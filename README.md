@@ -1,0 +1,46 @@
+# 資管科智慧學習歷程系統
+
+這是使用 Flask + MySQL 開發的學習歷程管理系統，搭配 Antigravity IDE 與 BMAD AI Agent 協助規劃、切分故事與開發。
+
+## 開發環境
+
+建議工具：
+
+- Python 3.11+
+- MySQL 或 MariaDB
+- Antigravity IDE
+- BMAD
+- Git
+
+## 第一次設定
+
+```powershell
+cd D:\democase\ai
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
+python run.py
+```
+
+## BMAD 建議流程
+
+```text
+CP  Create PRD
+CA  Create Architecture
+CE  Create Epics and Stories
+IR  Check Implementation Readiness
+SP  Sprint Planning
+CS  Create Story
+DS  Dev Story
+CR  Code Review
+```
+
+## 文件位置
+
+- `docs/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`（主要系統規格書）
+- `docs/diagrams.md`（Mermaid 圖表庫）
+- `docs/diagram-style-guide.md`（圖表繪製指南）
+- `docs/mysql-setup.md`（MySQL 設定說明）
+- `docs/development-log.md`（開發日誌）
+
