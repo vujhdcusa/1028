@@ -284,3 +284,136 @@ AI 可以做：
 2. 確認流程正確。
 3. 再轉成圖片放到報告書或簡報。
 4. 最後才做美化版圖表。
+
+## 11. 文件與開發同步流程圖
+
+```mermaid
+flowchart TD
+    classDef source fill:#FEF9C3,stroke:#333;
+    classDef docs fill:#E0F2FE,stroke:#333;
+    classDef dev fill:#DCFCE7,stroke:#333;
+    classDef check fill:#FEE2E2,stroke:#333;
+
+    GoogleDoc[Google Docs 最終版]:::source --> ActionPlan[system-design-action-plan.md]:::docs
+    Share[ChatGPT 分享對話]:::source --> ActionPlan
+
+    ActionPlan --> Spec[系統規格設計書]:::docs
+    ActionPlan --> Diagrams[diagrams.md]:::docs
+    ActionPlan --> DataDict[Data Dictionary]:::docs
+    ActionPlan --> API[API Specification]:::docs
+    ActionPlan --> Permission[Role Permission Matrix]:::docs
+    ActionPlan --> Tests[Test Case]:::docs
+    ActionPlan --> UI[UI Wireframe / UI UX 規格]:::docs
+
+    Spec --> BMAD[BMAD 任務切分]:::dev
+    Diagrams --> BMAD
+    DataDict --> Models[Flask / SQLAlchemy Models]:::dev
+    API --> Routes[Flask Routes / API]:::dev
+    Permission --> Auth[登入與權限控制]:::dev
+    Tests --> Pytest[pytest 驗證]:::check
+    UI --> Templates[HTML / CSS / JavaScript]:::dev
+
+    Models --> Pytest
+    Routes --> Pytest
+    Auth --> Pytest
+    Templates --> Pytest
+```
+
+## 12. 角色權限同步流程圖
+
+```mermaid
+flowchart TD
+    classDef docs fill:#E0F2FE,stroke:#333;
+    classDef db fill:#F3F4F6,stroke:#333;
+    classDef dev fill:#DCFCE7,stroke:#333;
+    classDef check fill:#FEE2E2,stroke:#333;
+
+    Start([開始]) --> Roles[確認角色清單與 role 值]:::docs
+    Roles --> UseCase[更新 Use Case]:::docs
+    UseCase --> ERD[更新 ERD]:::docs
+    ERD --> UserRole[同步 users.role 允許值]:::db
+    UserRole --> Permission[更新權限矩陣]:::docs
+    Permission --> API[更新 API Specification]:::docs
+    API --> UI[更新各角色畫面與導頁]:::dev
+    UI --> Tests[補角色測試案例]:::check
+    Tests --> Decision{文件、資料庫、API、畫面是否一致?}
+    Decision -- 否 --> Roles
+    Decision -- 是 --> End([完成])
+```
+
+## 13. MVP 主流程圖
+
+```mermaid
+flowchart TD
+    classDef student fill:#DBEAFE,stroke:#333;
+    classDef teacher fill:#DCFCE7,stroke:#333;
+    classDef admin fill:#EDE9FE,stroke:#333;
+    classDef backend fill:#E0F2FE,stroke:#333;
+    classDef db fill:#F3F4F6,stroke:#333;
+    classDef alert fill:#FEE2E2,stroke:#333;
+
+    Start([開始]) --> Login[使用者登入]:::backend
+    Login --> Role{判斷角色}
+
+    Role -- 學生 --> StudentHome[學生首頁]:::student
+    StudentHome --> CreatePortfolio[建立或修改學習歷程]:::student
+    CreatePortfolio --> Evidence[上傳 PDF / 圖片 / 外部連結]:::student
+    Evidence --> Submit[提交學習歷程]:::backend
+    Submit --> LockCheck{是否進入審查?}
+    LockCheck -- 是 --> Locked[鎖定版本]:::db
+    LockCheck -- 否 --> Draft[保留草稿]:::db
+
+    Role -- 教師/評審 --> TeacherHome[教師工作區]:::teacher
+    TeacherHome --> Assigned[查看被分派學生]:::teacher
+    Assigned --> Review[查看歷程與佐證]:::teacher
+    Review --> Score[評分與回饋留言]:::teacher
+    Score --> Decision{審查結果}
+    Decision -- 通過 --> Approved[標示通過]:::db
+    Decision -- 退回 --> Returned[退回補件並記錄原因]:::alert
+    Decision -- 待確認 --> Pending[標示待確認]:::alert
+
+    Role -- 管理者 --> AdminHome[管理者後台]:::admin
+    AdminHome --> Users[帳號與權限管理]:::admin
+    AdminHome --> Result[查看審查結果]:::admin
+    AdminHome --> Settings[系統設定]:::admin
+
+    Approved --> End([完成])
+    Returned --> StudentHome
+    Pending --> TeacherHome
+    Users --> End
+    Result --> End
+    Settings --> End
+```
+
+## 14. UI/UX 視覺概念流程圖
+
+```mermaid
+flowchart LR
+    classDef concept fill:#FEF9C3,stroke:#333;
+    classDef public fill:#DBEAFE,stroke:#333;
+    classDef student fill:#DCFCE7,stroke:#333;
+    classDef work fill:#EDE9FE,stroke:#333;
+    classDef ai fill:#FFEDD5,stroke:#333;
+
+    Concept[把五年，拼成下一站]:::concept --> Public[公開首頁]:::public
+    Concept --> Student[學生首頁]:::student
+    Concept --> TeacherAdmin[教師與行政工作頁]:::work
+    Concept --> AI[AI 小助手入口]:::ai
+
+    Public --> P1[散落資料]
+    P1 --> P2[連接與分類]
+    P2 --> P3[五年路徑]
+    P3 --> P4[升學 / 實習 / 就業下一站]
+
+    Student --> S1[個人五年路線]
+    S1 --> S2[成果節點逐年增加]
+    S2 --> S3[缺漏以空白拼圖或未完成節點呈現]
+
+    TeacherAdmin --> T1[表格]
+    TeacherAdmin --> T2[搜尋與篩選]
+    TeacherAdmin --> T3[狀態與批次操作]
+
+    AI --> A1[看看我的歷程還少了什麼]
+    AI --> A2[幫我整理下一步]
+    AI --> A3[只提供建議，不直接修改正式資料]
+```

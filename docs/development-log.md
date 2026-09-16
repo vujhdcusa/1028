@@ -61,6 +61,10 @@
 - 建立 smart_learning_portfolio 資料庫。
 - 建立 smart_learning_app 專案帳號。
 - Flask 使用 .env 成功連線 MySQL。
+- 建立並推動專案遠端儲存庫備份：
+  - GitHub Repository: `https://github.com/LanyuLiu951127/smart-learning-portfolio.git` (`origin/main`)
+  - GitLab Repository: `https://gitlab.com/LanyuLiu951127/smart-learning-portfolio.git` (`gitlab/main`)
+- 驗證兩端儲存庫內容同步完成，具備雙備份與組員協作能力。
 遇到問題：
 - mysql 指令不在 PATH。
 - root 不可空密碼登入。
@@ -208,6 +212,7 @@
 下一步：
 - 展開 Sprint 1 前端與後端登入驗證實作。
 
+
 ## 2026-09-15 專案檔案結構整理與冗餘清理
 
 日期：2026-09-15
@@ -258,5 +263,71 @@
 下一步：
 - 展開 Sprint 1 前端與後端登入驗證實作。
 
+## 2026-09-16 系統設計文件同步與 UI/UX 規格補強
 
+日期：2026-09-16
+開發者：田心于 / Codex
+今日目標：依 Google Docs 最終版與 ChatGPT 分享對話內容，將新版系統設計、角色同步、MVP 切分與 UI/UX 方向整合回本地開發文件。
+修改檔案：
+- `docs/system-design-action-plan.md`
+- `docs/diagrams.md`
+- `docs/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`
+- `docs/development-log.md`
+完成內容：
+- 新增 `docs/system-design-action-plan.md`，整理系統設計更新行動計畫。
+- 補上角色同步檢查，統一 `student`, `teacher`, `reviewer`, `staff`, `admin` 等角色方向。
+- 補上 MVP / Phase 2 / Future 功能切割，避免開發範圍失控。
+- 在 `docs/diagrams.md` 新增文件與開發同步流程圖、角色權限同步流程圖、MVP 主流程圖與 UI/UX 視覺概念流程圖。
+- 在主規格書新增「第零節 系統設計版本同步原則」。
+- 在主規格書補上科辦／行政角色、批次分派與通知 Use Case、權限矩陣、`Users.role` 允許值。
+- 新增「附錄五、網頁視覺與使用體驗設計原則」，正式寫入「把五年，拼成下一站」與 Interactive Editorial Learning Journey 設計方向。
+遇到問題：
+- 一開始未同步更新 `development-log.md`，造成文件更新紀錄缺漏。
+- 舊的 `environment-check.md` 與後續 `mysql-setup.md` / `development-log.md` 狀態不一致，需要以實測結果為準。
+解決方式：
+- 補寫本次同步紀錄。
+- 將後續開發流程調整為：每次修改文件或程式後，必須同步補 `docs/development-log.md`。
+測試結果：
+- 執行 `.\.venv\Scripts\pytest.exe -q` 通過，結果為 `3 passed`。
+下一步：
+- 開始 Sprint 1 前，先整理 Git 狀態與 `.gitignore`，再實作登入、Session 與角色權限控制。
 
+## 2026-09-16 開發前總檢查
+
+日期：2026-09-16
+開發者：田心于 / Codex
+今日目標：檢視整份專案大綱、文件、環境、資料庫與測試狀態，判斷是否可以開始正式開發系統。
+檢查檔案與項目：
+- `README.md`
+- `docs/environment-check.md`
+- `docs/mysql-setup.md`
+- `docs/system-design-action-plan.md`
+- `docs/diagrams.md`
+- `docs/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`
+- `app/`
+- `tests/`
+- `scripts/check_db.py`
+- Git 狀態
+完成內容：
+- 確認 Flask app 可載入。
+- 確認目前測試通過。
+- 確認 MySQL 可連線，版本為 `8.0.39`。
+- 確認目前資料庫已存在第一批資料表：`users`, `student_profiles`, `portfolios`, `portfolio_evidence`, `agent_tasks`, `audit_logs`。
+- 確認主規格書已具備角色、流程、ERD、DFD、MVP 切分、AI 限制與 UI/UX 附錄。
+目前仍需處理：
+- 專案沒有 `.gitignore`，且 Git 狀態中出現 `__pycache__` 與 `.pyc` 快取檔被加入追蹤/暫存。
+- 登入、登出、Session 與角色權限尚未實作。
+- 規格書列出的完整核心資料表尚未全部實作，目前僅完成 MVP 第一批模型。
+- API Specification 仍未獨立整理成完整端點清單。
+- Data Dictionary 目前仍是摘要，尚未列出所有欄位型別、必填、預設值與狀態允許值。
+- UI Wireframe 尚未正式建立。
+測試結果：
+- `.\.venv\Scripts\pytest.exe -q` 通過，結果為 `3 passed`。
+- `.\.venv\Scripts\python.exe scripts\check_db.py` 通過，顯示 `MySQL connected: 8.0.39`。
+結論：
+- 目前專案已可進入 Sprint 1 開發，但不能視為整個系統 100% 完成或完全沒有重大風險。
+- 建議先完成 Git 清理、`.gitignore`、登入驗證、Session、角色導頁與基礎權限測試，再進入學生歷程 CRUD。
+下一步：
+- 建立 `.gitignore`。
+- 移除不應追蹤的 `__pycache__` / `.pyc` 快取檔。
+- 實作 Sprint 1：登入驗證、Session 管理、角色權限控制。
