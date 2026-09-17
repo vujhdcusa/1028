@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head><meta charset="utf-8"><title>{{ title }}</title></head>
+  <body>
+    <main>
+      <h1>{{ title }}</h1>
+      <p>目前登入：{{ user.display_name }}（{{ user.role }}）</p>
+      <p>期中核心功能正在依序開發中。</p>
+      <form method="post" action="{{ url_for('main.logout') }}"><button type="submit">登出</button></form>
+    </main>
+  </body>
+</html>
