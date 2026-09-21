@@ -1,0 +1,19 @@
+flowchart TD
+    classDef student fill:#DBEAFE,stroke:#333;
+    classDef teacher fill:#DCFCE7,stroke:#333;
+    classDef staff fill:#EDE9FE,stroke:#333;
+    classDef ai fill:#FFEDD5,stroke:#333;
+    classDef backend fill:#E0F2FE,stroke:#333;
+    classDef alert fill:#FEE2E2,stroke:#333;
+
+    Start([學生登入]) --> Portfolio[建立學習成果]:::student
+    Portfolio --> Evidence[上傳檔案或作品連結]:::student
+    Evidence --> Snapshot[保存成果要求快照]:::backend
+    Snapshot --> AI[AI 初步比對佐證與缺件]:::ai
+    AI --> Teacher[教師查看學生資料與 AI 提示]:::teacher
+    Teacher --> Feedback[留下輔導或補件建議]:::teacher
+    Feedback --> NeedFix{是否需要補件?}
+    NeedFix -- 是 --> Revise[學生補件並提交新版本]:::student
+    Revise --> Snapshot
+    NeedFix -- 否 --> Complete[保存教師確認紀錄]:::backend
+    Complete --> End([完成])

@@ -361,6 +361,41 @@
 下一步：
 - 依 M-01 至 M-10 順序建立學習目標、提交版本、目標快照與學生提交測試。
 
+## 2026-09-21 目前系統進度重新評估
+
+日期：2026-09-21
+開發者：Codex
+今日目標：依最新程式、測試、規格與公開來源快照，重新區分規劃成熟度與實際程式完成度。
+完成內容：
+- 重新執行專案測試，於 `D:\democase\ai` 執行 `pytest -q`，結果為 `7 passed`。
+- 確認目前已實作登入、登出、Session、角色導頁與後端 RBAC。
+- 確認目前只有第一批六類資料表，尚未建立專題類型、成果要求模板、學生套用、目標快照、教師覆核與 AI 分析資料表。
+- 將規格成熟度與實際程式完成度分開記錄，避免用文件規劃百分比代表功能已完成。
+目前評估：
+- 正式規格書約 85%。
+- 學校需求整合約 70%。
+- 教師端規劃約 75%。
+- 學生端規劃約 82%。
+- 管理端規劃約 78%。
+- 期中核心實際程式約 20% 左右，尚未形成完整端到端流程。
+下一步：
+- 先依 114 學年度「專題審查學習目標與評量對照表」建立資訊軟體開發組與商務網站經營組的成果要求範本。
+- 建立 `project_types`、`requirement_templates`、`requirement_items`、`student_project_assignments`。
+- 以 `admin` 建立安全的專題類型與成果要求維護頁。
+- 再進入學生提交與目標快照，之後才做公開來源 AI Agent。
+
+## 2026-09-21 需求規則修正：專題時程與證照／競賽抵免
+
+完成內容：
+- 修正學生歷程階段規劃：三年級以累積作品、證照與競賽為主，專題方向、分組與指導教師改為五年級專題正式啟動前。
+- 修正抵免規則：抵免來源為學校及各科系認證的證照與競賽／比賽成果，合計至多 6 學分；不再把實習本身列為此項抵免來源。
+- 將認證清單、適用年度、證明文件與審核結果列為需版本化管理的資料。
+測試結果：
+- 本次為規格文件修正，未修改程式碼。
+- 修正內容已寫入 `需求資料蒐集與規則補充表.md` 與 `midterm-development-log.md`。
+下一步：
+- 依修正後的抵免規則設計證照／競賽資料模型與管理員維護欄位。
+
 ## 2026-09-17 正式規格書與期中核心範圍對照
 
 日期：2026-09-17
@@ -384,3 +419,106 @@
 - 未修改程式碼或資料庫，尚未宣稱任何期中功能已完成。
 下一步：
 - 依對照文件補齊 API Specification、Data Dictionary 與期中測試案例，再開始核心流程實作。
+
+## 2026-09-17 公開校方來源瀏覽與本機快照
+
+日期：2026-09-17
+開發者：Codex
+今日目標：重新瀏覽需求補充表提供的公開校方網址，下載可公開取得的頁面與附件，供規格核對與後續 AI Agent 來源管理使用。
+修改檔案：
+- `school/public-sources/README.md`
+- `school/public-sources/*.html`
+- `school/public-sources/*.doc`
+- `school/public-sources/*.odt`
+- `school/public-sources/*.pdf`
+- `docs/development-log.md`
+完成內容：
+- 保存康寧大學官網首頁、課表查詢、抵免系統公開登入頁、校內轉科公告及資管科公開頁面。
+- 保存資管科專題書面繳交公告及附件：著作授權書、成果報告封面／書背格式的 Word、ODT、PDF 版本。
+- 保存 1151 學期五專資訊管理科五年級 A 班教學計畫與實務專題課程綱要頁面。
+- 建立 `school/public-sources/README.md`，記錄來源網址、抓取日期、初步可用線索與尚待確認項目。
+- 未登入抵免系統、未讀取私人資料，也未下載 Google Drive 未確認公開權限的內容。
+核對結果：
+- 公開教學計畫頁顯示五專資訊管理科五年級 A 班的 1151 學期課程資料。
+- 公開課程綱要頁顯示「實務專題」為 1 學分、專題課，並描述分組實作與專題流程。
+- 114 學年度專題繳交公告包含每組三本紙本、每本附光碟、PDF 上傳與光碟電子檔要求；這些規則仍需依適用年度確認。
+限制：
+- 部分資管科頁面無法由瀏覽工具直接解析，但已用公開 HTTP 頁面下載保存。
+- 111 級實務專題規定、114 學年度公告與 115 學期課程資料不可直接視為同一年度規則。
+下一步：
+- 將已核對來源轉成正式規格的年度化規則與成果要求模板；後續由 `admin` 管理假帳號與專題資料，不另設 `Administrator` 網站使用者。
+
+## 2026-09-21 專題成果評量範本與角色收斂
+
+日期：2026-09-21
+開發者：Codex
+今日目標：依去年度專題審查學習目標與評量對照表，將專題功能收斂為學習歷程中的小組成果，不另做專題行政系統。
+修改檔案：
+- `docs/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`
+- `docs/需求資料蒐集與規則補充表.md`
+- `docs/midterm-development-log.md`
+- `docs/專題成果評量範本-第一版.md`
+完成內容：
+- 確認專題由小組共用成果、個人分工與答詢紀錄組成；不延伸為場地、委員會或網站公告系統。
+- 移除正式規格中的獨立 `reviewer` 登入角色設計；教師共同討論，科主任或科助登錄共同結論。
+- 建立資訊軟體開發組、商務網站經營組，以及期中／兩次複評的第一版成果要求範本。
+- 將 111 級實施計畫與 114 學年度評量對照表標示為年度化參考，不視為永久固定規則。
+限制：
+- 本次只更新規格與開發軌跡，未修改 Python 程式、資料庫或期中核心實作完成度。
+下一步：
+- 以成果要求範本為依據，設計並測試 `project_types`、`requirement_templates`、`requirement_items`、`student_project_assignments`。
+
+## 2026-09-21 核心流程第一版實作
+
+日期：2026-09-21
+開發者：Codex
+今日目標：依 AI 交接摘要完成角色、模板、學生提交、審查版本與 AI 初檢第一版。
+修改檔案：
+- `app/models/project.py`
+- `app/models/submission.py`
+- `app/models/review.py`
+- `app/services/portfolio_service.py`
+- `app/services/review_service.py`
+- `app/services/ai_service.py`
+- `app/routes/student.py`、`app/routes/review.py`、`app/routes/staff.py`
+- `app/security.py`、`app/config.py`
+- `tests/` 新增角色、模型、提交、審查、AI 與安全測試
+完成內容：
+- 統一正式角色為 `student`、`teacher`、`staff`、`admin`，拒絕 `reviewer` 登入導頁。
+- 新增專題類型、年度模板、成果要求、小組、成員與學生模板分派模型。
+- 完成學生作品新增／編輯、提交版本、要求快照與私有證據下載／上傳。
+- 完成教師分派、staff／admin 共同結論、補件版本與 V1 歷程保留。
+- 完成規則式 AI 證據初檢；AI 只能保存候選結果，不會修改正式審查結論。
+- 加入 CSRF token 基礎檢查、上傳檔名／副檔名檢查及管理者密碼不輸出的初始化行為。
+測試結果：
+- `pytest -q`：22 passed。
+已知限制：
+- 尚未接外部 LLM、病毒掃描、學校主資料庫或正式 migration 管理。
+- 管理端模板 CRUD 與完整 UI 仍是最小可驗收頁面，需下一階段補齊。
+下一步：
+- 補齊 staff 模板／小組管理表單、檔案掃描策略與 Alembic migration。
+
+## 2026-09-21 Agent 工具與產物目錄整理
+
+日期：2026-09-21
+開發者：Codex
+今日目標：整理 BMAD、Codex 與 AI 工具設定，降低專案檔案瀏覽的混亂程度，同時保留工具相容性。
+修改檔案／目錄：
+- `agent/README.md`
+- `.vscode/settings.json`
+- `agent/codex/`：由 `ai/codex/` 搬移
+- `agent/bmad/`：由 `ai/_bmad/` 搬移
+- `ai/_bmad/`：建立指向 `agent/bmad/` 的 Windows Junction
+- `agent/codex` 內報告腳本的舊路徑
+完成內容：
+- Codex 報告、工作腳本與歷史產物集中至 `D:\democase\agent\codex`。
+- BMAD 實體資料集中至 `D:\democase\agent\bmad`，保留 `ai/_bmad` 相容路徑，避免 BMAD 專案根目錄解析失效。
+- VS Code 以 `files.exclude` 與 `search.exclude` 隱藏 AI 工具設定、虛擬環境、快取、執行資料與相容 Junction；未刪除這些資料。
+- 後續 AI 產生的 Markdown 仍統一放在 `D:\democase\ai\docs`。
+驗證結果：
+- Flask 測試：`22 passed`。
+- BMAD 新位置與相容路徑均可讀取。
+- Codex 內沒有殘留 `D:\democase\ai\codex` 舊路徑。
+恢復方式：
+- 編輯 `.vscode/settings.json`，刪除或將對應 `files.exclude`／`search.exclude` 項目設為 `false`，即可在 VS Code 顯示。
+- 這些設定只影響 VS Code 顯示與搜尋，不會刪除檔案；PowerShell 使用 `Get-ChildItem -Force` 仍可查看。

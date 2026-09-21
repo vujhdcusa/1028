@@ -1,0 +1,22 @@
+flowchart TD
+    classDef student fill:#DBEAFE,stroke:#333;
+    classDef teacher fill:#DCFCE7,stroke:#333;
+    classDef staff fill:#EDE9FE,stroke:#333;
+    classDef backend fill:#E0F2FE,stroke:#333;
+    classDef alert fill:#FEE2E2,stroke:#333;
+
+    Start([專五專題開始]) --> Team[學生組成 3 至 4 人小組]:::student
+    Team --> Advisor[小組找指導老師]:::student
+    Advisor --> Record[建立小組共用專題成果]:::backend
+    Record --> Template{選擇專題類型}
+    Template -- 資訊軟體開發組 --> Software[套用系統成果要求]:::backend
+    Template -- 商務網站經營組 --> Business[套用商務成果要求]:::backend
+    Software --> Submit[繳交階段成果與個人分工]:::student
+    Business --> Submit
+    Submit --> Discuss[教師共同討論成果]:::teacher
+    Discuss --> RecordDecision[科主任或科助登錄共同結果與評語]:::staff
+    RecordDecision --> Revision{需要補正?}
+    Revision -- 是 --> Fix[學生補正並附完成證據]:::student
+    Fix --> Submit
+    Revision -- 否 --> Link[成果連結至每位組員學習歷程]:::backend
+    Link --> End([完成])

@@ -1,0 +1,12 @@
+flowchart TD
+    Start([使用者登入]) --> Auth{帳密與帳號狀態有效？}
+    Auth -- 否 --> Error[顯示錯誤，不透露帳號資訊]
+    Auth -- 是 --> Role{使用者角色}
+    Role -- student --> Student[學生工作區]
+    Role -- teacher --> Teacher[教師／導師工作區]
+    Role -- staff --> Staff[科辦／行政工作區]
+    Role -- admin --> Admin[系統管理工作區]
+    Student --> Log[寫入登入日誌]
+    Teacher --> Log
+    Staff --> Log
+    Admin --> Log

@@ -29,3 +29,9 @@ class Config:
     MAX_CONTENT_LENGTH = max_mb * 1024 * 1024
     
     AI_ENABLED = os.getenv("AI_ENABLED", "false").lower() == "true"
+    CSRF_ENABLED = os.getenv("CSRF_ENABLED", "true").lower() == "true"
+    ALLOWED_UPLOAD_EXTENSIONS = {
+        value.strip().lower()
+        for value in os.getenv("ALLOWED_UPLOAD_EXTENSIONS", "pdf,png,jpg,jpeg,doc,docx,odt,txt").split(",")
+        if value.strip()
+    }

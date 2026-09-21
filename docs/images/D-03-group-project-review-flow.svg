@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="920" viewBox="0 0 1600 920">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+    <style>
+      text{font-family:'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;fill:#172033} .title{font-size:32px;font-weight:700}.note{font-size:16px;fill:#475569}.node{stroke:#334155;stroke-width:2}.label{font-size:20px;font-weight:600;text-anchor:middle;dominant-baseline:middle}.small{font-size:17px;font-weight:500;text-anchor:middle;dominant-baseline:middle}.line{stroke:#334155;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1600" height="920" fill="#ffffff"/>
+  <text x="800" y="56" class="title" text-anchor="middle">D-03 小組專題成果與共同審查流程圖</text>
+  <text x="800" y="86" class="note" text-anchor="middle">專題是學習歷程中的小組共用成果，不另建立評審帳號或場地／公告系統</text>
+  <rect x="650" y="120" width="300" height="58" rx="29" fill="#e0f2fe" class="node"/><text x="800" y="149" class="label">專五專題開始</text>
+  <rect x="620" y="220" width="360" height="70" rx="14" fill="#dbeafe" class="node"/><text x="800" y="255" class="label">學生組成 3 至 4 人小組</text>
+  <rect x="650" y="332" width="300" height="70" rx="14" fill="#dbeafe" class="node"/><text x="800" y="367" class="label">小組找指導老師</text>
+  <rect x="625" y="444" width="350" height="70" rx="14" fill="#e0f2fe" class="node"/><text x="800" y="479" class="label">建立小組共用專題成果</text>
+  <path d="M800 178V220 M800 290V332 M800 402V444" class="line"/>
+  <polygon points="800,562 920,622 800,682 680,622" fill="#fef9c3" class="node"/><text x="800" y="622" class="label">選擇專題類型</text>
+  <path d="M800 514V562" class="line"/>
+  <rect x="170" y="724" width="390" height="74" rx="14" fill="#e0f2fe" class="node"/><text x="365" y="753" class="label">資訊軟體開發組</text><text x="365" y="778" class="small">套用系統成果要求</text>
+  <rect x="1040" y="724" width="390" height="74" rx="14" fill="#e0f2fe" class="node"/><text x="1235" y="753" class="label">商務網站經營組</text><text x="1235" y="778" class="small">套用商務成果要求</text>
+  <path d="M700 658L365 724 M900 658L1235 724" class="line"/>
+  <rect x="615" y="830" width="370" height="68" rx="14" fill="#dbeafe" class="node"/><text x="800" y="856" class="label">繳交階段成果與個人分工</text><text x="800" y="879" class="small">後續：共同討論 → 行政登錄結果 → 補正或連結個人歷程</text>
+  <path d="M560 761H800V830 M1040 761H800" class="line"/>
+</svg>

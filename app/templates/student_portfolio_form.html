@@ -1,0 +1,3 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><title>編輯成果</title></head>
+<body><main><h1>編輯成果</h1><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="title" value="{{ portfolio.title }}" required><input name="category" value="{{ portfolio.category }}" required><textarea name="description">{{ portfolio.description or '' }}</textarea><button>儲存</button></form></main></body></html>

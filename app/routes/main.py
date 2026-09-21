@@ -8,6 +8,14 @@ from app.models import User
 main_bp = Blueprint("main", __name__)
 
 
+def get_current_user():
+    user_id = session.get("user_id")
+    user = db.session.get(User, user_id) if user_id else None
+    if not user or not user.is_active:
+        return None
+    return user
+
+
 @main_bp.route("/")
 def index():
     return render_template("index.html")
@@ -29,7 +37,7 @@ def login():
     destinations = {
         "student": "main.student_dashboard",
         "teacher": "main.teacher_dashboard",
-        "reviewer": "main.teacher_dashboard",
+        "staff": "main.staff_dashboard",
         "admin": "main.admin_dashboard",
     }
     endpoint = destinations.get(user.role)
@@ -49,9 +57,8 @@ def role_required(*allowed_roles):
     def decorator(view):
         @wraps(view)
         def wrapped(*args, **kwargs):
-            user_id = session.get("user_id")
-            user = db.session.get(User, user_id) if user_id else None
-            if not user or not user.is_active:
+            user = get_current_user()
+            if not user:
                 abort(401)
             if user.role not in allowed_roles:
                 abort(403)
@@ -71,7 +78,13 @@ def student_dashboard():
 @main_bp.get("/teacher/dashboard")
 @role_required("teacher", "reviewer")
 def teacher_dashboard():
-    return render_template("dashboard.html", title="教師工作台", user=db.session.get(User, session["user_id"]))
+    return render_template("dashboard.html", title="教師工作台", user=get_current_user())
+
+
+@main_bp.get("/staff/dashboard")
+@role_required("staff")
+def staff_dashboard():
+    return render_template("dashboard.html", title="科辦／行政工作台", user=get_current_user())
 
 
 @main_bp.get("/admin/dashboard")
@@ -86,7 +99,7 @@ def admin_legacy_route():
 
 
 @main_bp.get("/dashboard/<role>")
-@role_required("student", "teacher", "reviewer", "staff", "admin")
+@role_required("student", "teacher", "staff", "admin")
 def role_dashboard(role):
     user = db.session.get(User, session["user_id"])
     if role != user.role:
@@ -94,7 +107,7 @@ def role_dashboard(role):
     destinations = {
         "student": "main.student_dashboard",
         "teacher": "main.teacher_dashboard",
-        "reviewer": "main.teacher_dashboard",
+        "staff": "main.staff_dashboard",
         "admin": "main.admin_dashboard",
     }
     endpoint = destinations.get(role)

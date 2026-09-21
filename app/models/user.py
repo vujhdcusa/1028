@@ -31,6 +31,7 @@ class User(db.Model):
     portfolios = db.relationship("Portfolio", back_populates="student")
     agent_tasks = db.relationship("AgentTask", back_populates="requester")
     audit_logs = db.relationship("AuditLog", back_populates="user")
+    review_assignments = db.relationship("SubmissionAssignment", back_populates="teacher", foreign_keys="SubmissionAssignment.teacher_id")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

@@ -30,6 +30,10 @@ class Portfolio(db.Model):
     evidence_items = db.relationship(
         "PortfolioEvidence", back_populates="portfolio", cascade="all, delete-orphan"
     )
+    submissions = db.relationship(
+        "PortfolioSubmission", back_populates="portfolio", cascade="all, delete-orphan",
+        order_by="PortfolioSubmission.version_no",
+    )
 
 
 class PortfolioEvidence(db.Model):

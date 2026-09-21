@@ -16,7 +16,9 @@ def create_admin_user():
     if admin:
         return "admin user already exists"
 
-    default_password = os.getenv("ADMIN_DEFAULT_PASSWORD", "admin123")
+    default_password = os.getenv("ADMIN_DEFAULT_PASSWORD")
+    if not default_password:
+        raise RuntimeError("ADMIN_DEFAULT_PASSWORD must be set before creating an admin user")
     admin = User(
         username="admin",
         display_name="系統管理者",
@@ -26,7 +28,7 @@ def create_admin_user():
     admin.set_password(default_password)
     db.session.add(admin)
     db.session.commit()
-    return f"created admin user: admin / {default_password} (Notice: Please change password upon first login)"
+    return "created admin user: admin (password supplied through ADMIN_DEFAULT_PASSWORD)"
 
 
 def main():

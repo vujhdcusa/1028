@@ -1,0 +1,1 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>教師待審</title></head><body><main><h1>教師待審提交</h1><ul>{% for assignment in assignments %}<li>提交 #{{ assignment.submission_id }}：{{ assignment.submission.portfolio.title }}</li>{% else %}<li>目前沒有被分派的提交</li>{% endfor %}</ul></main></body></html>

@@ -26,7 +26,8 @@ flowchart LR
     GH[GitHub REST API]:::external
     
     Student[學生]:::student --> U
-    Teacher[教師 / 評審]:::teacher --> U
+    Teacher[教師 / 導師]:::teacher --> U
+    Staff[科辦 / 行政]:::admin --> U
     Admin[系統管理者]:::admin --> U
     
     U --> R
@@ -49,7 +50,8 @@ flowchart TD
     System[前端介面與後端]:::backend
 
     System --> Student[學生]:::student
-    System --> Teacher[教師 / 評審]:::teacher
+    System --> Teacher[教師 / 導師]:::teacher
+    System --> Staff[科辦 / 行政]:::admin
     System --> Admin[系統管理者]:::admin
     System --> Agent[AI Agent]:::ai
 
@@ -60,9 +62,12 @@ flowchart TD
     Student --> S5[查看 AI 檢核報告]:::student
 
     Teacher --> T1[查看被分派學生]:::teacher
-    Teacher --> T2[評分與回饋留言]:::teacher
+    Teacher --> T2[提供輔導與補件建議]:::teacher
     Teacher --> T3[人工覆核 AI 提示]:::teacher
     Teacher --> T4[提供補件建議]:::teacher
+
+    Staff --> F1[登錄共同審查結論]:::admin
+    Staff --> F2[整理補正項目]:::admin
 
     Admin --> A1[帳號與權限管理]:::admin
     Admin --> A2[系統設定維護]:::admin
@@ -97,7 +102,29 @@ flowchart TD
     Milestone --> End([完成])
 ```
 
-## 4. AI 備審主張－證據檢核流程圖
+## 4. 小組專題成果與共同審查流程圖
+
+> 報告圖片來源：`images/D-03-group-project-review-flow.mmd`。專題是學習歷程中的小組共用成果，不另做評審帳號、場地或網站公告管理系統。
+
+```mermaid
+flowchart TD
+    Start([專五專題開始]) --> Team[學生組成 3 至 4 人小組]
+    Team --> Advisor[小組找指導老師]
+    Advisor --> Record[建立小組共用專題成果]
+    Record --> Template{選擇專題類型}
+    Template -- 資訊軟體開發組 --> Software[套用系統成果要求]
+    Template -- 商務網站經營組 --> Business[套用商務成果要求]
+    Software --> Submit[繳交階段成果與個人分工]
+    Business --> Submit
+    Submit --> Discuss[教師共同討論成果]
+    Discuss --> RecordDecision[科主任或科助登錄共同結果與評語]
+    RecordDecision --> Revision{需要補正?}
+    Revision -- 是 --> Fix[學生補正並附完成證據]
+    Fix --> Submit
+    Revision -- 否 --> Link[成果連結至每位組員學習歷程]
+```
+
+## 5. AI 備審主張－證據檢核流程圖
 
 ```mermaid
 flowchart TD
@@ -126,7 +153,7 @@ flowchart TD
     Pending --> End
 ```
 
-## 5. 成績單擷取流程圖
+## 6. 成績單擷取流程圖
 
 ```mermaid
 flowchart TD
@@ -152,7 +179,7 @@ flowchart TD
     Save --> End([完成])
 ```
 
-## 6. 招生資料更新流程圖
+## 7. 招生資料更新流程圖
 
 ```mermaid
 flowchart TD
@@ -175,7 +202,7 @@ flowchart TD
     Log --> End([完成])
 ```
 
-## 7. 管理者維護流程圖
+## 8. 管理者維護流程圖
 
 ```mermaid
 flowchart TD
@@ -194,7 +221,7 @@ flowchart TD
     Tasks --> Retry[重新執行失敗任務]:::backend
 ```
 
-## 8. ERD 草圖
+## 9. ERD 草圖
 
 ```mermaid
 erDiagram
@@ -243,7 +270,7 @@ erDiagram
     }
 ```
 
-## 9. DFD 資料流程圖
+## 10. DFD 資料流程圖
 
 ```mermaid
 flowchart LR
@@ -259,13 +286,15 @@ flowchart LR
     P2 --> D2[(檔案與草稿資料)]:::db
     P2 --> P3[AI Agent 模組]:::ai
     P3 --> D3[(任務與檢核報告)]:::db
-    Teacher[教師 / 評審]:::teacher --> P4[人工覆核流程]
+    Teacher[教師 / 導師]:::teacher --> P4[人工覆核流程]
     P4 --> D4[(評分與覆核紀錄)]:::db
+    Staff[科辦 / 行政]:::admin --> P6[共同結論登錄]
+    P6 --> D4
     Admin[系統管理者]:::admin --> P5[管理者維護模組]
     P5 --> D5[(帳號規則日誌)]:::db
 ```
 
-## 10. AI 可以幫你做哪些圖
+## 11. AI 可以幫你做哪些圖
 
 AI 可以做：
 
@@ -285,7 +314,7 @@ AI 可以做：
 3. 再轉成圖片放到報告書或簡報。
 4. 最後才做美化版圖表。
 
-## 11. 文件與開發同步流程圖
+## 12. 文件與開發同步流程圖
 
 ```mermaid
 flowchart TD
@@ -319,7 +348,7 @@ flowchart TD
     Templates --> Pytest
 ```
 
-## 12. 角色權限同步流程圖
+## 13. 角色權限同步流程圖
 
 ```mermaid
 flowchart TD
@@ -341,7 +370,7 @@ flowchart TD
     Decision -- 是 --> End([完成])
 ```
 
-## 13. MVP 主流程圖
+## 14. MVP 主流程圖
 
 ```mermaid
 flowchart TD
@@ -363,29 +392,31 @@ flowchart TD
     LockCheck -- 是 --> Locked[鎖定版本]:::db
     LockCheck -- 否 --> Draft[保留草稿]:::db
 
-    Role -- 教師/評審 --> TeacherHome[教師工作區]:::teacher
+    Role -- 教師/導師 --> TeacherHome[教師工作區]:::teacher
     TeacherHome --> Assigned[查看被分派學生]:::teacher
     Assigned --> Review[查看歷程與佐證]:::teacher
-    Review --> Score[評分與回饋留言]:::teacher
-    Score --> Decision{審查結果}
-    Decision -- 通過 --> Approved[標示通過]:::db
-    Decision -- 退回 --> Returned[退回補件並記錄原因]:::alert
-    Decision -- 待確認 --> Pending[標示待確認]:::alert
+    Review --> Advice[提供輔導與補件建議]:::teacher
 
     Role -- 管理者 --> AdminHome[管理者後台]:::admin
     AdminHome --> Users[帳號與權限管理]:::admin
     AdminHome --> Result[查看審查結果]:::admin
     AdminHome --> Settings[系統設定]:::admin
 
+    Role -- 科辦/行政 --> StaffHome[行政工作區]:::admin
+    StaffHome --> Committee[登錄教師共同結論]:::admin
+    Committee --> Decision{是否需要補正?}
+    Decision -- 是 --> Returned[記錄補正項目]:::alert
+    Decision -- 否 --> Approved[保存共同結論]:::db
+
     Approved --> End([完成])
     Returned --> StudentHome
-    Pending --> TeacherHome
+    Advice --> End
     Users --> End
     Result --> End
     Settings --> End
 ```
 
-## 14. UI/UX 視覺概念流程圖
+## 15. UI/UX 視覺概念流程圖
 
 ```mermaid
 flowchart LR

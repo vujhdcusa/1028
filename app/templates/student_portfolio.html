@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><title>我的學習成果</title></head>
+<body><main><h1>我的學習成果</h1>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="title" placeholder="標題" required><input name="category" placeholder="類型" required><textarea name="description" placeholder="說明"></textarea><button>新增成果</button></form>
+<ul>{% for portfolio in portfolios %}<li>{{ portfolio.title }}（{{ portfolio.status }}）<a href="{{ url_for('student.portfolio_edit', portfolio_id=portfolio.id) }}">編輯</a><form method="post" action="{{ url_for('student.portfolio_submit', portfolio_id=portfolio.id) }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>提交</button></form></li>{% else %}<li>尚無成果</li>{% endfor %}</ul>
+</main></body></html>
