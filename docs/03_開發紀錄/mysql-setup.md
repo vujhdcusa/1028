@@ -81,3 +81,33 @@ XAMPP MariaDB: D:\xampp\mysql\bin\mysql.exe
 
 3. **`caching_sha2_password` 驗證錯誤**
    - 若連線提示缺少 `cryptography` 套件，可將專案帳號驗證方式改為 `mysql_native_password`。
+
+---
+
+## 資料庫版本更新（Migration）
+
+本專案已啟用 Flask-Migrate。新增教師審查意見功能後，須將 migration 套用到既有資料庫，才會建立 `teacher_review_feedback` 資料表。
+
+執行前請確認：
+
+- `.env` 的 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 指向正確的開發資料庫。
+- 原有核心資料表已完成初始化，特別是 `users` 與 `portfolio_submissions`。
+- 先備份資料庫，避免在錯誤環境執行更新。
+
+在 `D:\democase\ai` 執行：
+
+```powershell
+.\.venv\Scripts\python.exe -m flask --app app:create_app db current
+.\.venv\Scripts\python.exe -m flask --app app:create_app db upgrade
+.\.venv\Scripts\python.exe -m flask --app app:create_app db current
+```
+
+目前版本 `52b9ba9ea108` 只會新增 `teacher_review_feedback` 與兩個查詢索引，不會修改既有送件資料。
+
+若必須回復上一版，且確認不需要保留已輸入的教師意見，才可執行：
+
+```powershell
+.\.venv\Scripts\python.exe -m flask --app app:create_app db downgrade -1
+```
+
+> `downgrade` 會移除教師意見資料表與其中內容；正式環境請先備份再操作。

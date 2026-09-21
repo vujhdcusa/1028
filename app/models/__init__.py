@@ -10,7 +10,7 @@ from app.models.project import (
     StudentProjectAssignment,
 )
 from app.models.submission import PortfolioGoalSnapshot, PortfolioSubmission, SubmissionEvidence
-from app.models.review import ProjectReviewResult, ProjectRevisionRecord, SubmissionAssignment
+from app.models.review import ProjectReviewResult, ProjectRevisionRecord, SubmissionAssignment, TeacherReviewFeedback
 from app.models.user import StudentProfile, User
 
 __all__ = [
@@ -30,6 +30,7 @@ __all__ = [
     "PortfolioGoalSnapshot",
     "SubmissionEvidence",
     "SubmissionAssignment",
+    "TeacherReviewFeedback",
     "ProjectReviewResult",
     "ProjectRevisionRecord",
 ]

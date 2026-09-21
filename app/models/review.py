@@ -17,6 +17,18 @@ class SubmissionAssignment(db.Model):
     teacher = db.relationship("User", back_populates="review_assignments")
 
 
+class TeacherReviewFeedback(db.Model):
+    __tablename__ = "teacher_review_feedback"
+    id = db.Column(db.Integer, primary_key=True)
+    submission_id = db.Column(db.Integer, db.ForeignKey("portfolio_submissions.id"), nullable=False, index=True)
+    teacher_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    comment = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    submission = db.relationship("PortfolioSubmission")
+    teacher = db.relationship("User")
+
+
 class ProjectReviewResult(db.Model):
     __tablename__ = "project_review_results"
     id = db.Column(db.Integer, primary_key=True)

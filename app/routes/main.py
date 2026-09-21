@@ -3,7 +3,7 @@ from functools import wraps
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
 from app.extensions import db
-from app.models import User
+from app.models import Portfolio, PortfolioSubmission, SubmissionAssignment, TeacherReviewFeedback, User
 
 main_bp = Blueprint("main", __name__)
 
@@ -14,6 +14,20 @@ def get_current_user():
     if not user or not user.is_active:
         return None
     return user
+
+
+def feedback_by_submission(submission_ids):
+    feedback_map = {}
+    if not submission_ids:
+        return feedback_map
+    feedback_items = (
+        TeacherReviewFeedback.query.filter(TeacherReviewFeedback.submission_id.in_(submission_ids))
+        .order_by(TeacherReviewFeedback.created_at.asc())
+        .all()
+    )
+    for feedback in feedback_items:
+        feedback_map.setdefault(feedback.submission_id, []).append(feedback)
+    return feedback_map
 
 
 @main_bp.route("/")
@@ -72,25 +86,70 @@ def role_required(*allowed_roles):
 @main_bp.get("/student/dashboard")
 @role_required("student")
 def student_dashboard():
-    return render_template("dashboard.html", title="學生首頁", user=db.session.get(User, session["user_id"]))
+    user = db.session.get(User, session["user_id"])
+    return render_template(
+        "dashboard.html",
+        title="學生首頁",
+        user=user,
+        portfolio_count=Portfolio.query.filter_by(student_id=user.id).count(),
+    )
 
 
 @main_bp.get("/teacher/dashboard")
-@role_required("teacher", "reviewer")
+@role_required("teacher")
 def teacher_dashboard():
-    return render_template("dashboard.html", title="教師工作台", user=get_current_user())
+    user = get_current_user()
+    assignments = (
+        SubmissionAssignment.query.filter_by(teacher_id=user.id)
+        .order_by(SubmissionAssignment.assigned_at.desc())
+        .all()
+    )
+    return render_template(
+        "dashboard.html",
+        title="教師工作台",
+        user=user,
+        teacher_assignments=assignments,
+    )
 
 
 @main_bp.get("/staff/dashboard")
 @role_required("staff")
 def staff_dashboard():
-    return render_template("dashboard.html", title="科辦／行政工作台", user=get_current_user())
+    user = get_current_user()
+    pending_submissions = (
+        PortfolioSubmission.query.filter_by(status="submitted")
+        .order_by(PortfolioSubmission.created_at.desc())
+        .all()
+    )
+    return render_template(
+        "dashboard.html",
+        title="科辦／行政工作台",
+        user=user,
+        staff_pending_submissions=pending_submissions,
+        staff_feedback_by_submission=feedback_by_submission(
+            [item.id for item in pending_submissions]
+        ),
+    )
 
 
 @main_bp.get("/admin/dashboard")
 @role_required("admin")
 def admin_dashboard():
-    return render_template("admin_dashboard.html", user=db.session.get(User, session["user_id"]))
+    user = db.session.get(User, session["user_id"])
+    return render_template(
+        "admin_dashboard.html",
+        user=user,
+        student_count=User.query.filter_by(role="student", is_active=True).count(),
+        teacher_count=User.query.filter_by(role="teacher", is_active=True).count(),
+        staff_count=User.query.filter_by(role="staff", is_active=True).count(),
+        submission_count=PortfolioSubmission.query.count(),
+        pending_submission_count=PortfolioSubmission.query.filter_by(status="submitted").count(),
+        recent_submissions=(
+            PortfolioSubmission.query.order_by(PortfolioSubmission.created_at.desc())
+            .limit(6)
+            .all()
+        ),
+    )
 
 
 @main_bp.get("/admin")

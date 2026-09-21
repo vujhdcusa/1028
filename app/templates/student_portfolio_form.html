@@ -1,3 +1,22 @@
-<!doctype html>
-<html lang="zh-Hant"><head><meta charset="utf-8"><title>編輯成果</title></head>
-<body><main><h1>編輯成果</h1><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input name="title" value="{{ portfolio.title }}" required><input name="category" value="{{ portfolio.category }}" required><textarea name="description">{{ portfolio.description or '' }}</textarea><button>儲存</button></form></main></body></html>
+{% extends "base.html" %}
+{% set page_name = "student-portfolio-edit" %}
+
+{% block title %}編輯成果｜資管科智慧學習歷程系統{% endblock %}
+
+{% block content %}
+<section class="form-shell">
+  <div class="surface" data-motion="reveal">
+    <p class="eyebrow">Keep shaping it</p>
+    <h1>回來補幾個細節。</h1>
+    <p class="muted">你不需要一次寫得很完整。把現在想得到的先留下，之後還能再調整。</p>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="field">成果名稱 <input name="title" value="{{ portfolio.title }}" required></label>
+      <label class="field">成果類型 <input name="category" value="{{ portfolio.category }}" required></label>
+      <label class="field">描述 <textarea name="description">{{ portfolio.description or '' }}</textarea></label>
+      <button class="button" type="submit">儲存這次調整</button>
+      <a class="button button--quiet" href="{{ url_for('student.portfolio_list') }}">先回成果清單</a>
+    </form>
+  </div>
+</section>
+{% endblock %}

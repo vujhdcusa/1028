@@ -38,9 +38,9 @@ CR  Code Review
 
 ## 文件位置
 
-- `docs/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`（主要系統規格書）
-- `docs/diagrams.md`（Mermaid 圖表庫）
-- `docs/diagram-style-guide.md`（圖表繪製指南）
-- `docs/mysql-setup.md`（MySQL 設定說明）
-- `docs/development-log.md`（開發日誌）
-
+- `docs/01_正式規格/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`（主要系統規格書）
+- `docs/README.md`（文件總索引）
+- `docs/04_圖表與介面/diagrams.md`（Mermaid 圖表庫）
+- `docs/04_圖表與介面/diagram-style-guide.md`（圖表繪製指南）
+- `docs/03_開發紀錄/mysql-setup.md`（MySQL 設定說明）
+- `docs/03_開發紀錄/development-log.md`（開發日誌）

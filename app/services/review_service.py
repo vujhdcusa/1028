@@ -1,7 +1,7 @@
 from flask import abort
 
 from app.extensions import db
-from app.models import ProjectReviewResult, ProjectRevisionRecord, SubmissionAssignment, PortfolioSubmission
+from app.models import ProjectReviewResult, ProjectRevisionRecord, SubmissionAssignment, TeacherReviewFeedback, PortfolioSubmission
 
 
 def assign_submission(submission, teacher):
@@ -14,6 +14,21 @@ def assign_submission(submission, teacher):
 
 def can_teacher_review(submission, teacher):
     return any(item.teacher_id == teacher.id for item in submission.assignments)
+
+
+def record_teacher_feedback(submission, teacher, comment):
+    if teacher.role != "teacher" or not can_teacher_review(submission, teacher):
+        raise PermissionError("only an assigned teacher can submit feedback")
+    comment = (comment or "").strip()
+    if not comment:
+        raise ValueError("feedback comment is required")
+    feedback = TeacherReviewFeedback(
+        submission_id=submission.id,
+        teacher_id=teacher.id,
+        comment=comment,
+    )
+    db.session.add(feedback)
+    return feedback
 
 
 def record_review_result(submission, actor, decision, comment=None, revision_items=None):

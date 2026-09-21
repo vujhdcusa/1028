@@ -1,13 +1,104 @@
-<!doctype html>
-<html lang="zh-Hant">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>資管科智慧學習歷程系統</title>
-  </head>
-  <body>
-    <h1>資管科智慧學習歷程系統</h1>
-    <p>Flask 專案已可啟動。下一步請依 BMAD story 開始實作登入、學生歷程與管理者維護功能。</p>
-    <p><a href="{{ url_for('main.login') }}">登入系統</a></p>
-  </body>
-</html>
+{% extends "base.html" %}
+{% set page_name = "public-home" %}
+
+{% block title %}資管科智慧學習歷程系統｜把五年，拼成下一站{% endblock %}
+
+{% block navigation %}
+<header class="public-shell">
+  <nav class="site-nav" aria-label="主要導覽">
+    <a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark">IM</span>資管科學習歷程</a>
+    <div class="nav-links">
+      <a href="#journey">五年路線</a>
+      <a href="#future">下一站</a>
+      <a class="button button--quiet" href="{{ url_for('main.login') }}">登入系統</a>
+    </div>
+  </nav>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="public-shell">
+  <section class="hero">
+    <div class="hero-copy" data-motion="reveal">
+      <p class="eyebrow">Piece × Path × Archive</p>
+      <h1>把五年，<br><span class="accent">拼成</span>下一站。</h1>
+      <p class="hero-summary">課堂作品、專題、比賽、證照與實習，不再散在不同資料夾。每次完成一件事，都替未來留下一塊看得見的拼圖。</p>
+      <div class="hero-actions">
+        <a class="button" href="{{ url_for('main.login') }}">開始整理我的歷程 <span aria-hidden="true">→</span></a>
+        <a class="button button--quiet" href="#journey">先看看怎麼走</a>
+      </div>
+      <p class="hero-note">不是急著把資料塞滿，而是慢慢把你做過的事連起來。</p>
+    </div>
+    <div class="data-universe" data-motion="hero-cards" aria-label="學習歷程由不同成果逐步連成路徑的示意圖" role="img">
+      <span class="orbit-line" aria-hidden="true"></span>
+      <span class="hero-scribble" aria-hidden="true">留下來！</span>
+      <article class="piece-card piece-card--blue"><small>課程作品 · 2026</small><strong>第一次把程式真的做出來</strong></article>
+      <article class="piece-card piece-card--yellow"><small>競賽紀錄</small><strong>提案沒得獎，但學會重來</strong></article>
+      <article class="piece-card piece-card--teal"><small>專題成果</small><strong>和同學一起解了一個難題</strong></article>
+      <article class="piece-card piece-card--coral"><small>未來目標</small><strong>想走的方向，慢慢變清楚</strong></article>
+      <span class="path-dot path-dot--one" aria-hidden="true">✦</span>
+      <span class="path-dot path-dot--two" aria-hidden="true">→</span>
+    </div>
+  </section>
+
+  <section class="story-band" data-motion="reveal">
+    <div class="story-band__inner">
+      <div><span class="section-label">把資料變成故事</span>
+        <h2>不是一份履歷，<br>是你一路走來的證明。</h2>
+      </div>
+      <div>
+        <p>有些作品看起來很小：一張證照、一個頁面、一段修到很晚的程式。但放回時間軸裡，它們會告訴你——原來我真的一直在往前。</p>
+        <div class="story-facts">
+          <div class="story-fact"><strong>作品</strong><span>把做過的事好好收好</span></div>
+          <div class="story-fact"><strong>回饋</strong><span>知道下一次怎麼更好</span></div>
+          <div class="story-fact"><strong>方向</strong><span>讓選擇不只靠猜</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="journey" class="journey">
+    <div class="journey-intro" data-motion="reveal">
+      <div><span class="section-label">你的五年，不必長得一樣</span>
+        <h2>每一段都有東西可以留下。</h2>
+      </div>
+      <p>這條路不是打卡清單。你可以先從一件最想留住的事開始，剩下的，走到那裡再補上也沒關係。</p>
+    </div>
+    <div class="journey-rail" data-journey-path>
+      <article class="journey-stop"><span class="journey-stop__number">01</span>
+        <h3>探索</h3>
+        <p>把第一個作品與靈感留住。</p>
+      </article>
+      <article class="journey-stop"><span class="journey-stop__number">02</span>
+        <h3>練習</h3>
+        <p>課堂、社團與小挑戰慢慢累積。</p>
+      </article>
+      <article class="journey-stop"><span class="journey-stop__number">03</span>
+        <h3>協作</h3>
+        <p>在專題裡，學會一起把事情完成。</p>
+      </article>
+      <article class="journey-stop"><span class="journey-stop__number">04</span>
+        <h3>延伸</h3>
+        <p>把成果帶到比賽、證照或實習。</p>
+      </article>
+      <article class="journey-stop"><span class="journey-stop__number">05</span>
+        <h3>出發</h3>
+        <p>帶著自己的故事，選擇下一站。</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="future" class="future-panel" data-motion="reveal">
+    <div class="future-copy"><span class="section-label">下一站，不只一種答案</span>
+      <h2>現在整理，<br>以後就多一點底氣。</h2>
+      <p>想升學、找實習或直接就業都沒問題。這裡幫你把已經做過的事攤開來看，下一個決定就不必從空白開始。</p><a class="button button--warm"
+        href="{{ url_for('main.login') }}">登入看看我的路徑</a>
+    </div>
+    <div class="future-options" aria-label="未來可能方向">
+      <div class="future-option"><b>繼續升學</b><span>把作品變成一段說得清楚的自我介紹。</span></div>
+      <div class="future-option"><b>尋找實習</b><span>整理技能與實作紀錄，讓機會更靠近。</span></div>
+      <div class="future-option"><b>準備就業</b><span>回頭看每次累積，找出真正的強項。</span></div>
+    </div>
+  </section>
+</div>
+{% endblock %}

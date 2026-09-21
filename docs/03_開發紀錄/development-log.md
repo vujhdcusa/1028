@@ -522,3 +522,219 @@
 恢復方式：
 - 編輯 `.vscode/settings.json`，刪除或將對應 `files.exclude`／`search.exclude` 項目設為 `false`，即可在 VS Code 顯示。
 - 這些設定只影響 VS Code 顯示與搜尋，不會刪除檔案；PowerShell 使用 `Get-ChildItem -Force` 仍可查看。
+
+## 2026-09-21 UI/UX 設計與動畫規格收斂
+
+日期：2026-09-21
+開發者：Codex
+今日目標：依參考圖片、既有 UI/UX 對話稿與使用者回饋，定稿首頁與學生端的版面、文案與動畫方向。
+修改檔案：
+- `docs/UI_UX_設計與動畫規格_2026-09-21.md`
+- `docs/system-design-action-plan.md`
+- `docs/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`
+- `docs/AI_交接摘要_2026-09-21.md`
+完成內容：
+- 將 UI 定位為「資訊豐富的編輯式學習歷程介面」，不再以大量空白作為主要風格。
+- 定義 `Experience Layer` 與 `Work Layer`，分離展示感與工作效率。
+- 定義文字密度、受控不對稱、台灣口語文案、色彩、字體、版面、元件、響應式與動畫 token。
+- 規劃首頁與學生端的資料漂浮、Scroll 路徑、節點亮起、拼圖填入、成果卡進場與目標分岔動畫。
+- 加入 `prefers-reduced-motion`、動畫時間上限與表單／審查頁低動畫規則。
+驗證結果：
+- 已讀取並對照 UI/UX 對話稿中的 20 張參考圖與既有設計討論。
+- 已確認完整規格文件可在 `D:\democase\ai\docs` 找到。
+下一步：
+- 建立 `base.html`、共用 CSS design tokens、`JourneyPath`、`PieceCard`、`StatusChip`、`AdviceCard` 與 `DataTable`，再實作公開首頁與學生首頁動畫。
+
+## 2026-09-21 UI 共用骨架與學生端第一版完成
+
+日期：2026-09-21  
+開發者：Codex  
+今日目標：將已定稿的 UI/UX 規格落成可操作的公開首頁、學生首頁與成果管理流程。
+
+修改檔案：
+
+- `app/templates/base.html`
+- `app/static/css/design-system.css`
+- `app/static/js/motion.js`
+- `app/templates/index.html`
+- `app/templates/dashboard.html`
+- `app/templates/login.html`
+- `app/templates/student_portfolio.html`
+- `app/templates/student_portfolio_form.html`
+- `app/routes/main.py`
+- `tests/test_ui_shell.py`
+
+完成內容：
+
+- 建立共用 `base.html`，統一語系、RWD viewport、設計系統 CSS、動畫腳本與鍵盤使用者的跳到主要內容連結。
+- 公開首頁改為「把五年，拼成下一站」的資訊豐富敘事版面，包含浮動成果卡、五年路徑、未來分岔與台灣常見網路服務語氣的文案。
+- 學生首頁改為個人化學習路徑，會顯示實際已建立的成果數量、五段路徑、可補上的拼圖與下一步提醒。
+- 學生的成果清單、成果編輯與登入頁接入同一套視覺語言，避免操作流程在不同頁面出現斷裂感。
+- 使用 CSS 動畫與 `IntersectionObserver` 實作卡片漂浮、捲動進場與路徑亮起；並支援 `prefers-reduced-motion`，使用者選擇減少動態時不會被強制播放動畫。
+- 先新增 UI 行為測試，再完成模板與路由實作，涵蓋公開首頁、學生首頁與成果清單是否使用共用 UI 外殼。
+
+驗證結果：
+
+- `pytest -q tests/test_ui_shell.py`：3 passed。
+- `pytest -q`：25 passed。
+- `git diff --check`：無空白與 patch 格式錯誤。
+
+下一步：
+
+- 以相同的 Work Layer 規則，整理教師、科辦與系統管理者的待辦清單、篩選列與資料表格畫面。
+
+## 2026-09-21 Work Layer 後台工作介面第一版完成
+
+日期：2026-09-21  
+開發者：Codex  
+今日目標：把教師、科辦／行政與系統管理者從通用提示頁，改為可讀取既有資料的低動畫工作介面。
+
+修改檔案：
+
+- `app/routes/main.py`
+- `app/routes/review.py`
+- `app/templates/dashboard.html`
+- `app/templates/review_queue.html`
+- `app/templates/admin_dashboard.html`
+- `app/static/css/design-system.css`
+- `tests/test_work_layer.py`
+
+完成內容：
+
+- 教師工作台顯示實際被指派的審查數、最近指派項目與「我的審查」入口；教師只能閱讀與提供意見，共同結論仍由科辦登錄。
+- 科辦／行政工作台顯示資料庫中狀態為 `submitted` 的送件，並直接使用既有路由登錄核可、需要補正或退件的共同結論。
+- 系統管理總覽顯示啟用學生、教師、科辦帳號、送件總數、待處理送件與最近送件動態。
+- 審查清單改用共用版型，讓教師從工作台進入清單時維持一致的導覽與資料層級。
+- Work Layer 保持資訊密度與操作優先，僅使用必要的按鈕互動，不加入學生端的漂浮或捲動敘事動畫。
+- 新增資料驅動的端到端測試，確認三種角色會收到對應的工作畫面與既有功能入口。
+
+驗證結果：
+
+- `pytest -q tests/test_work_layer.py`：3 passed。
+- 完整回歸與程式編譯檢查會在本次收尾後重新執行。
+
+下一步：
+
+- 補上教師可提交建議、科辦可查看既有審查意見與管理者帳號／規則維護頁面，再完成工作流程的細節串接。
+
+## 2026-09-21 教師意見與共同結論流程完成
+
+日期：2026-09-21  
+開發者：Codex  
+今日目標：讓教師意見能安全地交給科辦參考，再由科辦登錄共同審查結論。
+
+修改檔案：
+
+- `app/models/review.py`
+- `app/models/__init__.py`
+- `app/services/review_service.py`
+- `app/routes/main.py`
+- `app/routes/review.py`
+- `app/templates/dashboard.html`
+- `app/templates/review_queue.html`
+- `app/static/css/design-system.css`
+- `tests/test_teacher_feedback_flow.py`
+
+完成內容：
+
+- 新增 `TeacherReviewFeedback`，把教師的個別意見與科辦的共同結論分開保存，避免角色責任混在同一筆資料中。
+- 教師只能對自己被指派的送件提交非空白意見；未被指派的教師會收到 `403`。
+- 教師工作台與「我的審查」清單都可送出意見，且會保留已送出的內容。
+- 科辦工作台會在每一筆已送審成果中顯示教師意見，再使用既有的核可／補正／退件功能登錄共同結論。
+- 科辦登錄結論後，送件狀態會由既有服務更新；教師無法直接改變共同結論。
+
+驗證結果：
+
+- `tests/test_teacher_feedback_flow.py`：4 passed，涵蓋教師提交、未指派拒絕、空白意見拒絕，以及科辦登錄後狀態更新。
+- `pytest -q`：32 passed。
+
+下一步：
+
+- 建立資料庫 migration，讓新的教師意見資料表可安全套用到既有 MySQL 開發資料庫；再補上管理者的帳號與規則維護功能。
+
+## 2026-09-21 教師意見資料表 Migration 完成
+
+日期：2026-09-21  
+開發者：Codex  
+今日目標：讓教師意見資料表可安全、可追蹤地套用至既有 MySQL 開發資料庫。
+
+修改檔案：
+
+- `app/extensions.py`
+- `app/__init__.py`
+- `migrations/`
+- `migrations/versions/52b9ba9ea108_add_teacher_review_feedback.py`
+- `tests/test_migration_setup.py`
+- `docs/03_開發紀錄/mysql-setup.md`
+
+完成內容：
+
+- 啟用已列在相依套件中的 Flask-Migrate，Flask CLI 現可使用 `db` migration 指令。
+- 建立第一份增量 migration，僅新增 `teacher_review_feedback`、送件索引與教師索引，不會改動既有送件內容。
+- 提供 `downgrade()`，可在確認不需保留教師意見時移除這份 migration 所建立的資料表。
+- 更新 MySQL 文件，列出套用前檢查、`db current`、`db upgrade` 與回復操作的安全提醒。
+
+驗證結果：
+
+- Flask `db` 指令註冊測試通過。
+- SQLite 實際執行 `db upgrade` 後，已驗證資料表與五個必要欄位存在。
+- SQLite 實際執行 `db downgrade base` 後，已驗證資料表被移除。
+
+下一步：
+
+- 由使用者在確認的 MySQL 開發資料庫執行 `db upgrade`；接著建立管理者帳號與規則維護功能。
+
+## 2026-09-21 管理者帳號與年度規則維護第一版完成
+
+日期：2026-09-21  
+開發者：Codex  
+今日目標：提供系統管理者安全的帳號狀態控制，以及專題類型、成果模板與要求項目的年度化設定介面。
+
+修改檔案：
+
+- `app/routes/admin.py`
+- `app/__init__.py`
+- `app/templates/admin_dashboard.html`
+- `app/templates/admin_accounts.html`
+- `app/templates/admin_rules.html`
+- `app/static/css/design-system.css`
+- `tests/test_admin_management.py`
+
+完成內容：
+
+- 新增只限 `admin` 使用的帳號管理頁；可啟用／停用其他帳號，但不可停用目前登入的管理者，也不提供刪除帳號。
+- 新增年度規則管理頁，可依序建立專題類型、成果模板與要求項目，並可啟用／停用類型與模板。
+- 要求項目可設定階段、排序、說明，以及必填或選填；預設為必填，避免漏填規則被意外放寬。
+- 管理頁不提供刪除已使用規則，也不自行填入未經學校確認的正式規定。
+- 補齊桌面與行動版表單排列，維持 Work Layer 的資料優先與低動畫原則。
+
+驗證結果：
+
+- `tests/test_admin_management.py`：3 passed，涵蓋帳號停用保護、規則階層建立、必填／選填與非管理者拒絕存取。
+- `pytest -q`：38 passed。
+
+下一步：
+
+- 在確認的 MySQL 開發資料庫執行 migration；之後可補上管理者帳號建立／密碼重設，以及已使用規則的版本化編輯流程。
+
+## 2026-09-21 完整對話與開發交接文件建立
+
+日期：2026-09-21  
+開發者：Codex  
+今日目標：讓使用者可開啟新的 AI 對話，同時保留本次合作的需求、決策、程式狀態與待辦。
+
+修改檔案：
+
+- `docs/05_交接與專案管理/AI_完整對話與開發交接_2026-09-21.md`
+- `docs/README.md`
+- `docs/03_開發紀錄/development-log.md`
+
+完成內容：
+
+- 整理使用者的資料夾、文件、UI／UX、角色流程、migration 與管理端需求。
+- 記錄已完成功能、重要檔案地圖、測試命令、MySQL 寫入限制與目前進度。
+- 提供可直接貼到新 AI 對話的接手指令。
+
+下一步：
+
+- 使用者可將此文件附加或貼到新對話；新 AI 應先依文件完成 MySQL migration 前檢查與展示驗收規劃。

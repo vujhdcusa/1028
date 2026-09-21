@@ -8,7 +8,7 @@
 
 目前系統不需要急著一直加新功能，優先工作是補齊「系統設計厚度」並同步版本。
 
-現在最容易被問到的風險是：文件、資料庫、角色權限、流程圖與畫面設計沒有完全對齊。例如早期角色可能只有 `student/admin/reviewer`，但新版設計已經包含學生、教師/導師/評審、系統管理者、AI Agent 與行政維護工作。如果這些角色沒有同步到 Use Case、ERD、API、權限矩陣、測試案例與畫面，報告時會被看出版本不一致。
+現在最容易被問到的風險是：文件、資料庫、角色權限、流程圖與畫面設計沒有完全對齊。例如早期角色可能只有 `student/admin/reviewer`，但新版設計已經包含學生、教師、科辦／行政、系統管理者與 AI Agent。如果這些角色沒有同步到 Use Case、ERD、API、權限矩陣、測試案例與畫面，報告時會被看出版本不一致。
 
 ## 2. 角色版本同步
 
@@ -17,7 +17,7 @@
 | 角色 | 建議 role 值 | 主要責任 |
 | --- | --- | --- |
 | 學生 | `student` | 維護個人資料、建立學習歷程、上傳佐證、查看 AI 檢核與教師回饋 |
-| 教師/導師/評審 | `teacher` 或 `reviewer` | 查看被分派學生、評分、留言、人工覆核 AI 提示 |
+| 教師/導師 | `teacher` | 查看被分派學生、提供回饋、參與共同審查並人工覆核 AI 提示 |
 | 科辦/行政 | `staff` | 建立專案、分派委員、管理批次通知與結果彙整 |
 | 系統管理者 | `admin` | 帳號權限、系統設定、日誌、AI 任務監控、資料維護 |
 | AI Agent | 系統模組 | OCR、主張證據檢核、任務地圖分析、官方資料更新建議 |
@@ -39,7 +39,7 @@
 9. Test Case 測試案例
 10. MVP / Phase 2 / Future 功能切割表
 
-本地已存在 `docs/diagrams.md`，可作為流程圖與 ERD 的主要維護位置。這份行動計畫負責定義「要補什麼、補到哪裡、開發順序怎麼排」。
+本地已存在 `docs/04_圖表與介面/diagrams.md`，可作為流程圖與 ERD 的主要維護位置。這份行動計畫負責定義「要補什麼、補到哪裡、開發順序怎麼排」。
 
 ## 4. MVP / Phase 2 / Future 切分
 
@@ -49,7 +49,7 @@
 - 學生建立學習歷程
 - 上傳 PDF、圖片或外部連結佐證
 - GitHub / Canva 連結欄位
-- 教師或評審查看學生資料
+- 教師查看被分派學生資料
 - 評分與回饋留言
 - 歷程狀態：草稿、提交、退回、通過、鎖定
 - 系統管理者查看基本結果
@@ -60,7 +60,7 @@
 - 教師 Dashboard
 - AI 備審主張與佐證一致性檢核
 - GitHub API 擷取專案資訊
-- 教師/評審避嫌分派
+- 教師分派與避嫌規則
 - 批次通知
 - AI 任務狀態監控
 - 操作日誌與錯誤日誌
@@ -79,10 +79,10 @@
 
 ```mermaid
 flowchart TD
-    Doc[Google Docs 最終版] --> Plan[docs/system-design-action-plan.md]
+    Doc[Google Docs 最終版] --> Plan[docs/02_需求與設計/system-design-action-plan.md]
     Share[ChatGPT 分享對話] --> Plan
     Plan --> Spec[docs/系統規格設計書-開發閱讀版.md]
-    Plan --> Diagrams[docs/diagrams.md]
+    Plan --> Diagrams[docs/04_圖表與介面/diagrams.md]
     Plan --> DB[資料庫模型與 Data Dictionary]
     Plan --> API[API Specification]
     Plan --> Tests[Test Case 測試案例]
@@ -123,19 +123,26 @@ flowchart TD
 > Interactive Editorial Learning Journey  
 > 互動式資訊設計 x 五年成長旅程 x 個人數位檔案
 
-建議比例：
+最新 UI/UX 比例：
 
-- 70% 安靜、乾淨、成熟
-- 20% 資訊視覺化與藝術編排
-- 10% 小型互動驚喜
+- 55% 文字與內容層級
+- 25% 路徑、節點、卡片與圖像
+- 15% 受控不對稱與重疊編排
+- 5% 微互動與裝飾動畫
 
 設計原則：
 
-- 公開首頁與學生首頁可以有較強的五年旅程、拼圖、節點與路徑感。
+- 公開首頁與學生首頁必須有較強的五年旅程、拼圖、節點、路徑與 Scroll 動畫，不能只做靜態卡片。
 - 教師與行政後台以效率為主，使用表格、搜尋、篩選、狀態與編輯功能。
 - AI 不應搶走主畫面，可做成「看看我的歷程還少了什麼」或「幫我整理下一步」的小入口。
 - 缺漏資料可用空白拼圖、未完成節點、空資料位置呈現，不只用紅色警告。
+- 所有文案使用台灣常見網路服務口語，避免機器翻譯感、中國用語與每張卡片相同長度的制式句型。
+- 不對稱必須是受控的編輯式排版，不可隨機破壞欄位對齊、表單操作與可讀性。
+- 首頁／學生端動畫要解釋資料關係；教師／行政／審查端只保留低程度狀態回饋。
+- 動畫必須支援 `prefers-reduced-motion`，關閉動畫後仍看得懂內容狀態。
 - 開發仍採「功能先完成，再逐步美化」。
+
+完整規格請參考：[UI/UX 設計與動畫規格](../04_圖表與介面/UI_UX_設計與動畫規格_2026-09-21.md)。
 
 ## 8. 目前程式碼對照
 
@@ -145,12 +152,12 @@ flowchart TD
 - `app/models/portfolio.py`：`Portfolio`、`PortfolioEvidence`
 - `app/models/agent_task.py`：`AgentTask`
 - `app/models/audit_log.py`：操作紀錄模型
-- `app/routes/main.py`：首頁 `/` 與管理者頁 `/admin`
+- `app/routes/main.py`：首頁 `/`、角色工作台與管理者頁 `/admin`
 
 需要補強的設計項目：
 
 - `User.role` 的正式允許值與權限矩陣
-- 教師/評審/科辦是否分開成不同角色
+- 教師、科辦／行政與系統管理者的權限矩陣
 - 評分與回饋資料表
 - 人工覆核 AI 報告資料表
 - 歷程鎖定狀態與退回原因
@@ -208,12 +215,12 @@ flowchart TD
 - 是否需要補流程圖？
 - 是否需要補測試案例？
 - 是否需要更新 UI/UX 規格？
-- 是否已寫入 `docs/development-log.md`？
+- 是否已寫入 `docs/03_開發紀錄/development-log.md`？
 
 ## 12. 下一個建議動作
 
 短期最建議先做三件事：
 
-1. 在 `docs/diagrams.md` 補「角色權限同步流程」與「MVP 主流程」。
+1. 在 `docs/04_圖表與介面/diagrams.md` 補「角色權限同步流程」與「MVP 主流程」。
 2. 在系統規格書補「MVP / Phase 2 / Future 功能切割」章節。
 3. 開始建立 Data Dictionary 與 API Specification，避免程式開發時欄位與角色越長越散。

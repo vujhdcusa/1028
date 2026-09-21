@@ -30,3 +30,12 @@ def test_reviewer_is_not_a_supported_login_role():
 
     assert response.status_code == 403
     assert "尚未設定可用角色".encode("utf-8") in response.data
+
+
+def test_reviewer_cannot_open_teacher_dashboard():
+    app = role_app()
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session["user_id"] = 5
+
+    assert client.get("/teacher/dashboard").status_code == 403
