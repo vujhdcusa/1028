@@ -1,5 +1,7 @@
 # 系統設計更新行動計畫
 
+> **2026-09-23 優先順序註記：** 本文件的角色、圖表與資料模型同步原則仍有效；但開發順序改由 [檔案分析與學習歷程產出需求基準](../AI_需求基準_檔案分析與學習歷程產出_2026-09-23.md) 決定。P0 完成前，不以文件厚度、圖表或視覺設計取代可操作成果。
+
 > 來源：Google Docs「資管科智慧學習歷程系統－系統規格設計書（最終版）」與 ChatGPT 分享對話「補強系統設計書-網頁設計」。
 >
 > 目的：把文件新增內容同步到本地開發環境，讓 BMAD、程式碼、資料庫、流程圖與 UI/UX 方向使用同一套系統設計。
@@ -78,17 +80,20 @@
 ## 5. 文件同步流程圖
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
 flowchart TD
-    Doc[Google Docs 最終版] --> Plan[docs/02_需求與設計/system-design-action-plan.md]
-    Share[ChatGPT 分享對話] --> Plan
-    Plan --> Spec[docs/系統規格設計書-開發閱讀版.md]
-    Plan --> Diagrams[docs/04_圖表與介面/diagrams.md]
-    Plan --> DB[資料庫模型與 Data Dictionary]
-    Plan --> API[API Specification]
-    Plan --> Tests[Test Case 測試案例]
-    Plan --> UI[UI Wireframe 與視覺規格]
+    classDef doc fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef dev fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef check fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    Doc[正式需求與規格]:::doc --> Plan[設計與實作計畫]:::doc
+    Plan --> Spec[系統規格設計書]:::doc
+    Plan --> Diagrams[流程圖與圖表規範]:::doc
+    Plan --> DB[資料模型與資料字典]:::dev
+    Plan --> API[API 規格]:::dev
+    Plan --> Tests[測試案例]:::check
+    Plan --> UI[UI Wireframe 與視覺規格]:::dev
 
-    Spec --> BMAD[BMAD 任務切分]
+    Spec --> BMAD[實作任務切分]:::dev
     Diagrams --> BMAD
     DB --> Dev[Flask / SQLAlchemy 開發]
     API --> Dev
@@ -99,14 +104,18 @@ flowchart TD
 ## 6. 角色權限同步檢查流程
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
 flowchart TD
-    Start([開始同步]) --> Roles[確認角色清單]
-    Roles --> UseCase[更新 Use Case]
-    UseCase --> ERD[更新 ERD 與 users.role]
-    ERD --> Permission[更新權限矩陣]
-    Permission --> API[更新 API Specification]
-    API --> UI[更新各角色畫面]
-    UI --> Tests[補測試案例]
+    classDef doc fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef dev fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef check fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    Start([開始同步]) --> Roles[確認四種登入角色]:::doc
+    Roles --> UseCase[更新角色責任與檢核邊界]:::doc
+    UseCase --> ERD[更新 ERD 與 users.role]:::dev
+    ERD --> Permission[更新權限矩陣]:::doc
+    Permission --> API[更新 API 規格]:::dev
+    API --> UI[更新各角色畫面]:::dev
+    UI --> Tests[補測試案例]:::check
     Tests --> Review{角色是否一致?}
     Review -- 否 --> Roles
     Review -- 是 --> End([完成])

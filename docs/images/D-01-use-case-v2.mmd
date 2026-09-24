@@ -1,10 +1,18 @@
-flowchart LR
-    Student[學生] --> Portfolio[建立與管理學習歷程]
-    Student --> Evidence[上傳檔案／作品連結]
-    Student --> Project[連結小組專題與個人分工]
-    Student --> AgentReport[查看 AI 缺件提示]
-    Teacher[教師／導師] --> Guidance[查看學生資料並提供輔導]
-    Teacher --> Committee[參與教師共同討論]
-    Staff[科辦／行政] --> Result[登錄共同結論與補正]
-    Admin[系統管理者] --> Account[維護帳號、規則與日誌]
-    Agent[AI Agent] --> Check[整理佐證與缺件提示]
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
+flowchart TD
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef ai fill:#FEF3C7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+
+    Student[學生]:::student --> S1[上傳、校正與確認資料]:::student
+    Student --> S2[查看摘要、補件與文件草稿]:::student
+    Student --> S3[編輯並下載 Word]:::student
+    Teacher[教師／導師]:::teacher --> T1[檢視被指派學生資料]:::teacher
+    Teacher --> T2[提供回饋與補件建議]:::teacher
+    Staff[科辦／行政]:::staff --> F1[維護年度課程與證照規則]:::staff
+    Staff --> F2[確認正式規則與結論]:::staff
+    Admin[系統管理者]:::staff --> A1[管理帳號、權限與系統設定]:::staff
+    Agent[分析服務]:::ai --> G1[產生可校正草稿與候選提示]:::ai
+    System[系統]:::system --> P0[P0：整理、分類與文件產出]:::system

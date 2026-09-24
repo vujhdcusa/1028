@@ -1,12 +1,19 @@
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
 flowchart TD
-    Start([使用者登入]) --> Auth{帳密與帳號狀態有效？}
-    Auth -- 否 --> Error[顯示錯誤，不透露帳號資訊]
-    Auth -- 是 --> Role{使用者角色}
-    Role -- student --> Student[學生工作區]
-    Role -- teacher --> Teacher[教師／導師工作區]
-    Role -- staff --> Staff[科辦／行政工作區]
-    Role -- admin --> Admin[系統管理工作區]
-    Student --> Log[寫入登入日誌]
+    classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+
+    Start([登入系統]) --> Auth{帳密與帳號狀態有效？}
+    Auth -- 否 --> Error[顯示登入錯誤]:::alert
+    Auth -- 是 --> Role{判斷登入角色}
+    Role -- student --> Student[學生工作檯：上傳、確認與產出]:::student
+    Role -- teacher --> Teacher[教師工作區：回饋與補件建議]:::teacher
+    Role -- staff --> Staff[科辦工作區：規則與結論確認]:::staff
+    Role -- admin --> Admin[管理工作區：帳號與系統設定]:::staff
+    Student --> Log[寫入操作紀錄]:::system
     Teacher --> Log
     Staff --> Log
     Admin --> Log

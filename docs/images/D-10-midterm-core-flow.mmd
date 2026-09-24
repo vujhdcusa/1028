@@ -1,19 +1,24 @@
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
 flowchart TD
-    classDef student fill:#DBEAFE,stroke:#333;
-    classDef teacher fill:#DCFCE7,stroke:#333;
-    classDef staff fill:#EDE9FE,stroke:#333;
-    classDef ai fill:#FFEDD5,stroke:#333;
-    classDef backend fill:#E0F2FE,stroke:#333;
-    classDef alert fill:#FEE2E2,stroke:#333;
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
-    Start([學生登入]) --> Portfolio[建立學習成果]:::student
-    Portfolio --> Evidence[上傳檔案或作品連結]:::student
-    Evidence --> Snapshot[保存成果要求快照]:::backend
-    Snapshot --> AI[AI 初步比對佐證與缺件]:::ai
-    AI --> Teacher[教師查看學生資料與 AI 提示]:::teacher
-    Teacher --> Feedback[留下輔導或補件建議]:::teacher
-    Feedback --> NeedFix{是否需要補件?}
-    NeedFix -- 是 --> Revise[學生補件並提交新版本]:::student
-    Revise --> Snapshot
-    NeedFix -- 否 --> Complete[保存教師確認紀錄]:::backend
-    Complete --> End([完成])
+    Start([學生登入]) --> Upload[上傳成績單、證照與其他資料]:::student
+    Upload --> Extract[系統擷取並建立可校正草稿]:::system
+    Extract --> Confirm[學生校正、補充與確認]:::student
+    Confirm --> Complete{資料是否完整？}
+    Complete -- 否 --> Missing[顯示待補資料]:::alert
+    Missing --> Upload
+    Complete -- 是 --> Rules[套用適用年度規則]:::system
+    Rules --> Check{是否需要人工檢核？}
+    Check -- 是 --> Teacher[教師／導師提供回饋]:::teacher
+    Teacher --> Staff[科辦／行政確認規則或結論]:::staff
+    Staff --> Fix{需要補件？}
+    Fix -- 是 --> Confirm
+    Fix -- 否 --> Result[產生摘要、待補清單與文件草稿]:::system
+    Check -- 否 --> Result
+    Result --> Word[學生編輯並下載 Word]:::student
+    Word --> End([完成])
