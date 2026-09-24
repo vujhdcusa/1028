@@ -2,9 +2,9 @@
   <defs><style>text{font-family:'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;fill:#111827}.title{font-size:32px;font-weight:700}.sub{font-size:18px;fill:#4B5563}.h{font-size:23px;font-weight:700;text-anchor:middle}.n{font-size:18px;text-anchor:middle}.box{stroke:#9CA3AF;stroke-width:1.5}</style></defs>
   <rect width="1600" height="980" fill="#FFFFFF"/><text x="800" y="58" class="title" text-anchor="middle">D-01 角色責任圖</text><text x="800" y="90" class="sub" text-anchor="middle">檢核由既有角色共同完成，不另設 reviewer 登入帳號</text>
   <g class="box"><rect x="90" y="160" width="320" height="260" rx="12" fill="#DBEAFE"/><rect x="460" y="160" width="320" height="260" rx="12" fill="#DCFCE7"/><rect x="830" y="160" width="320" height="260" rx="12" fill="#EDE9FE"/><rect x="1200" y="160" width="320" height="260" rx="12" fill="#EDE9FE"/></g>
-  <text x="250" y="210" class="h">學生</text><text x="250" y="260" class="n">上傳資料</text><text x="250" y="300" class="n">校正與確認</text><text x="250" y="340" class="n">編輯並下載 Word</text>
+  <text x="250" y="210" class="h">學生</text><text x="250" y="260" class="n">設定升學、就業或實習目標</text><text x="250" y="300" class="n">上傳、校正與確認</text><text x="250" y="340" class="n">作品集、文件與送審</text>
   <text x="620" y="210" class="h">教師／導師</text><text x="620" y="270" class="n">檢視被指派資料</text><text x="620" y="320" class="n">提供回饋與補件建議</text>
-  <text x="990" y="210" class="h">科辦／行政</text><text x="990" y="270" class="n">維護年度規則</text><text x="990" y="320" class="n">確認正式結論</text>
+  <text x="990" y="210" class="h">科辦／行政</text><text x="990" y="270" class="n">維護年度規則與審查專案</text><text x="990" y="320" class="n">分派、登錄結論與歸檔</text>
   <text x="1360" y="210" class="h">系統管理者</text><text x="1360" y="270" class="n">帳號與權限</text><text x="1360" y="320" class="n">系統設定與日誌</text>
-  <rect x="410" y="560" width="780" height="180" rx="12" fill="#F3F4F6" class="box"/><text x="800" y="620" class="h">P0 系統整理與產出</text><text x="800" y="670" class="n">擷取可辨識欄位、套用年度規則、產生摘要、待補清單與文件草稿</text><text x="800" y="710" class="n">分析服務僅提供可校正草稿或候選提示，不直接形成正式判定</text>
+  <rect x="410" y="560" width="780" height="180" rx="12" fill="#F3F4F6" class="box"/><text x="800" y="620" class="h">系統整理、差距分析與產出</text><text x="800" y="670" class="n">擷取可辨識欄位、套用年度規則、建立五年地圖、產生摘要與文件草稿</text><text x="800" y="710" class="n">分析服務提供可校正草稿與目標差距提示，不直接形成正式判定</text>
 </svg>

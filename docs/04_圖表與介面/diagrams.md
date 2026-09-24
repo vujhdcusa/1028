@@ -32,7 +32,7 @@ flowchart TD
     G1 -.不直接定案.-> F2
 ```
 
-## 3. P0 學生學習歷程主流程
+## 3. 學生學習歷程、目標與送審流程
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
@@ -44,7 +44,11 @@ flowchart TD
     classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
     Start([開始]) --> Login[學生登入]:::student
-    Login --> Upload[上傳成績單、證照與其他資料]:::student
+    Login --> Goal{是否已設定目標？}
+    Goal -- 否 --> Choose[選擇升學、就業或實習目標]:::student
+    Choose --> Map[建立個人五年學習地圖]:::system
+    Goal -- 是 --> Upload
+    Map --> Upload[上傳成績單、證照、作品與其他資料]:::student
     Upload --> Extract[系統擷取可辨識欄位]:::system
     Extract --> Draft[建立可校正資料草稿]:::system
     Draft --> Confirm[學生校正、補充與確認]:::student
@@ -59,12 +63,14 @@ flowchart TD
     Fix -- 是 --> Confirm
     Fix -- 否 --> Results[產生摘要、分類、待補清單與下一步]:::system
     Review -- 否 --> Results
-    Results --> Document[產生自傳與學習／入學計畫草稿]:::system
-    Document --> Edit[學生編輯並下載 Word]:::student
+    Results --> Gap[對照目標顯示差距與下一步]:::system
+    Gap --> Portfolio[累積個人作品集與五年地圖]:::system
+    Portfolio --> Document[產生自傳與學習／入學計畫草稿]:::system
+    Document --> Edit[學生編輯、下載 Word 或送入審查專案]:::student
     Edit --> End([完成])
 ```
 
-## 4. 人工檢核與補件流程
+## 4. 教師回饋、審查與補件流程
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
@@ -74,7 +80,7 @@ flowchart TD
     classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
-    Start([已確認的學生資料]) --> TeacherView[教師／導師檢視資料與草稿]:::teacher
+    Start([學生送入審查專案]) --> TeacherView[教師／導師檢視資料與草稿]:::teacher
     TeacherView --> Advice[留下輔導或補件建議]:::teacher
     Advice --> RuleCheck{是否涉及正式規則判定？}
     RuleCheck -- 是 --> StaffCheck[科辦／行政確認規則與結論]:::staff
@@ -84,10 +90,31 @@ flowchart TD
     StudentFix --> StudentConfirm[學生再次確認]:::student
     StudentConfirm --> TeacherView
     NeedFix -- 否 --> Record[保存檢核紀錄與可用結果]:::system
-    Record --> End([完成])
+    Record --> Result[學生查看結果並更新五年地圖]:::system
+    Result --> End([完成])
 ```
 
-## 5. P1 小組專題成果流程
+## 5. 科辦審查專案與成果管理流程
+
+```mermaid
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
+flowchart TD
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+
+    Start([科辦／行政登入]) --> Dashboard[進入科辦行政控制台]:::staff
+    Dashboard --> Track[全局總覽與進度追蹤]:::staff
+    Track --> Export[匯出獎學金公文或名單]:::system
+    Dashboard --> Project[建立與管理審查專案]:::staff
+    Project --> Assign[將學生名單批次分派給教師／委員]:::staff
+    Assign --> Notify[系統通知並追蹤回覆]:::system
+    Notify --> Review[教師／委員登錄審查結果]:::teacher
+    Review --> Result[科辦輸入共同結論、分數與評語]:::staff
+    Result --> Lock[鎖定成果並歸檔]:::system
+```
+
+## 6. 小組專題成果流程
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
@@ -97,7 +124,7 @@ flowchart TD
     classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
-    Start([P1：專五專題]) --> Team[學生建立小組與個人分工]:::student
+    Start([專五專題開始]) --> Team[學生建立小組與個人分工]:::student
     Team --> Template[系統套用年度成果要求]:::system
     Template --> Submit[學生繳交成果與佐證]:::student
     Submit --> Teacher[教師／導師提供回饋]:::teacher
@@ -108,7 +135,7 @@ flowchart TD
     Link --> End([完成])
 ```
 
-## 6. P2 與 Future 的位置
+## 7. 延伸功能位置
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
@@ -117,8 +144,8 @@ flowchart LR
     classDef p2 fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef future fill:#FEF3C7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
-    P0[P0：已確認資料、規則分類與 Word 產出]:::p0 --> P2[P2：五年地圖、互鎖拼圖與公開首頁]:::p2
-    P0 -.資料成熟後.-> Future[Future：招生資料更新、進階推薦與完整 PDF]:::future
+    Core[學生資料、目標、規則分類與文件產出]:::p0 --> Experience[五年地圖、互鎖拼圖與公開首頁]:::p2
+    Core -.資料成熟後.-> Future[招生資料更新、進階推薦與完整 PDF]:::future
 ```
 
 ## 7. 系統架構圖
