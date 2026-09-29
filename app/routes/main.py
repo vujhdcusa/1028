@@ -1,6 +1,8 @@
 from functools import wraps
 
-from flask import Blueprint, abort, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, session, url_for
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
 from app.models import Portfolio, PortfolioSubmission, SubmissionAssignment, TeacherReviewFeedback, User
@@ -33,6 +35,17 @@ def feedback_by_submission(submission_ids):
 @main_bp.route("/")
 def index():
     return render_template("index.html")
+
+
+@main_bp.get("/health")
+def health():
+    """Expose a minimal readiness check without leaking database details."""
+    try:
+        db.session.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify(status="error", database="unavailable"), 503
+    return jsonify(status="ok", database="ok")
 
 
 @main_bp.route("/login", methods=["GET", "POST"])
