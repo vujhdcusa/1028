@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>課程規則管理</h1>
+<p>規則依入學學年度管理；此處的比對結果只供學習規劃，不取代正式畢業或抵免審查。</p>
+<form method="post" action="{{ url_for('admin.course_rules') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label>入學學年度 <input type="number" name="school_year" min="1" max="999" required></label>
+  <label>課程名稱 <input name="course_name" required></label>
+  <label>分類 <input name="category" required></label>
+  <label>必選修 <select name="requirement_type"><option value="required">必修</option><option value="elective">選修</option></select></label>
+  <label>學分 <input type="number" name="credits" min="0"></label>
+  <label>能力領域 <input name="ability_domain"></label>
+  <button type="submit">新增規則</button>
+</form>
+<table>
+  <thead><tr><th>學年度</th><th>課程</th><th>分類</th><th>必選修</th><th>狀態</th><th>操作</th></tr></thead>
+  <tbody>
+    {% for rule in course_rules %}
+    <tr><td>{{ rule.school_year }}</td><td>{{ rule.course_name }}</td><td>{{ rule.category }}</td><td>{{ rule.requirement_type }}</td><td>{{ '啟用' if rule.is_active else '停用' }}</td><td><form method="post" action="{{ url_for('admin.toggle_course_rule_active', rule_id=rule.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit">{{ '停用' if rule.is_active else '啟用' }}</button></form></td></tr>
+    {% else %}<tr><td colspan="6">尚無規則。</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

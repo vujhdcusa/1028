@@ -7,7 +7,7 @@
 <header class="workspace-header">
   <nav class="workspace-nav" aria-label="系統導覽">
     <a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark">IM</span>資管科學習歷程</a>
-    <div class="workspace-nav__links"><a href="{{ url_for('main.admin_dashboard') }}">系統總覽</a><a href="{{ url_for('admin.accounts') }}">帳號管理</a><a href="{{ url_for('admin.project_types') }}">規則管理</a><form method="post" action="{{ url_for('main.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit">登出</button></form></div>
+    <div class="workspace-nav__links"><a href="{{ url_for('main.admin_dashboard') }}">系統總覽</a><a href="{{ url_for('admin.accounts') }}">帳號管理</a><a href="{{ url_for('admin.project_types') }}">專題規則</a><a href="{{ url_for('admin.course_rules') }}">課程規則</a><form method="post" action="{{ url_for('main.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit">登出</button></form></div>
   </nav>
 </header>
 {% endblock %}

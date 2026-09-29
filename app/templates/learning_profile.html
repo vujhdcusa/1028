@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>智慧學習歷程</h1>
+<p>上傳成績單或證照後，請先確認系統擷取的欄位；系統不會自行補寫未知資料。</p>
+<form method="post" action="{{ url_for('student.learning_profile_document_upload') }}" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label>檔案類型
+    <select name="document_type">
+      <option value="transcript">成績單</option>
+      <option value="credential">證照</option>
+    </select>
+  </label>
+  <label>檔案（PDF、PNG、JPG）<input type="file" name="file" required></label>
+  <button type="submit">上傳並建立確認草稿</button>
+</form>
+<form method="post" action="{{ url_for('student.learning_profile_generate') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label>適用入學學年度／課程規則 <input type="number" name="school_year" min="1" max="999" required></label>
+  <button type="submit">生成四類學習歷程草稿</button>
+</form>
+<h2>我的來源檔</h2>
+<ul>
+  {% for document in documents %}
+    <li>{{ document.display_name }}（{{ document.document_type }}／{{ document.status }}）
+      <a href="{{ url_for('student.learning_profile_document_review', document_id=document.id) }}">檢視／確認</a>
+    </li>
+  {% else %}
+    <li>尚未上傳資料。</li>
+  {% endfor %}
+</ul>
+<h2>已生成草稿</h2>
+<ul>
+  {% for output in outputs %}
+    <li>{{ output.output_type }} <a href="{{ url_for('student.learning_profile_output_docx', output_id=output.id) }}">下載 Word</a></li>
+  {% else %}
+    <li>尚未生成草稿。</li>
+  {% endfor %}
+</ul>
+{% endblock %}

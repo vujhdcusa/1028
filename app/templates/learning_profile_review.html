@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>確認擷取資料：{{ document.display_name }}</h1>
+<p>請只保留你能確認正確的資料。抵、免、補不是分數，仍須由課程規則與學校人員確認。</p>
+<form method="post" action="{{ url_for('student.learning_profile_document_confirm', document_id=document.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label>課程 JSON（可由擷取草稿修改後貼入）</label>
+  <textarea name="courses_json" rows="10">{{ (document.extraction.result_json.courses if document.extraction and document.extraction.result_json and document.extraction.result_json.courses else []) | tojson }}</textarea>
+  <label>證照 JSON（可由擷取草稿修改後貼入）</label>
+  <textarea name="credentials_json" rows="10">{{ (document.extraction.result_json.credentials if document.extraction and document.extraction.result_json and document.extraction.result_json.credentials else []) | tojson }}</textarea>
+  <button type="submit">確認並儲存</button>
+</form>
+{% endblock %}
