@@ -1,10 +1,12 @@
 # 開發環境檢查報告
 
-日期：2026-09-15
+日期：2026-09-29（本次環境補充）
 
 ## 結論
 
 目前專案已具備基本 Flask 開發條件，可以進入下一步功能開發。
+
+本次補充：已建立個人完整備份專案 `D:\democase\ai-personal-backup-2026-09-29`，並完成 `docs` 文件庫的現行／封存分類。團隊協作線與個人完整線尚未直接建立 Git worktree，需在目前未提交變更完成基準快照後再建立。
 
 已確認：
 
@@ -18,12 +20,13 @@
 - Git 已安裝。
 - Node.js 已安裝。
 - npm 已安裝，但 PowerShell 直接執行會被執行原則擋住。
+- Mermaid CLI 已安裝，可由完整路徑執行 `C:\Users\lisa2\AppData\Roaming\npm\mmdc.cmd`。
 
 尚需處理：
 
 - MySQL CLI 尚未加入 PATH，或尚未安裝 MySQL Client。
 - 目前資料庫連線尚未實測，因為專案還沒有正式初始化資料表。
-- 專案目前不是 Git repository，建議初始化 Git。
+- 專案目前位於 Git `main` 分支，但工作區有未提交變更；建立協作分支前必須先做基準快照。
 
 ## 實際檢查結果
 
@@ -71,7 +74,7 @@ git version 2.55.0.windows.3
 ### Node.js
 
 ```text
-v26.8.1
+v24.19.0
 ```
 
 ### npm
@@ -92,6 +95,14 @@ cmd /c npm --version
 
 ```text
 11.13.0
+```
+
+### Mermaid CLI
+
+```text
+mmdc 12.0.0
+位置：C:\Users\lisa2\AppData\Roaming\npm\mmdc.cmd
+注意：目前 PowerShell PATH 未包含 Node.js 與 npm 全域執行檔路徑。
 ```
 
 ### MySQL
@@ -172,14 +183,12 @@ cmd /c npm --version
 cmd /c npm install
 ```
 
-### 5. Git 初始化
+### 5. Git 分支／備份
 
 建議執行：
 
 ```powershell
-git init
-git add .
-git commit -m "Initialize smart learning portfolio project"
+先確認 `git status`，不可用 reset 或 checkout 清除既有變更。整合前使用 `D:\democase\ai-personal-backup-2026-09-29` 或新的快照目錄保存完整專案，再建立團隊 worktree。
 ```
 
 ### 6. MySQL 處理

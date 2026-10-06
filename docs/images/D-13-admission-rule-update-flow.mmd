@@ -1,0 +1,38 @@
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
+flowchart TD
+    classDef admin fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef system fill:#E0F2FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef store fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef note fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
+
+    subgraph Stage1[第一階段：手動建立]
+        Manual[系統管理者依簡章或整理資料<br/>輸入校系與加權項目]:::admin
+    end
+    subgraph Stage23[第二、三階段：Agent 每年更新（亮點）]
+        Source[管理者設定官方來源<br/>技專校院招生委員會、各校分則]:::admin
+        Schedule[排程：每年簡章公告期間定期檢查]:::system
+        Detect[Agent 抓取來源並比對內容雜湊]:::ai
+        Changed{來源有更新？}
+        Notify[通知管理者：新年度簡章已公告]:::system
+        Extract[Agent 擷取校系、招生類別、<br/>原始項目名稱與加權百分比]:::ai
+        Validate{格式檢查：<br/>各校系加權合計 100%？}
+        Fail[擷取失敗：保留原始檔，<br/>改由管理者手動輸入]:::alert
+        Source --> Schedule --> Detect --> Changed
+        Changed -- 否 --> Schedule
+        Changed -- 是 --> Notify --> Extract --> Validate
+        Validate -- 否 --> Fail
+    end
+    Manual --> Candidate[(候選版本 status=candidate<br/>校系與年度、校系備審要求)]:::store
+    Validate -- 是 --> Candidate
+    Fail --> Manual
+    Candidate --> Diff[管理者比對新舊差異<br/>並確認對應的資料類別]:::admin
+    Diff --> Approve{核准？}
+    Approve -- 否 --> Reject[駁回並記錄原因]:::alert
+    Approve -- 是 --> Publish[(正式版本 status=published)]:::store
+    Publish --> Student[學生選校系與缺件比對<br/>只讀取正式版本]:::student
+    Reject --> Log[寫入操作紀錄]:::system
+    Publish --> Log
+    Rule[AI 不得直接發布；舊年度資料保留不覆蓋]:::note -.- Approve

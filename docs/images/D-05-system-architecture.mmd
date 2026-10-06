@@ -1,0 +1,26 @@
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
+flowchart LR
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef admin fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef backend fill:#E0F2FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef db fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef external fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
+
+    School[學校成績系統<br/>（本系統不連線）]:::external
+    Student[學生]:::student
+    Teacher[導師]:::teacher
+    Admin[系統管理者（開發者）]:::admin
+
+    School -. 學生自行下載成績單 .-> Student
+    Student --> UI
+    Teacher --> UI
+    Admin --> UI
+
+    UI[瀏覽器前端<br/>HTML／CSS／JavaScript／Bootstrap 5]:::backend
+    UI --> App[Flask 後端<br/>登入與權限、檔案上傳、資料整理、<br/>缺件比對、備審資料產出]:::backend
+    App --> DB[(MySQL 8.0<br/>帳號、學習資料、校系備審要求)]:::db
+    App --> Files[(上傳檔案儲存區)]:::db
+    App -. 選用：文件辨識 .-> Gemini[Google Gemini API]:::ai
+    App --> Doc[Word 備審資料<br/>（可列印）]:::backend

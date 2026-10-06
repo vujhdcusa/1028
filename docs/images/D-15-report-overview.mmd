@@ -1,0 +1,12 @@
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
+flowchart LR
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+
+    Target[學生選擇目標校系]:::student --> Upload[上傳六類學習資料]:::student
+    Upload --> Core[系統整理並比對缺件]:::system
+    Core --> Confirm[學生確認並補齊資料]:::student
+    Confirm --> Teacher[導師確認內容]:::teacher
+    Teacher --> Output[產出完整備審資料]:::system

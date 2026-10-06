@@ -1,11 +1,119 @@
-%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280'}}}%%
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Arial, Microsoft JhengHei, sans-serif','fontSize':'14px','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280'},'er':{'minEntityWidth':160,'entityPadding':20}}}%%
 erDiagram
-    USERS ||--o| STUDENT_PROFILES : has
-    USERS ||--o{ PORTFOLIOS : owns
-    PORTFOLIOS ||--o{ PORTFOLIO_EVIDENCE : contains
-    PROJECT_GROUPS ||--o{ PROJECT_MEMBERS : has
-    USERS ||--o{ PROJECT_MEMBERS : joins
-    PROJECT_GROUPS ||--o{ PROJECT_STAGE_SUBMISSIONS : submits
-    PROJECT_GROUPS ||--o{ PROJECT_REVIEW_RESULTS : receives
-    PROJECT_REVIEW_RESULTS ||--o{ PROJECT_REVISION_RECORDS : tracks
-    USERS ||--o{ PROJECT_REVIEW_RESULTS : recorded_by
+    USERS ||--o| STUDENT_PROFILES : "學生基本資料"
+    USERS ||--o{ CLASS_ADVISORS : "擔任導師"
+    USERS ||--o{ SOURCE_DOCUMENTS : "上傳"
+    SOURCE_DOCUMENTS ||--o| DOCUMENT_EXTRACTIONS : "辨識結果"
+    USERS ||--o{ LEARNING_COURSE_RECORDS : "成績與學分"
+    SOURCE_DOCUMENTS |o--o{ LEARNING_COURSE_RECORDS : "來源檔"
+    USERS ||--o{ CREDENTIAL_RECORDS : "證照"
+    SOURCE_DOCUMENTS |o--o{ CREDENTIAL_RECORDS : "來源檔"
+    USERS ||--o{ PORTFOLIOS : "活動競賽服務幹部"
+    PORTFOLIOS ||--o{ PORTFOLIO_EVIDENCE : "佐證"
+    ADMISSION_RULE_VERSIONS ||--o{ ADMISSION_RULE_ITEMS : "備審要求"
+    USERS ||--o{ STUDENT_TARGETS : "選擇校系"
+    ADMISSION_RULE_VERSIONS ||--o{ STUDENT_TARGETS : "被選擇"
+    USERS ||--o{ LEARNING_PROFILE_OUTPUTS : "產出備審資料"
+    LEARNING_PROFILE_OUTPUTS ||--o{ PACKAGE_REVIEWS : "導師確認"
+    USERS ||--o{ PACKAGE_REVIEWS : "確認者"
+
+    USERS["USERS 使用者　　　"] {
+        int id PK
+        string username "學號或帳號"
+        string role "student teacher staff admin"
+        bool is_active
+    }
+    STUDENT_PROFILES["STUDENT_PROFILES 學生資料　　　"] {
+        int id PK
+        int user_id FK
+        string student_no
+        string class_name "班級"
+    }
+    CLASS_ADVISORS["CLASS_ADVISORS 導師班級　　　"] {
+        int id PK "待新增"
+        int teacher_id FK
+        string class_name
+        int school_year
+    }
+    SOURCE_DOCUMENTS["SOURCE_DOCUMENTS 上傳原始檔　　　"] {
+        int id PK
+        int owner_id FK
+        string document_type "成績單 證照等"
+        string file_path
+        string status
+    }
+    DOCUMENT_EXTRACTIONS["DOCUMENT_EXTRACTIONS 辨識結果　　　"] {
+        int id PK
+        int source_document_id FK
+        string status "辨識狀態"
+        datetime confirmed_at "學生確認時間"
+    }
+    LEARNING_COURSE_RECORDS["LEARNING_COURSE_RECORDS 成績與學分　　　"] {
+        int id PK
+        int student_id FK
+        int source_document_id FK
+        string course_name
+        int credits
+        int score
+    }
+    CREDENTIAL_RECORDS["CREDENTIAL_RECORDS 證照　　　"] {
+        int id PK
+        int student_id FK
+        int source_document_id FK
+        string credential_name
+        string level
+    }
+    PORTFOLIOS["PORTFOLIOS 活動競賽服務幹部　　　"] {
+        int id PK
+        int student_id FK
+        string category "活動 競賽 服務學習 幹部經歷"
+        string title
+        string status
+    }
+    PORTFOLIO_EVIDENCE["PORTFOLIO_EVIDENCE 佐證檔案　　　"] {
+        int id PK
+        int portfolio_id FK
+        string file_path
+        string external_url
+    }
+    ADMISSION_RULE_VERSIONS["ADMISSION_RULE_VERSIONS 校系與年度　　　"] {
+        int id PK "待新增"
+        string program_code "志願代碼"
+        string school_name "學校"
+        string department_name "科系"
+        string admission_category "招生類別"
+        int admission_year "學年度"
+        string source_url "資料來源"
+        string status "candidate published"
+        string data_origin "manual agent"
+        date checked_at "最後確認日期"
+    }
+    ADMISSION_RULE_ITEMS["ADMISSION_RULE_ITEMS 校系備審要求　　　"] {
+        int id PK "待新增"
+        int rule_version_id FK
+        string source_item_name "簡章原始項目名稱"
+        int weight_percent "加權百分比"
+        string mapped_categories "對應資料類別"
+        string mapping_status "確定 待確認"
+        string requirement "需要的資料與標準"
+        bool is_required
+    }
+    STUDENT_TARGETS["STUDENT_TARGETS 學生目標校系　　　"] {
+        int id PK "待新增"
+        int student_id FK
+        int rule_version_id FK
+        datetime selected_at
+    }
+    LEARNING_PROFILE_OUTPUTS["LEARNING_PROFILE_OUTPUTS 備審資料產出　　　"] {
+        int id PK
+        int student_id FK
+        string output_type "備審資料"
+        datetime created_at
+    }
+    PACKAGE_REVIEWS["PACKAGE_REVIEWS 導師確認紀錄　　　"] {
+        int id PK "待新增"
+        int output_id FK
+        int teacher_id FK
+        string result "confirmed needs_revision"
+        string comment "修改建議"
+    }

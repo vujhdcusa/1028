@@ -1,0 +1,34 @@
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
+flowchart TD
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef system fill:#E0F2FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef note fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
+
+    Start([學生登入]) --> HasTarget{已選擇目標校系？}
+    HasTarget -- 否 --> Choose[選擇想申請的二技校系]:::student
+    Choose --> Req
+    HasTarget -- 是 --> Req[系統列出該校系需要的<br/>備審資料項目與標準]:::system
+    Req --> Download[學生自行登入學校系統<br/>下載成績單等資料]:::student
+    Download -.- Note1[本系統不使用學生帳號登入或爬取學校系統<br/>期中修畢課程以列印版成績單為準<br/>微學分另上傳證明（處理方式待確認）]:::note
+    Download --> Upload[上傳資料並選擇類別<br/>成績與學分、證照、活動、<br/>競賽、服務學習、幹部經歷]:::student
+    Upload --> FileOK{檔案格式與大小正確？}
+    FileOK -- 否 --> FileErr[顯示錯誤原因，請重新上傳]:::alert
+    FileErr --> Upload
+    FileOK -- 是 --> Extract[系統整理資料<br/>AI 可協助辨識]:::ai
+    Extract --> Recognized{辨識成功？}
+    Recognized -- 否 --> Manual[學生手動輸入]:::student
+    Recognized -- 是 --> Confirm[學生確認與修正]:::student
+    Manual --> Confirm
+    Confirm --> Compare[系統比對校系要求]:::system
+    Compare --> Enough{資料符合要求？}
+    Enough -- 否 --> Missing[列出還缺什麼]:::alert
+    Missing --> Upload
+    Enough -- 是 --> Teacher[導師查看本班學生資料]:::teacher
+    Teacher --> Reasonable{內容合理？}
+    Reasonable -- 否 --> Advice[導師留下修改建議]:::teacher
+    Advice --> Confirm
+    Reasonable -- 是 --> Output[產出完整備審資料]:::system
+    Output --> Print([學生下載列印])

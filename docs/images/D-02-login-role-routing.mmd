@@ -1,19 +1,26 @@
-%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'}}}%%
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
 flowchart TD
-    classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef system fill:#E0F2FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef admin fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef pending fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
 
-    Start([登入系統]) --> Auth{帳密與帳號狀態有效？}
-    Auth -- 否 --> Error[顯示登入錯誤]:::alert
-    Auth -- 是 --> Role{判斷登入角色}
-    Role -- student --> Student[學生工作檯：上傳、確認與產出]:::student
-    Role -- teacher --> Teacher[教師工作區：回饋與補件建議]:::teacher
-    Role -- staff --> Staff[科辦工作區：規則與結論確認]:::staff
-    Role -- admin --> Admin[管理工作區：帳號與系統設定]:::staff
-    Student --> Log[寫入操作紀錄]:::system
-    Teacher --> Log
-    Staff --> Log
-    Admin --> Log
+    Start([開啟共用登入頁]) --> Input[輸入帳號與密碼]
+    Input --> Auth{帳號存在、已啟用<br/>且密碼正確？}
+    Auth -- 否 --> Err[顯示「帳號或密碼錯誤」]:::alert
+    Err --> Input
+    Auth -- 是 --> Session[清除舊登入狀態<br/>記錄目前使用者]:::system
+    Session --> Role{依帳號角色導頁}
+    Role -- student --> S[學生首頁<br/>選校系、上傳資料、查看缺件]:::student
+    Role -- teacher --> T[導師工作台<br/>本班學生資料與確認]:::teacher
+    Role -- admin --> A[管理工作區<br/>帳號、權限與校系備審要求]:::admin
+    Role -- staff --> F[科辦工作區<br/>任務待確認]:::pending
+    Role -- 未設定角色 --> NoRole[顯示「此帳號尚未設定可用角色」<br/>並清除登入狀態]:::alert
+    S --> Guard{每次開啟頁面或操作時<br/>再次檢查角色權限}
+    T --> Guard
+    A --> Guard
+    F --> Guard
+    Guard -- 符合 --> Allow[執行操作]:::system
+    Guard -- 不符合 --> Deny[拒絕存取（403）]:::alert

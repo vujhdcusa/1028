@@ -1,0 +1,16 @@
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
+flowchart TD
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef ai fill:#FEF3C7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+
+    Student[學生]:::student --> S1[上傳、校正與確認本人資料]:::student
+    Student --> S2[產出並下載完整備審資料]:::student
+    Teacher[教師／導師]:::teacher --> T1[查看本班學生資料與班級統計]:::teacher
+    Teacher --> T2[確認內容並提供修改建議]:::teacher
+    Staff[科辦／行政（待確認）]:::staff --> F1[任務待確認]:::staff
+    Admin[系統管理者（開發者）]:::staff --> A1[管理帳號、權限、系統設定與校系備審要求]:::staff
+    Agent[分析服務]:::ai --> G1[產生可校正草稿與候選提示]:::ai
+    G1 -.不直接定案.-> Block[必須經學生或人工確認]:::alert
