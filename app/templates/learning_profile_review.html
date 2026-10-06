@@ -10,7 +10,7 @@
 {% block content %}
 <div class="page">
   <header class="page-head">
-    <p class="kicker"><a href="{{ url_for('student.learning_profile') }}">← 成績與證照</a> · {{ "成績單" if is_transcript else "證照" }}</p>
+    <p class="small"><a href="{{ url_for('student.learning_profile') }}">← 成績與證照</a> · {{ "成績單" if is_transcript else "證照" }}</p>
     <h1>確認資料：{{ document.display_name }}</h1>
     <p>請對照你的文件，逐筆檢查。系統辨識不出來的欄位會留空，不會自己猜；可以直接修改、新增或刪除列。</p>
   </header>

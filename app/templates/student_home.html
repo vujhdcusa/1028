@@ -12,14 +12,13 @@
 <div class="page">
   <header class="student-cover">
     <div>
-      <p class="kicker"><b>STUDENT FILE</b>{% if user.student_profile %} · {{ user.student_profile.student_no }}{% endif %}{% if user.student_profile and user.student_profile.class_name %} · {{ user.student_profile.class_name }}{% endif %}</p>
-      <h1>{{ user.display_name }}的五年</h1>
-      <p>每一筆資料都放進它所屬的年級。空著的格子就是還可以補的地方，不用一次補完。</p>
+            <h1>{{ user.display_name }}的五年</h1>
+      <p>空著的格子，就是還可以補的地方。</p>
     </div>
     {% if journey.current_grade %}
     <div class="grade-mark" aria-label="目前是專{{ '一二三四五'[journey.current_grade - 1] }}">
       <strong>0{{ journey.current_grade }}</strong>
-      <span>NOW · 專{{ '一二三四五'[journey.current_grade - 1] }}</span>
+      <span>目前 專{{ '一二三四五'[journey.current_grade - 1] }}</span>
     </div>
     {% endif %}
   </header>
@@ -33,7 +32,7 @@
       <a class="slot{% if total == 0 %} slot--empty{% endif %}" style="--slot: {{ slot_colors[key] }};" href="{{ add_links.get(key, url_for('student.portfolio_list') ~ '#form') }}">
         <strong>{{ total }}</strong>
         <span>{{ category_labels[key] }}</span>
-        <small>{{ "還沒有資料，點這裡新增" if total == 0 else "筆" }}</small>
+        <small>{{ "還沒有" if total == 0 else "筆" }}</small>
       </a>
       {% endfor %}
     </div>
@@ -48,7 +47,7 @@
         <button class="folder-tab" type="button" role="tab" id="tab-{{ year.grade }}" aria-controls="year-{{ year.grade }}"
                 style="--year: var(--year-{{ year.grade }});"
                 data-initial="{{ 'true' if year.grade == (journey.current_grade or 1) else 'false' }}">
-          <span class="mono">0{{ year.grade }}</span>{{ year.label }}{% if year.grade == journey.current_grade %}<span class="folder-tab__now">NOW</span>{% endif %}
+          <span class="mono">0{{ year.grade }}</span>{{ year.label }}{% if year.grade == journey.current_grade %}<span class="folder-tab__now">目前</span>{% endif %}
           <span class="folder-tab__count">{{ year.count }}</span>
         </button>
         {% endfor %}
@@ -58,7 +57,7 @@
            style="--year: var(--year-{{ year.grade }});" data-year-folder="{{ year.grade }}">
         <div class="folder-panel__head">
           <h2>{{ year.label }}</h2>
-          <span class="kicker">{{ year.count }} 筆資料</span>
+          <span class="muted small">{{ year.count }} 筆</span>
         </div>
         <div class="drawer">
           {% for key in category_keys %}
@@ -82,24 +81,9 @@
 
     {# 側欄：下一步 #}
     <aside class="sticky form-stack">
-      <section class="sheet">
-        <div class="sheet__head"><h2>下一步</h2><span class="kicker">NEXT</span></div>
-        <ol class="next-list">
-          {% set pending = source_documents|selectattr("status", "ne", "confirmed")|list %}
-          {% if pending %}
-          <li><div><b>{{ pending|length }} 份上傳的文件還沒確認</b><a href="{{ url_for('student.learning_profile') }}">去確認 →</a></div></li>
-          {% endif %}
-          {% for key in journey.missing_categories[:3] %}
-          <li><div><b>補上第一筆{{ category_labels[key] }}</b><a href="{{ add_links.get(key, url_for('student.portfolio_list') ~ '#form') }}">新增 →</a></div></li>
-          {% endfor %}
-          {% if not pending and not journey.missing_categories %}
-          <li><div><b>六類資料都有了</b><span class="muted">接下來可以選目標校系，比對還缺什麼。</span></div></li>
-          {% endif %}
-        </ol>
-      </section>
       {% if targets %}
       <section class="sheet target-mini">
-        <div class="sheet__head"><h2>目標校系</h2><span class="kicker">TARGET</span></div>
+        <div class="sheet__head"><h2>目標校系</h2></div>
         {% for target in targets %}
         <a class="paper-item" href="{{ url_for('student.target_gap', program_id=target.program.id) }}">
           <b>{{ target.program.school_name|replace("國立", "") }} {{ target.program.department_name }}</b>
@@ -109,7 +93,7 @@
       </section>
       {% else %}
       <section class="sheet">
-        <div class="sheet__head"><h2>目標校系</h2><span class="kicker">TARGET</span></div>
+        <div class="sheet__head"><h2>目標校系</h2></div>
         <p class="muted mb-1">選擇想申請的二技校系，系統會依該校系的加權，告訴你還缺哪些資料。</p>
         <a class="button button--small" href="{{ url_for('student.target_list') }}">選擇目標校系 →</a>
       </section>

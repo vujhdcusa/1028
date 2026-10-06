@@ -7,7 +7,7 @@
 
 {% block title %}{{ program.school_name }} {{ program.department_name }}｜缺件比對{% endblock %}
 
-{% block navigation %}{{ masthead(user, "目標校系") }}{% endblock %}
+{% block navigation %}{{ masthead(user, "補齊缺件") }}{% endblock %}
 
 {% block content %}
 <div class="page">
@@ -20,14 +20,14 @@
 
   <header class="student-cover">
     <div>
-      <p class="kicker"><b>{{ program.program_code }}</b> · {{ program.admission_category or "" }} · {{ program.admission_year }} 學年度簡章</p>
+      <p class="muted small">志願代碼 {{ program.program_code }} · {{ program.admission_year }} 學年度簡章</p>
       <h1>{{ program.school_name }}<br>{{ program.department_name }}</h1>
-      <p>每個方塊是一個評分項目，<b>越寬代表佔分越多</b>，裡面裝了多少，就是你已經備齊多少。點方塊看細節。</p>
+      <p>方塊越寬，佔分越多；裝得越滿，準備得越完整。點方塊看細節。</p>
     </div>
     <div class="readiness">
       {% if gap.readiness is not none %}
       <strong><span data-count="{{ gap.readiness }}">{{ gap.readiness }}</span><small>%</small></strong>
-      <span>依加權計算的準備度</span>
+      <span>準備度</span>
       {% else %}
       <span>此校系項目都需要自己準備文件</span>
       {% endif %}
@@ -56,7 +56,7 @@
     {% for item in gap["items"] %}
     <div class="gap-detail" id="detail-{{ loop.index }}" data-gap-detail>
       <div class="sheet__head">
-        <div><p class="kicker">ITEM {{ loop.index }} · 佔 {{ item.weight }}%</p><h3 class="serif">{{ item.name }}</h3></div>
+        <h3 class="serif">{{ item.name }}（佔 {{ item.weight }}%）</h3>
         <span class="tag {{ {'complete': 'tag--ok', 'partial': 'tag--warn', 'missing': 'tag--danger'}.get(item.status, '') }}">{{ status_text[item.status] }}</span>
       </div>
       {% if item.mapping_pending %}<p class="muted small">這個項目對應哪些資料，是依簡章名稱推論的，各校分則可能另有說明。</p>{% endif %}
@@ -71,8 +71,8 @@
 
   <div class="split mt-1">
     <section class="sheet" aria-labelledby="toc-title">
-      <div class="sheet__head"><h2 id="toc-title">這個校系的備審目錄</h2><span class="kicker">TOC</span></div>
-      <p class="muted small mb-1">依這個校系的加權排序：佔分越高的章節排越前面，讓審查委員先看到。</p>
+      <div class="sheet__head"><h2 id="toc-title">這個校系的備審目錄</h2></div>
+      <p class="muted small mb-1">佔分越高的章節排越前面。</p>
       <ol class="toc">
         {% for chapter in chapters %}
         <li><span>{{ chapter.title }} <span class="mono">原 {{ chapter.code }}</span></span>{% if chapter.weight %}<span class="toc__bar" style="--w: {{ chapter.weight }};" title="相關加權 {{ chapter.weight }}%"><i></i></span>{% else %}<span class="mono">{{ "固定章節" if chapter.code in ("01", "02") else "此校系未列加權" }}</span>{% endif %}</li>
@@ -81,7 +81,7 @@
     </section>
 
     <aside class="form-stack">
-      <section class="sheet review-box" aria-labelledby="review-title">
+      <section class="sheet review-box" id="review" aria-labelledby="review-title">
         <div class="sheet__head"><h2 id="review-title">導師確認</h2>
           {% if review %}{% set label, cls = review_text[review.status] %}<span class="tag {{ cls }}">{{ label }}</span>{% else %}<span class="tag">尚未送出</span>{% endif %}
         </div>

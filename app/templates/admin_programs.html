@@ -9,7 +9,7 @@
 {% block content %}
 <section class="work-shell" data-work-role="admin">
   <header class="work-heading">
-    <div><p class="eyebrow">ADMIN · 二技招生資料</p><h1>校系資料</h1>
+    <div><h1>校系資料</h1>
       <p>學生只看得到「正式」的校系。候選資料（之後由 Agent 擷取）要先在這裡核對加權與對應的資料類別，再改為正式。</p></div>
     <form method="post" action="{{ url_for('admin.programs_import_seed') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--line" type="submit">匯入種子資料</button></form>
   </header>

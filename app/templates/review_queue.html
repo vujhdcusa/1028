@@ -8,7 +8,7 @@
 
 {% block content %}
 <section class="work-shell" data-work-role="teacher">
-  <header class="work-heading"><div><p class="eyebrow">TEACHER · 我的審查</p><h1>我的審查清單</h1><p>先查看作品與目標快照，留下可執行的意見；共同審查結論由科辦統一登錄。</p></div></header>
+  <header class="work-heading"><div><h1>我的審查清單</h1><p>先查看作品與目標快照，留下可執行的意見；共同審查結論由科辦統一登錄。</p></div></header>
   <section class="work-panel"><ul class="work-list">
     {% for assignment in assignments %}
     <li><span class="work-list__index">{{ loop.index }}</span><div><strong>{{ assignment.submission.portfolio.title }}</strong><span>送件 #{{ assignment.submission_id }} · 第 {{ assignment.submission.version_no }} 版 · {{ assignment.submission.status }}</span></div><span class="queue-badge">已指派</span></li>

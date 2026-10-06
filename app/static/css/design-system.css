@@ -520,3 +520,39 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .check-row label { display: inline-flex; align-items: center; gap: .3rem; }
 .admin-item-form fieldset { grid-column: 1 / -1; }
 .check-row label { white-space: nowrap; }
+
+/* =========================================================
+   學生主線步驟列（2026-10-06 收斂：讓學生一眼知道下一步）
+   ========================================================= */
+.masthead--student .masthead__inner { min-height: 56px; }
+.stepbar { border-top: 1px solid var(--line); background: var(--sheet); }
+.stepbar__inner { width: var(--page); margin: 0 auto; display: flex; align-items: center; gap: 1.5rem; padding: .55rem 0; }
+.steps { display: flex; align-items: center; gap: 0; list-style: none; margin: 0; padding: 0; flex: 1; min-width: 0; }
+.step { display: flex; align-items: center; }
+.step + .step::before { content: ""; width: clamp(12px, 3vw, 40px); height: 2px; background: var(--line); margin: 0 .5rem; }
+.step--done + .step::before { background: var(--ok); }
+.step a { display: inline-flex; align-items: center; gap: .5rem; padding: .3rem .6rem .3rem .3rem; border-radius: 99px; text-decoration: none; font-size: .92rem; white-space: nowrap; color: var(--muted); }
+.step__no { width: 1.7rem; height: 1.7rem; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--line); font-size: .8rem; font-weight: 700; background: var(--sheet); }
+.step--done a { color: var(--ink); }
+.step--done .step__no { background: var(--ok); border-color: var(--ok); color: var(--sheet); }
+.step--current a { color: var(--ink); font-weight: 700; }
+.step--current .step__no { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.step--here a { background: var(--paper-deep); }
+.next-action { display: grid; padding: .35rem .9rem; border-radius: var(--radius); background: var(--accent); color: var(--sheet); text-decoration: none; font-weight: 700; font-size: .9rem; line-height: 1.35; max-width: 340px; }
+.next-action small { font-weight: 400; font-size: .72rem; opacity: .85; }
+.next-action:hover { background: var(--ink); }
+.subnav { width: var(--page); margin: 0 auto; display: flex; gap: .25rem; padding: 0 0 .5rem; }
+.subnav a { padding: .25rem .75rem; border-radius: 99px; text-decoration: none; font-size: .88rem; color: var(--ink-soft); }
+.subnav a:hover { background: var(--paper-deep); }
+.subnav a[aria-current="page"] { background: var(--ink); color: var(--sheet); }
+
+@media (max-width: 900px) {
+  .stepbar__inner { flex-direction: column; align-items: stretch; gap: .5rem; }
+  .steps { overflow-x: auto; }
+  .step a span:not(.step__no) { font-size: .85rem; }
+  .next-action { max-width: none; }
+}
+@media (max-width: 520px) {
+  .step:not(.step--here):not(.step--current) a > span:not(.step__no) { display: none; }
+  .step + .step::before { width: 10px; margin: 0 .25rem; }
+}

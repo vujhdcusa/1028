@@ -210,3 +210,13 @@ def role_dashboard(role):
     if not endpoint:
         abort(403)
     return redirect(url_for(endpoint))
+
+
+@main_bp.app_context_processor
+def inject_student_progress():
+    """學生的每一頁都要顯示主線步驟列與「下一步」。"""
+    user = get_current_user()
+    if user and user.role == "student":
+        from app.services.student_progress import student_progress
+        return {"student_progress": student_progress(user)}
+    return {}

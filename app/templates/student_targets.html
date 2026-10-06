@@ -9,9 +9,8 @@
 {% block content %}
 <div class="page">
   <header class="page-head">
-    <p class="kicker"><b>TARGET</b> · 二技技優甄審</p>
     <h1>想申請哪裡？</h1>
-    <p>每張卡片都用你目前的資料，先幫你算好「如果申請這裡，準備度是多少」。選一個（或幾個）當目標，就能看到還缺什麼。</p>
+    <p>每張卡片顯示：用你現在的資料申請這裡，準備度是多少。</p>
   </header>
 
   {% if programs %}
@@ -20,7 +19,7 @@
     {% set gap = gaps[program.id] %}
     {% set chosen = program.id in selected %}
     <article class="program-card{% if chosen %} program-card--selected{% endif %}" data-motion="reveal">
-      <p class="kicker"><b>{{ program.program_code }}</b> · {{ program.admission_category or "" }} · {{ program.admission_year }} 學年度</p>
+      <p class="muted small">志願代碼 {{ program.program_code }}</p>
       <h3>{{ program.school_name }}<br>{{ program.department_name }}</h3>
       <div class="mini-weights" role="img" aria-label="{% for item in gap['items'] %}{{ item.name }} {{ item.weight }}%{% if not loop.last %}、{% endif %}{% endfor %}">
         {% for item in gap["items"] %}<span style="width: {{ item.weight }}%; --fill: {{ item.percent or 0 }}%;"><i></i></span>{% endfor %}

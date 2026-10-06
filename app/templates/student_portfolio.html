@@ -12,14 +12,13 @@
 {% block content %}
 <div class="page">
   <header class="page-head">
-    <p class="kicker"><b>03–06</b> · 活動、競賽、服務學習、幹部經歷</p>
     <h1>活動與經歷</h1>
-    <p>成績與證照之外的經歷，自己新增在這裡。填上年級，就會自動放進「我的五年」對應的資料夾。</p>
+    <p>活動、競賽、服務學習、幹部經歷自己新增在這裡，填上年級就會放進「我的五年」。</p>
   </header>
 
   <div class="split split--form-first">
     <section class="sheet sticky" id="form" aria-labelledby="form-title">
-      <div class="sheet__head"><h2 id="form-title">新增一筆</h2><span class="kicker">NEW</span></div>
+      <div class="sheet__head"><h2 id="form-title">新增一筆</h2></div>
       {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
       {% if request.args.get("added") %}<p class="notice mb-1" role="status">已新增一筆{{ category_labels.get(request.args.get("added"), "") }}。</p>{% endif %}
       <form method="post" class="form-stack">
@@ -35,7 +34,7 @@
       <section class="record-group" style="--slot: {{ slot_colors[key] }};" aria-labelledby="group-{{ key }}">
         <div class="record-group__head">
           <h2 id="group-{{ key }}">{{ category_labels[key] }}</h2>
-          <span class="kicker">{{ records|length }} 筆</span>
+          <span class="muted small">{{ records|length }} 筆</span>
         </div>
         {% if records %}
         <div class="record-cards">
@@ -74,7 +73,7 @@
 
       {% if legacy %}
       <section class="record-group" aria-labelledby="group-legacy">
-        <div class="record-group__head"><h2 id="group-legacy">舊的類別</h2><span class="kicker">{{ legacy|length }} 筆</span></div>
+        <div class="record-group__head"><h2 id="group-legacy">舊的類別</h2><span class="muted small">{{ legacy|length }} 筆</span></div>
         <p class="muted mb-1">這些資料是舊版系統建立的，類別不在六類之中。按「編輯」選一個新類別，就會放進五年資料夾。</p>
         <div class="record-cards">
           {% for record in legacy %}

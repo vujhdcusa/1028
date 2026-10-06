@@ -8,7 +8,7 @@
 
 {% block content %}
 <section class="work-shell work-shell--wide" data-work-role="admin">
-  <header class="work-heading"><div><p class="eyebrow">ADMIN · 帳號管理</p><h1>帳號管理</h1><p>這裡只處理啟用與停用，不會刪除學生歷程或重設任何人的密碼。為了避免把自己鎖在系統外，登入中的管理者不能停用自己。</p></div></header>
+  <header class="work-heading"><div><h1>帳號管理</h1><p>這裡只處理啟用與停用，不會刪除學生歷程或重設任何人的密碼。為了避免把自己鎖在系統外，登入中的管理者不能停用自己。</p></div></header>
   <section class="work-panel"><div class="work-panel__head"><div><h2>全部帳號</h2><p>停用後帳號無法登入，但資料會保留。</p></div></div><ul class="work-list admin-account-list">
     {% for account in accounts %}
     <li><span class="work-list__index">{{ loop.index }}</span><div><strong>{{ account.display_name }}</strong><span>{{ account.username }} · {{ account.role }}</span></div><div class="admin-action"><span class="queue-badge {% if account.is_active %}queue-badge--strong{% endif %}">{{ "啟用中" if account.is_active else "已停用" }}</span>{% if account.id == user.id %}<span class="muted">目前登入帳號</span>{% else %}<form method="post" action="{{ url_for('admin.toggle_account_active', user_id=account.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit">{{ "停用" if account.is_active else "重新啟用" }}</button></form>{% endif %}</div></li>

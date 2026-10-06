@@ -11,7 +11,7 @@
 {% if user.role == "teacher" %}
 <section class="work-shell work-shell--wide" data-work-role="teacher">
   <header class="work-heading">
-    <div><p class="eyebrow">TEACHER · 工作台</p><h1>{{ user.display_name }} 老師</h1><p>{% if classes %}負責班級：{{ classes|join("、") }}。{% endif %}點學生姓名查看資料，確認備審內容或留下修改建議。</p></div>
+    <div><h1>{{ user.display_name }} 老師</h1><p>{% if classes %}負責班級：{{ classes|join("、") }}。{% endif %}點學生姓名查看資料，確認備審內容或留下修改建議。</p></div>
   </header>
   {% set pending_total = class_rows|sum(attribute="pending") %}
   <div class="work-metrics">
@@ -57,7 +57,7 @@
 {% elif user.role == "staff" %}
 <section class="work-shell work-shell--wide" data-work-role="staff" data-work-queue>
   <header class="work-heading">
-    <div><p class="eyebrow">OFFICE · 待處理送件</p><h1>待處理送件</h1><p>已送審的成果會列在這裡。登錄共同結論時，請寫下學生看得懂的補正說明。</p></div>
+    <div><h1>待處理送件</h1><p>已送審的成果會列在這裡。登錄共同結論時，請寫下學生看得懂的補正說明。</p></div>
     <span class="queue-badge queue-badge--strong">{{ staff_pending_submissions|length }} 件待處理</span>
   </header>
   <div class="work-metrics">

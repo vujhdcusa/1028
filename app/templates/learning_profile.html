@@ -17,14 +17,13 @@
 {% block content %}
 <div class="page">
   <header class="page-head">
-    <p class="kicker"><b>01–02</b> · 成績與學分、證照</p>
     <h1>成績與證照</h1>
-    <p>請自己登入學校系統下載成績單，或掃描證照，再上傳到這裡。上傳後確認每一筆內容，確認過的資料才會放進「我的五年」。</p>
+    <p>從學校系統下載成績單（或拍下證照）後上傳，確認內容就會放進「我的五年」。</p>
   </header>
 
   <div class="split split--form-first">
     <section class="sheet sticky" aria-labelledby="upload-title">
-      <div class="sheet__head"><h2 id="upload-title">上傳文件</h2><span class="kicker">UPLOAD</span></div>
+      <div class="sheet__head"><h2 id="upload-title">上傳文件</h2></div>
       <form method="post" action="{{ url_for('student.learning_profile_document_upload') }}" enctype="multipart/form-data" class="form-stack">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <fieldset class="field">
@@ -42,7 +41,7 @@
 
     <div>
       <section class="record-group" aria-labelledby="docs-title">
-        <div class="record-group__head"><h2 id="docs-title">我上傳的文件</h2><span class="kicker">{{ documents|length }} 份</span></div>
+        <div class="record-group__head"><h2 id="docs-title">我上傳的文件</h2><span class="muted small">{{ documents|length }} 份</span></div>
         {% if documents %}
         <div class="table-wrap">
           <table class="data-table">
@@ -67,7 +66,7 @@
       </section>
 
       <section class="record-group" style="--slot: var(--year-1);" aria-labelledby="courses-title">
-        <div class="record-group__head"><h2 id="courses-title">成績與學分</h2><span class="kicker">{{ courses|length }} 門課</span></div>
+        <div class="record-group__head"><h2 id="courses-title">成績與學分</h2><span class="muted small">{{ courses|length }} 門課</span></div>
         {% if courses %}
         <div class="table-wrap">
           <table class="data-table">
@@ -85,7 +84,7 @@
       </section>
 
       <section class="record-group" style="--slot: var(--year-2);" aria-labelledby="credentials-title">
-        <div class="record-group__head"><h2 id="credentials-title">證照</h2><span class="kicker">{{ credentials|length }} 張</span></div>
+        <div class="record-group__head"><h2 id="credentials-title">證照</h2><span class="muted small">{{ credentials|length }} 張</span></div>
         {% if credentials %}
         <div class="record-cards">
           {% for credential in credentials %}
@@ -101,20 +100,6 @@
         {% endif %}
       </section>
 
-      <details class="sheet">
-        <summary><b>學習歷程草稿（舊功能，保留）</b></summary>
-        <p class="muted mt-1">依已確認的課程與證照產生四份草稿，可下載 Word。下一階段會改為依目標校系產出完整備審資料。</p>
-        <form method="post" action="{{ url_for('student.learning_profile_generate') }}" class="field-row mt-1">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <label class="field">課程規則學年度<input type="number" name="school_year" min="1" max="999" placeholder="例如 111" required></label>
-          <button class="button button--line align-end" type="submit">產生草稿</button>
-        </form>
-        {% if outputs %}
-        <ul class="evidence-list mt-1">
-          {% for output in outputs %}<li><a href="{{ url_for('student.learning_profile_output_docx', output_id=output.id) }}">{{ output_labels.get(output.output_type, output.output_type) }}（{{ output.created_at.strftime("%Y-%m-%d") }}）.docx</a></li>{% endfor %}
-        </ul>
-        {% endif %}
-      </details>
     </div>
   </div>
 </div>

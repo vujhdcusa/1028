@@ -1,5 +1,6 @@
 {# 共用刊頭導覽。用法：{% from "partials/nav.html" import masthead %}{{ masthead(user, "我的五年") }} #}
 {% macro masthead(user=None, active="") %}
+{% if user and user.role == "student" and student_progress is defined %}{{ student_masthead(user, active) }}{% else %}
 {% set links = {
   "student": [("我的五年", url_for("main.student_dashboard")), ("成績與證照", url_for("student.learning_profile")), ("活動與經歷", url_for("student.portfolio_list")), ("目標校系", url_for("student.target_list"))],
   "teacher": [("工作台", url_for("main.teacher_dashboard")), ("我的審查", url_for("review.teacher_reviews"))],
@@ -29,6 +30,50 @@
         <a class="button button--small" href="{{ url_for('main.login') }}">登入</a>
       {% endif %}
     </nav>
+  </div>
+</header>
+{% endif %}
+{% endmacro %}
+
+{# 學生：上方是主線四步驟，右邊固定一句「下一步」。active 可用頁名，或步驟編號 1–4。 #}
+{% macro student_masthead(user, active="") %}
+{% set step_of = {"我的五年": 1, "成績與證照": 1, "活動與經歷": 1, "目標校系": 2, "補齊缺件": 3} %}
+{% set active_step = step_of.get(active, 0) %}
+<header class="masthead masthead--student">
+  <div class="masthead__inner">
+    <a class="brand" href="{{ url_for('main.student_dashboard') }}">
+      <span class="brand__mark" aria-hidden="true">IM</span>
+      <span>資管科學習歷程</span>
+    </a>
+    <div class="masthead__links">
+      <span class="masthead__user">{{ user.display_name }}</span>
+      <form method="post" action="{{ url_for('main.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button button--small button--quiet" type="submit">登出</button>
+      </form>
+    </div>
+  </div>
+  <div class="stepbar">
+    <nav class="stepbar__inner" aria-label="主線步驟">
+      <ol class="steps">
+        {% for step in student_progress.steps %}
+        <li class="step step--{{ step.state }}{% if step.no == active_step %} step--here{% endif %}">
+          <a href="{{ step.href }}"{% if step.no == active_step %} aria-current="step"{% endif %}>
+            <span class="step__no" aria-hidden="true">{% if step.state == "done" %}✓{% else %}{{ step.no }}{% endif %}</span>
+            <span>{{ step.title }}<span class="visually-hidden">（{{ {"done": "已完成", "current": "目前", "todo": "還沒開始"}[step.state] }}）</span></span>
+          </a>
+        </li>
+        {% endfor %}
+      </ol>
+      <a class="next-action" href="{{ student_progress.next.href }}"><small>下一步</small>{{ student_progress.next.text }} →</a>
+    </nav>
+    {% if active_step == 1 %}
+    <nav class="subnav" aria-label="收集資料">
+      {% for label, href in [("我的五年", url_for("main.student_dashboard")), ("成績與證照", url_for("student.learning_profile")), ("活動與經歷", url_for("student.portfolio_list"))] %}
+      <a href="{{ href }}"{% if label == active %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    {% endif %}
   </div>
 </header>
 {% endmacro %}
