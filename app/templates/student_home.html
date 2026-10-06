@@ -97,10 +97,23 @@
           {% endif %}
         </ol>
       </section>
-      <section class="sheet locked">
-        <div class="sheet__head"><h2>目標校系</h2><span class="tag">下一階段開放</span></div>
-        <p class="muted">選擇想申請的二技校系後，系統會依該校系的備審加權，列出你還缺的資料，最後產出完整備審資料。</p>
+      {% if targets %}
+      <section class="sheet target-mini">
+        <div class="sheet__head"><h2>目標校系</h2><span class="kicker">TARGET</span></div>
+        {% for target in targets %}
+        <a class="paper-item" href="{{ url_for('student.target_gap', program_id=target.program.id) }}">
+          <b>{{ target.program.school_name|replace("國立", "") }} {{ target.program.department_name }}</b>
+          <small>準備度 {{ target.readiness if target.readiness is not none else "—" }}% · 看還缺什麼 →</small>
+        </a>
+        {% endfor %}
       </section>
+      {% else %}
+      <section class="sheet">
+        <div class="sheet__head"><h2>目標校系</h2><span class="kicker">TARGET</span></div>
+        <p class="muted mb-1">選擇想申請的二技校系，系統會依該校系的加權，告訴你還缺哪些資料。</p>
+        <a class="button button--small" href="{{ url_for('student.target_list') }}">選擇目標校系 →</a>
+      </section>
+      {% endif %}
     </aside>
   </div>
 </div>

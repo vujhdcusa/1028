@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "partials/nav.html" import masthead, footer with context %}
+{% set page_name = "student-targets" %}
+
+{% block title %}目標校系｜資管科智慧學習歷程系統{% endblock %}
+
+{% block navigation %}{{ masthead(user, "目標校系") }}{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-head">
+    <p class="kicker"><b>TARGET</b> · 二技技優甄審</p>
+    <h1>想申請哪裡？</h1>
+    <p>每張卡片都用你目前的資料，先幫你算好「如果申請這裡，準備度是多少」。選一個（或幾個）當目標，就能看到還缺什麼。</p>
+  </header>
+
+  {% if programs %}
+  <div class="program-cards">
+    {% for program in programs %}
+    {% set gap = gaps[program.id] %}
+    {% set chosen = program.id in selected %}
+    <article class="program-card{% if chosen %} program-card--selected{% endif %}" data-motion="reveal">
+      <p class="kicker"><b>{{ program.program_code }}</b> · {{ program.admission_category or "" }} · {{ program.admission_year }} 學年度</p>
+      <h3>{{ program.school_name }}<br>{{ program.department_name }}</h3>
+      <div class="mini-weights" role="img" aria-label="{% for item in gap['items'] %}{{ item.name }} {{ item.weight }}%{% if not loop.last %}、{% endif %}{% endfor %}">
+        {% for item in gap["items"] %}<span style="width: {{ item.weight }}%; --fill: {{ item.percent or 0 }}%;"><i></i></span>{% endfor %}
+      </div>
+      <p class="small muted">{% for item in gap["items"] %}{{ item.name }} {{ item.weight }}%{% if not loop.last %}／{% endif %}{% endfor %}</p>
+      <div class="program-card__ready">
+        {% if gap.readiness is not none %}<strong>{{ gap.readiness }}<small>%</small></strong><span class="muted small">你目前的準備度</span>{% else %}<span class="muted small">此校系以自傳等文件為主，需自行準備</span>{% endif %}
+      </div>
+      {% if chosen %}
+      <div class="record-card__actions">
+        <a class="button button--small" href="{{ url_for('student.target_gap', program_id=program.id) }}">看還缺什麼 →</a>
+        <form method="post" action="{{ url_for('student.target_remove', program_id=program.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--quiet" type="submit">取消目標</button></form>
+      </div>
+      {% else %}
+      <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="program_id" value="{{ program.id }}"><button class="button button--small button--line" type="submit">設為目標</button></form>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="paper-empty">目前還沒有公開的校系資料，請等系統管理者匯入。</p>
+  {% endif %}
+  <p class="muted small mt-1">校系資料整理自當年度二技技優甄審簡章；正式規定以簡章與各校系分則為準。準備度只依你已確認的資料計算，不代表錄取機率。</p>
+</div>
+{% endblock %}
+
+{% block footer %}{{ footer() }}{% endblock %}

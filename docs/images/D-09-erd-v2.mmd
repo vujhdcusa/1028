@@ -14,8 +14,8 @@ erDiagram
     USERS ||--o{ STUDENT_TARGETS : "選擇校系"
     ADMISSION_RULE_VERSIONS ||--o{ STUDENT_TARGETS : "被選擇"
     USERS ||--o{ LEARNING_PROFILE_OUTPUTS : "產出備審資料"
-    LEARNING_PROFILE_OUTPUTS ||--o{ PACKAGE_REVIEWS : "導師確認"
-    USERS ||--o{ PACKAGE_REVIEWS : "確認者"
+    USERS ||--o{ PACKAGE_REVIEWS : "請導師確認"
+    ADMISSION_RULE_VERSIONS ||--o{ PACKAGE_REVIEWS : "針對校系"
 
     USERS["USERS 使用者　　　"] {
         int id PK
@@ -30,7 +30,7 @@ erDiagram
         string class_name "班級"
     }
     CLASS_ADVISORS["CLASS_ADVISORS 導師班級　　　"] {
-        int id PK "待新增"
+        int id PK
         int teacher_id FK
         string class_name
         int school_year
@@ -77,7 +77,7 @@ erDiagram
         string external_url
     }
     ADMISSION_RULE_VERSIONS["ADMISSION_RULE_VERSIONS 校系與年度　　　"] {
-        int id PK "待新增"
+        int id PK
         string program_code "志願代碼"
         string school_name "學校"
         string department_name "科系"
@@ -89,7 +89,7 @@ erDiagram
         date checked_at "最後確認日期"
     }
     ADMISSION_RULE_ITEMS["ADMISSION_RULE_ITEMS 校系備審要求　　　"] {
-        int id PK "待新增"
+        int id PK
         int rule_version_id FK
         string source_item_name "簡章原始項目名稱"
         int weight_percent "加權百分比"
@@ -99,7 +99,7 @@ erDiagram
         bool is_required
     }
     STUDENT_TARGETS["STUDENT_TARGETS 學生目標校系　　　"] {
-        int id PK "待新增"
+        int id PK
         int student_id FK
         int rule_version_id FK
         datetime selected_at
@@ -111,9 +111,11 @@ erDiagram
         datetime created_at
     }
     PACKAGE_REVIEWS["PACKAGE_REVIEWS 導師確認紀錄　　　"] {
-        int id PK "待新增"
-        int output_id FK
-        int teacher_id FK
-        string result "confirmed needs_revision"
+        int id PK
+        int student_id FK
+        int rule_version_id FK "目標校系"
+        int teacher_id FK "確認的導師"
+        string status "pending confirmed needs_revision"
         string comment "修改建議"
+        int readiness_percent "送出時準備度"
     }

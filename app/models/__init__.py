@@ -20,6 +20,13 @@ from app.models.learning_profile import (
     SourceDocument,
 )
 from app.models.user import StudentProfile, User
+from app.models.admission import (
+    AdmissionProgram,
+    AdmissionRequirementItem,
+    ClassAdvisor,
+    PackageReview,
+    StudentTarget,
+)
 from app.models.p0_workbench import (
     ConsentRecord,
     PuzzlePiece,
@@ -67,4 +74,9 @@ __all__ = [
     "PublicSourceSnapshot",
     "PublicSourceChange",
     "PublicSourcePublication",
+    "AdmissionProgram",
+    "AdmissionRequirementItem",
+    "StudentTarget",
+    "ClassAdvisor",
+    "PackageReview",
 ]

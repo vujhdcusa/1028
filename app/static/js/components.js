@@ -77,3 +77,35 @@ document.querySelectorAll("[data-record-table]").forEach((table) => {
     output.value = JSON.stringify(rows);
   });
 });
+
+// ---------- 缺件比對：容器依序裝滿、數字往上跳、點容器看細節 ----------
+document.querySelectorAll("[data-gap-board]").forEach((board) => {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const vessels = [...board.querySelectorAll(".vessel")];
+  vessels.forEach((vessel, index) => vessel.style.setProperty("--delay", reduce ? "0s" : `${index * 0.18}s`));
+  requestAnimationFrame(() => vessels.forEach((vessel) => vessel.classList.add("is-filled")));
+
+  const panels = [...document.querySelectorAll("[data-gap-detail]")];
+  const open = (vessel) => {
+    vessels.forEach((v) => v.setAttribute("aria-expanded", String(v === vessel)));
+    panels.forEach((panel) => { panel.hidden = panel.id !== vessel.getAttribute("aria-controls"); });
+  };
+  vessels.forEach((vessel) => vessel.addEventListener("click", () => open(vessel)));
+  // 先打開「最需要補」的那一格：加權最大、還沒滿的項目
+  const first = vessels.find((v) => v.dataset.priority === "true") || vessels[0];
+  if (first) open(first);
+});
+
+document.querySelectorAll("[data-count]").forEach((el) => {
+  const target = Number(el.dataset.count);
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce || Number.isNaN(target)) { el.textContent = target; return; }
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min((now - start) / 1400, 1);
+    el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3)));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  el.textContent = "0";
+  requestAnimationFrame(step);
+});

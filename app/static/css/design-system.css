@@ -431,3 +431,92 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
   .scatter { min-height: 0; aspect-ratio: 1 / 1.15; }
   .chip { width: 30%; }
 }
+
+/* =========================================================
+   主線後半：目標校系、缺件比對、導師確認
+   ========================================================= */
+.program-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+.program-card { position: relative; display: grid; gap: .8rem; padding: 1.25rem; background: var(--sheet); border: 1.5px solid var(--ink); transition: transform .2s ease, box-shadow .2s ease; }
+.program-card:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 var(--accent); }
+.program-card--selected { box-shadow: 6px 6px 0 var(--ink); }
+.program-card h3 { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 900; }
+.program-card__ready { display: flex; align-items: baseline; gap: .4rem; }
+.program-card__ready strong { font-family: var(--font-serif); font-size: 2.2rem; font-weight: 900; line-height: 1; }
+.mini-weights { display: flex; height: 10px; border: 1px solid var(--ink); }
+.mini-weights span { height: 100%; border-right: 1px solid var(--ink); position: relative; overflow: hidden; background: var(--paper-deep); }
+.mini-weights span:last-child { border-right: 0; }
+.mini-weights span i { position: absolute; inset: 0 auto 0 0; width: var(--fill); background: var(--ink); }
+
+/* 目標校系切換 */
+.target-switch { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+.target-switch a { padding: .35rem .8rem; border: 1.5px solid var(--ink); text-decoration: none; font-size: .88rem; background: var(--sheet); }
+.target-switch a[aria-current="page"] { background: var(--ink); color: var(--sheet); }
+.target-switch .add { border-style: dashed; }
+
+/* 準備度大數字 */
+.readiness { display: grid; justify-items: end; }
+.readiness strong { font-family: var(--font-serif); font-weight: 900; font-size: clamp(3.5rem, 9vw, 6rem); line-height: .9; }
+.readiness strong small { font-size: .4em; }
+.readiness > span { font-family: var(--font-mono); font-size: .78rem; color: var(--muted); }
+
+/* 缺件比對：每個評分項目是一個容器，寬度 = 加權，裝滿程度 = 已有資料比例 */
+.gap-board { display: flex; gap: .6rem; align-items: stretch; min-height: 300px; }
+.vessel { position: relative; flex: var(--weight) 1 0; min-width: 92px; display: flex; flex-direction: column; justify-content: space-between; padding: .8rem; border: 2px solid var(--ink); background: var(--sheet); text-align: left; cursor: pointer; overflow: hidden; isolation: isolate; font: inherit; color: inherit; transition: transform .2s ease, box-shadow .2s ease; }
+.vessel:hover, .vessel[aria-expanded="true"] { transform: translateY(-4px); box-shadow: 0 6px 0 var(--ink); }
+.vessel::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; z-index: -1; height: 0; background: var(--fill-color, var(--accent)); transition: height 1.4s cubic-bezier(.2, .8, .2, 1) var(--delay, 0s); }
+.vessel.is-filled::before { height: var(--fill); }
+.vessel::after { content: ""; position: absolute; left: 0; right: 0; bottom: var(--fill); height: 2px; background: var(--ink); opacity: 0; transition: opacity .3s ease 1.2s; }
+.vessel.is-filled::after { opacity: .6; }
+.vessel--complete { --fill-color: #a9d7cd; }
+.vessel--partial { --fill-color: #f2d58f; }
+.vessel--missing { --fill-color: transparent; border-style: dashed; animation: wait 2.4s ease-in-out infinite; }
+.vessel--prepare { background: repeating-linear-gradient(-45deg, var(--sheet) 0 8px, var(--paper-deep) 8px 16px); border-style: dashed; }
+@keyframes wait { 50% { border-color: var(--danger); } }
+.vessel__weight { font-family: var(--font-serif); font-weight: 900; font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1; }
+.vessel__name { font-weight: 700; font-size: .95rem; }
+.vessel__state { font-family: var(--font-mono); font-size: .75rem; }
+.gap-legend { display: flex; flex-wrap: wrap; gap: 1rem; margin: .8rem 0 0; font-size: .82rem; color: var(--muted); }
+.gap-legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: .35rem; vertical-align: -1px; border: 1.5px solid var(--ink); background: var(--c); }
+
+.gap-detail { margin-top: 1rem; padding: 1.25rem; background: var(--sheet); border: 1.5px solid var(--ink); }
+.gap-detail[hidden] { display: none; }
+.piece-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .6rem; list-style: none; margin: .8rem 0 0; padding: 0; }
+.piece { display: grid; gap: .15rem; padding: .7rem .8rem; border: 1.5px solid var(--ink); background: var(--sheet); }
+.piece b::before { margin-right: .35rem; }
+.piece--have { background: var(--ok-soft); }
+.piece--have b::before { content: "✓"; color: var(--ok); }
+.piece--missing { border-style: dashed; animation: pop 1.6s ease-in-out infinite; }
+.piece--missing b::before { content: "＋"; color: var(--danger); }
+.piece--doc { background: repeating-linear-gradient(-45deg, var(--sheet) 0 8px, var(--paper-deep) 8px 16px); }
+.piece--doc b::before { content: "✎"; }
+.piece small { color: var(--muted); }
+@keyframes pop { 50% { transform: translateY(-2px); box-shadow: 0 3px 0 var(--danger); } }
+
+/* 備審目錄：依加權排序 */
+.toc { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+.toc li { counter-increment: toc; display: grid; grid-template-columns: 2.4rem 1fr 120px; gap: .75rem; align-items: center; padding: .55rem 0; border-bottom: 1px solid var(--line); }
+.toc li::before { content: counter(toc, decimal-leading-zero); font-family: var(--font-mono); font-size: .8rem; color: var(--muted); }
+.toc .mono { font-size: .72rem; color: var(--muted); }
+.toc__bar { height: 8px; background: var(--paper-deep); position: relative; }
+.toc__bar i { position: absolute; inset: 0 auto 0 0; width: calc(var(--w) * 1%); background: var(--ink); transition: width 1s ease; }
+
+/* 導師確認狀態 */
+.review-box { display: grid; gap: .8rem; }
+.review-box blockquote { margin: 0; padding: .8rem 1rem; border-left: 4px solid var(--warn); background: var(--warn-soft); }
+.decision-form { display: grid; gap: .6rem; }
+.decision-form .choice-group { grid-template-columns: 1fr 1fr; }
+
+/* 首頁「我的五年」的目標校系卡 */
+.target-mini { display: grid; gap: .6rem; }
+.target-mini strong { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 900; line-height: 1; }
+
+@media (max-width: 760px) {
+  .gap-board { flex-direction: column; min-height: 0; }
+  .vessel { min-height: 120px; flex-basis: auto; }
+  .toc li { grid-template-columns: 2rem 1fr; }
+  .toc__bar { grid-column: 2; }
+}
+.check-row { display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .85rem; font-weight: 400; }
+.check-row label { display: inline-flex; align-items: center; gap: .3rem; }
+.admin-item-form fieldset { grid-column: 1 / -1; }
+.check-row label { white-space: nowrap; }

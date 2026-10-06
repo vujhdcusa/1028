@@ -20,6 +20,7 @@ def create_app(config_overrides=None):
     from app.routes.student import student_bp
     from app.routes.review import review_bp
     from app.routes.staff import staff_bp
+    from app.routes.teacher import teacher_bp
     from app import models
 
     app.register_blueprint(main_bp)
@@ -27,5 +28,6 @@ def create_app(config_overrides=None):
     app.register_blueprint(student_bp)
     app.register_blueprint(review_bp)
     app.register_blueprint(staff_bp)
+    app.register_blueprint(teacher_bp)
 
     return app

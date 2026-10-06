@@ -5,8 +5,9 @@
 然後打開 http://127.0.0.1:5000
 
 展示帳號（皆為假資料）：
-    學生  111534105 / demo1234
-    導師  teacher01 / demo1234
+    學生  111534105 / demo1234（王小明，還沒選目標校系）
+    學生  111534107 / demo1234（林小美，已送導師確認）
+    導師  teacher01 / demo1234（負責資管科三甲）
     管理者 admin     / demo1234
 每次啟動都會重建 instance/demo.db。
 """
@@ -21,15 +22,20 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
+from app.services.admission_service import import_seed_programs  # noqa: E402
+from app.services.gap_service import analyze_gap  # noqa: E402
 from app.models import (  # noqa: E402
+    AdmissionProgram,
+    ClassAdvisor,
     CredentialRecord,
+    PackageReview,
+    StudentTarget,
     LearningCourseRecord,
     Portfolio,
     StudentProfile,
     User,
 )
 
-DEMO_DB = PROJECT_ROOT / "instance" / "demo.db"
 DEMO_PASSWORD = "demo1234"
 
 
@@ -67,18 +73,41 @@ def seed():
                                  semester=semester, title=title, description=description))
     db.session.commit()
 
+    # 主線後半：校系資料、導師班級，以及一位已送導師確認的同學
+    import_seed_programs()
+    db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name="資管科三甲", school_year=115))
+    classmate = User(username="111534107", display_name="林小美", role="student")
+    classmate.set_password(DEMO_PASSWORD)
+    db.session.add(classmate)
+    db.session.flush()
+    db.session.add(StudentProfile(user_id=classmate.id, student_no="111534107", class_name="資管科三甲", admission_year=113))
+    db.session.add(LearningCourseRecord(student_id=classmate.id, school_year=1, semester="上", course_name="計算機概論",
+                                        normalized_course_name="計算機概論", credits=3, score=90))
+    db.session.add(CredentialRecord(student_id=classmate.id, credential_name="電腦軟體應用丙級", level="丙級",
+                                    issuing_organization="勞動部", issue_date=date(2025, 4, 12)))
+    db.session.add(Portfolio(student_id=classmate.id, category="competition", school_year=2, semester=2,
+                             title="全國商業類技藝競賽 佳作", description="電腦軟體應用組。"))
+    program = AdmissionProgram.query.filter_by(program_code="208003").one()
+    db.session.add(StudentTarget(student_id=classmate.id, rule_version_id=program.id))
+    db.session.flush()
+    db.session.add(PackageReview(student_id=classmate.id, rule_version_id=program.id, status="pending",
+                                 readiness_percent=analyze_gap(classmate, program)["readiness"]))
+    db.session.commit()
+
 
 def main():
-    DEMO_DB.parent.mkdir(parents=True, exist_ok=True)
-    DEMO_DB.unlink(missing_ok=True)
+    port = int(os.getenv("DEMO_PORT", "5000"))
+    # 不同埠號用不同資料庫檔，可以同時開兩個展示網站
+    demo_db = PROJECT_ROOT / "instance" / ("demo.db" if port == 5000 else f"demo-{port}.db")
+    demo_db.parent.mkdir(parents=True, exist_ok=True)
+    demo_db.unlink(missing_ok=True)
     app = create_app({
-        "SQLALCHEMY_DATABASE_URI": f"sqlite:///{DEMO_DB.as_posix()}",
+        "SQLALCHEMY_DATABASE_URI": f"sqlite:///{demo_db.as_posix()}",
         "UPLOAD_FOLDER": str(PROJECT_ROOT / "instance" / "demo-uploads"),
     })
     with app.app_context():
         db.create_all()
         seed()
-    port = int(os.getenv("DEMO_PORT", "5000"))
     print(f"展示網站：http://127.0.0.1:{port}  （學生 111534105 / {DEMO_PASSWORD}）")
     app.run(port=port, debug=False)
 

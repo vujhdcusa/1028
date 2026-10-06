@@ -3,7 +3,10 @@ from functools import wraps
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
 from app.extensions import db
-from app.models import PortfolioSubmission, SourceDocument, SubmissionAssignment, TeacherReviewFeedback, User
+from app.models import PortfolioSubmission, SourceDocument, StudentTarget, SubmissionAssignment, TeacherReviewFeedback, User
+from app.services.gap_service import analyze_gap
+from app.services.package_service import latest_review
+from app.services.teacher_scope import advised_classes, students_for_teacher
 from app.content.five_year_plan import FIVE_YEAR_PLAN, NEXT_STOPS
 from app.services.admission_sample import load_sample_programs
 from app.services.journey_service import CATEGORY_KEYS, CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
@@ -95,10 +98,16 @@ def role_required(*allowed_roles):
 @role_required("student")
 def student_dashboard():
     user = get_current_user()
+    journey = build_journey(user)
+    targets = [
+        {"program": target.program, "readiness": analyze_gap(user, target.program, journey)["readiness"]}
+        for target in StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
+    ]
     return render_template(
         "student_home.html",
         user=user,
-        journey=build_journey(user),
+        journey=journey,
+        targets=targets,
         category_keys=CATEGORY_KEYS,
         category_labels=CATEGORY_LABELS,
         experience_categories=EXPERIENCE_CATEGORIES,
@@ -115,11 +124,28 @@ def teacher_dashboard():
         .order_by(SubmissionAssignment.assigned_at.desc())
         .all()
     )
+    students = students_for_teacher(user)
+    rows = []
+    for student in students:
+        journey = build_journey(student)
+        targets = StudentTarget.query.filter_by(student_id=student.id).all()
+        reviews = [latest_review(student, target.program) for target in targets]
+        rows.append({
+            "student": student,
+            "totals": journey["totals"],
+            "missing": len(journey["missing_categories"]),
+            "targets": [target.program for target in targets],
+            "pending": sum(1 for review in reviews if review and review.status == "pending"),
+        })
     return render_template(
         "dashboard.html",
         title="教師工作台",
         user=user,
         teacher_assignments=assignments,
+        classes=advised_classes(user),
+        class_rows=rows,
+        category_keys=CATEGORY_KEYS,
+        category_labels=CATEGORY_LABELS,
     )
 
 

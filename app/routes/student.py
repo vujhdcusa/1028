@@ -8,13 +8,16 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 
 from app.extensions import db
 from app.models import (
+    AdmissionProgram,
     CredentialRecord,
     DocumentExtraction,
     LearningCourseRecord,
     LearningProfileOutput,
+    PackageReview,
     Portfolio,
     PortfolioEvidence,
     SourceDocument,
+    StudentTarget,
 )
 from app.routes.main import get_current_user, role_required
 from app.services.portfolio_service import owned_portfolio, create_submission_snapshot
@@ -22,7 +25,10 @@ from app.security import validate_upload_filename
 from app.services.document_analysis_service import ALLOWED_DOCUMENT_TYPES, analyze_document
 from app.services.learning_profile_docx_service import output_to_docx_bytes
 from app.services.learning_profile_service import generate_learning_profile_outputs
-from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES
+from app.services.admission_service import published_programs
+from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
+from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
+from app.services.package_service import build_package_docx, latest_review
 
 
 student_bp = Blueprint("student", __name__)
@@ -410,3 +416,103 @@ def evidence_download(evidence_id):
     if not evidence.file_path or not Path(evidence.file_path).is_file():
         abort(404)
     return send_file(evidence.file_path, as_attachment=True, download_name=evidence.display_name)
+
+
+# ---------- 主線後半：目標校系、缺件比對、請導師確認、產出備審資料 ----------
+
+def _published_program_or_404(program_id):
+    program = db.session.get(AdmissionProgram, program_id)
+    if not program or program.status != "published":
+        abort(404)
+    return program
+
+
+def _selected_target_or_404(user, program_id):
+    program = _published_program_or_404(program_id)
+    if not StudentTarget.query.filter_by(student_id=user.id, rule_version_id=program.id).first():
+        abort(404)
+    return program
+
+
+@student_bp.get("/student/targets")
+@student_bp.post("/student/targets")
+@role_required("student")
+def target_list():
+    user = get_current_user()
+    if request.method == "POST":
+        try:
+            program = _published_program_or_404(int(request.form.get("program_id", "")))
+        except ValueError:
+            abort(400)
+        if not StudentTarget.query.filter_by(student_id=user.id, rule_version_id=program.id).first():
+            db.session.add(StudentTarget(student_id=user.id, rule_version_id=program.id))
+            db.session.commit()
+        return redirect(url_for("student.target_gap", program_id=program.id))
+    journey = build_journey(user)
+    selected = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id).all()}
+    programs = published_programs()
+    return render_template(
+        "student_targets.html",
+        user=user,
+        programs=programs,
+        selected=selected,
+        gaps={p.id: analyze_gap(user, p, journey) for p in programs},
+    )
+
+
+@student_bp.post("/student/targets/<int:program_id>/remove")
+@role_required("student")
+def target_remove(program_id):
+    user = get_current_user()
+    StudentTarget.query.filter_by(student_id=user.id, rule_version_id=program_id).delete()
+    db.session.commit()
+    return redirect(url_for("student.target_list"))
+
+
+@student_bp.get("/student/targets/<int:program_id>")
+@role_required("student")
+def target_gap(program_id):
+    user = get_current_user()
+    program = _selected_target_or_404(user, program_id)
+    journey = build_journey(user)
+    targets = StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
+    return render_template(
+        "student_gap.html",
+        user=user,
+        program=program,
+        gap=analyze_gap(user, program, journey),
+        chapters=chapter_order(program),
+        targets=[t.program for t in targets],
+        review=latest_review(user, program),
+        labels=ALL_LABELS,
+    )
+
+
+@student_bp.post("/student/targets/<int:program_id>/review")
+@role_required("student")
+def target_request_review(program_id):
+    user = get_current_user()
+    program = _selected_target_or_404(user, program_id)
+    review = latest_review(user, program)
+    if not review or review.status != "pending":
+        db.session.add(PackageReview(
+            student_id=user.id,
+            rule_version_id=program.id,
+            status="pending",
+            readiness_percent=analyze_gap(user, program)["readiness"],
+        ))
+        db.session.commit()
+    return redirect(url_for("student.target_gap", program_id=program.id))
+
+
+@student_bp.get("/student/targets/<int:program_id>/package.docx")
+@role_required("student")
+def target_package(program_id):
+    user = get_current_user()
+    program = _selected_target_or_404(user, program_id)
+    return send_file(
+        build_package_docx(user, program),
+        as_attachment=True,
+        download_name=f"備審資料-{program.school_name}-{program.department_name}.docx",
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )

@@ -1,7 +1,19 @@
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 
 from app.extensions import db
-from app.models import CourseRule, ProjectType, RequirementItem, RequirementTemplate, User
+from app.models import (
+    AdmissionProgram,
+    AdmissionRequirementItem,
+    ClassAdvisor,
+    CourseRule,
+    ProjectType,
+    RequirementItem,
+    RequirementTemplate,
+    StudentProfile,
+    User,
+)
+from app.services.admission_service import import_seed_programs
+from app.services.gap_service import ALL_LABELS
 from app.routes.main import get_current_user, role_required
 
 
@@ -179,3 +191,94 @@ def create_requirement_item(template_id):
     )
     db.session.commit()
     return redirect(url_for("admin.project_types"))
+
+
+# ---------- 校系備審要求（二技招生資料 Agent 第一階段：管理者維護） ----------
+
+@admin_bp.get("/admin/programs")
+@role_required("admin")
+def programs():
+    return render_template(
+        "admin_programs.html",
+        user=get_current_user(),
+        programs=AdmissionProgram.query.order_by(
+            AdmissionProgram.status, AdmissionProgram.admission_year.desc(), AdmissionProgram.program_code).all(),
+        mappable=list(ALL_LABELS.items()),
+        message=request.args.get("message"),
+    )
+
+
+@admin_bp.post("/admin/programs/import-seed")
+@role_required("admin")
+def programs_import_seed():
+    created = import_seed_programs()
+    return redirect(url_for("admin.programs", message=f"已匯入 {created} 個志願" if created else "種子資料都已存在，沒有新增"))
+
+
+@admin_bp.post("/admin/programs/<int:program_id>/toggle-status")
+@role_required("admin")
+def program_toggle_status(program_id):
+    program = db.session.get(AdmissionProgram, program_id)
+    if not program:
+        abort(404)
+    program.status = "candidate" if program.status == "published" else "published"
+    db.session.commit()
+    return redirect(url_for("admin.programs"))
+
+
+@admin_bp.post("/admin/program-items/<int:item_id>")
+@role_required("admin")
+def program_item_update(item_id):
+    item = db.session.get(AdmissionRequirementItem, item_id)
+    if not item:
+        abort(404)
+    categories = [key for key in request.form.getlist("categories") if key in ALL_LABELS]
+    if not categories:
+        abort(400, description="至少要對應一個資料類別")
+    status = request.form.get("mapping_status", "pending")
+    item.mapped_categories = ",".join(categories)
+    item.mapping_status = status if status in {"confirmed", "pending"} else "pending"
+    db.session.commit()
+    return redirect(url_for("admin.programs") + f"#program-{item.rule_version_id}")
+
+
+# ---------- 導師班級 ----------
+
+@admin_bp.get("/admin/classes")
+@admin_bp.post("/admin/classes")
+@role_required("admin")
+def classes():
+    error = None
+    if request.method == "POST":
+        teacher = db.session.get(User, request.form.get("teacher_id", type=int) or 0)
+        class_name = request.form.get("class_name", "").strip()
+        school_year = request.form.get("school_year", type=int)
+        if not teacher or teacher.role != "teacher":
+            error = "請選擇導師帳號"
+        elif not class_name or not school_year:
+            error = "請填寫班級與學年度"
+        elif ClassAdvisor.query.filter_by(teacher_id=teacher.id, class_name=class_name, school_year=school_year).first():
+            error = "這位導師已經負責這個班級"
+        else:
+            db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name=class_name, school_year=school_year))
+            db.session.commit()
+            return redirect(url_for("admin.classes"))
+    class_names = sorted({p.class_name for p in StudentProfile.query.all() if p.class_name})
+    return render_template(
+        "admin_classes.html",
+        user=get_current_user(),
+        advisors=ClassAdvisor.query.order_by(ClassAdvisor.school_year.desc(), ClassAdvisor.class_name).all(),
+        teachers=User.query.filter_by(role="teacher", is_active=True).order_by(User.display_name).all(),
+        class_names=class_names,
+        error=error,
+    ), (400 if error else 200)
+
+
+@admin_bp.post("/admin/classes/<int:advisor_id>/delete")
+@role_required("admin")
+def class_delete(advisor_id):
+    advisor = db.session.get(ClassAdvisor, advisor_id)
+    if advisor:
+        db.session.delete(advisor)
+        db.session.commit()
+    return redirect(url_for("admin.classes"))

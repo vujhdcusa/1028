@@ -11,15 +11,39 @@
 {% if user.role == "teacher" %}
 <section class="work-shell work-shell--wide" data-work-role="teacher">
   <header class="work-heading">
-    <div><p class="eyebrow">TEACHER · 工作台</p><h1>{{ user.display_name }} 老師</h1><p>這裡列出指派給你的審查項目。共同結論由科主任或科助登錄。</p></div>
-    <a class="button" href="{{ url_for('review.teacher_reviews') }}">查看全部審查 <span aria-hidden="true">→</span></a>
+    <div><p class="eyebrow">TEACHER · 工作台</p><h1>{{ user.display_name }} 老師</h1><p>{% if classes %}負責班級：{{ classes|join("、") }}。{% endif %}點學生姓名查看資料，確認備審內容或留下修改建議。</p></div>
   </header>
+  {% set pending_total = class_rows|sum(attribute="pending") %}
   <div class="work-metrics">
-    <article class="work-metric"><span>已指派審查</span><strong>{{ teacher_assignments|length }}</strong><small>件需要先閱讀與提供意見</small></article>
-    
+    <article class="work-metric"><span>本班學生</span><strong>{{ class_rows|length }}</strong><small>人</small></article>
+    <article class="work-metric"><span>等待你確認</span><strong>{{ pending_total }}</strong><small>份備審資料</small></article>
+    <article class="work-metric"><span>已選目標校系</span><strong>{{ class_rows|selectattr("targets")|list|length }}</strong><small>人</small></article>
   </div>
+  <section class="work-panel" data-class-roster>
+    <div class="work-panel__head"><div><h2>本班學生</h2><p>數字是各類資料筆數，空格代表還沒有資料。</p></div></div>
+    {% if class_rows %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>學號</th><th>姓名</th>{% for key in category_keys %}<th>{{ category_labels[key] }}</th>{% endfor %}<th>目標校系</th><th>待確認</th></tr></thead>
+        <tbody>
+          {% for row in class_rows %}
+          <tr>
+            <td class="mono">{{ row.student.student_profile.student_no }}</td>
+            <td><a href="{{ url_for('teacher.student_detail', student_id=row.student.id) }}"><b>{{ row.student.display_name }}</b></a></td>
+            {% for key in category_keys %}<td>{% if row.totals[key] %}{{ row.totals[key] }}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+            <td class="small">{% for program in row.targets %}{{ program.school_name|replace("國立", "") }}{{ program.department_name }}{% if not loop.last %}<br>{% endif %}{% else %}<span class="muted">未選</span>{% endfor %}</td>
+            <td>{% if row.pending %}<span class="tag tag--warn">{{ row.pending }} 份</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="work-empty"><strong>還沒有負責的班級。</strong><span>請系統管理者在「導師班級」設定。</span></p>
+    {% endif %}
+  </section>
   <section class="work-panel">
-    <div class="work-panel__head"><div><h2>最近指派</h2><p>先整理觀察，再交由共同流程完成結論。</p></div><a href="{{ url_for('review.teacher_reviews') }}">前往完整清單</a></div>
+    <div class="work-panel__head"><div><h2>專題審查指派</h2><p>專題共同審查流程（後續擴充）。</p></div><a href="{{ url_for('review.teacher_reviews') }}">前往完整清單</a></div>
     <ul class="work-list">
       {% for assignment in teacher_assignments[:4] %}
       <li><span class="work-list__index">{{ loop.index }}</span><div><strong>{{ assignment.submission.portfolio.title }}</strong><span>版本 {{ assignment.submission.version_no }} · {{ assignment.submission.portfolio.category }}</span></div><span class="queue-badge">待閱讀</span></li>
