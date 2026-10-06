@@ -48,7 +48,7 @@ def test_student_can_create_and_submit_own_portfolio_with_goal_snapshot(tmp_path
 
     client = app.test_client()
     login(client)
-    response = client.post("/student/portfolio", data={"title": "作品一", "category": "課程作品", "description": "說明"})
+    response = client.post("/student/portfolio", data={"title": "作品一", "category": "activity", "description": "說明"})
     assert response.status_code == 302
     with app.app_context():
         portfolio_id = Portfolio.query.order_by(Portfolio.id.desc()).first().id

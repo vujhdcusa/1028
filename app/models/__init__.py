@@ -11,7 +11,26 @@ from app.models.project import (
 )
 from app.models.submission import PortfolioGoalSnapshot, PortfolioSubmission, SubmissionEvidence
 from app.models.review import ProjectReviewResult, ProjectRevisionRecord, SubmissionAssignment, TeacherReviewFeedback
+from app.models.learning_profile import (
+    CourseRule,
+    CredentialRecord,
+    DocumentExtraction,
+    LearningCourseRecord,
+    LearningProfileOutput,
+    SourceDocument,
+)
 from app.models.user import StudentProfile, User
+from app.models.p0_workbench import (
+    ConsentRecord,
+    PuzzlePiece,
+    PuzzleEvidence,
+    EditableDraft,
+    ApiKeyMetadata,
+    PublicSource,
+    PublicSourceSnapshot,
+    PublicSourceChange,
+    PublicSourcePublication,
+)
 
 __all__ = [
     "AgentTask",
@@ -33,4 +52,19 @@ __all__ = [
     "TeacherReviewFeedback",
     "ProjectReviewResult",
     "ProjectRevisionRecord",
+    "SourceDocument",
+    "DocumentExtraction",
+    "LearningCourseRecord",
+    "CourseRule",
+    "CredentialRecord",
+    "LearningProfileOutput",
+    "ConsentRecord",
+    "PuzzlePiece",
+    "PuzzleEvidence",
+    "EditableDraft",
+    "ApiKeyMetadata",
+    "PublicSource",
+    "PublicSourceSnapshot",
+    "PublicSourceChange",
+    "PublicSourcePublication",
 ]

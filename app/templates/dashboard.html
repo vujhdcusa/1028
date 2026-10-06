@@ -1,81 +1,29 @@
 {% extends "base.html" %}
-{% set page_name = "student-dashboard" if user.role == "student" else "work-dashboard" %}
+{% from "partials/nav.html" import masthead with context %}
+{% set page_name = "work-dashboard" %}
+{% set nav_active = "工作台" if user.role == "teacher" else "待處理送件" %}
 
 {% block title %}{{ title }}｜資管科智慧學習歷程系統{% endblock %}
 
-{% block navigation %}
-<header class="workspace-header">
-  <nav class="workspace-nav" aria-label="系統導覽">
-    <a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark">IM</span>資管科學習歷程</a>
-    <div class="workspace-nav__links">
-      {% if user.role == "student" %}<a href="{{ url_for('main.student_dashboard') }}">我的路徑</a><a href="{{ url_for('student.portfolio_list') }}">我的成果</a>{% elif user.role == "teacher" %}<a href="{{ url_for('main.teacher_dashboard') }}">工作台</a><a href="{{ url_for('review.teacher_reviews') }}">我的審查</a>{% elif user.role == "staff" %}<a href="{{ url_for('main.staff_dashboard') }}">待處理送件</a>{% endif %}
-      <form method="post" action="{{ url_for('main.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit">登出</button></form>
-    </div>
-  </nav>
-</header>
-{% endblock %}
+{% block navigation %}{{ masthead(user, nav_active) }}{% endblock %}
 
 {% block content %}
-{% if user.role == "student" %}
-<div class="student-shell">
-  <section class="student-welcome">
-    <div class="student-welcome__copy" data-motion="reveal">
-      <p class="eyebrow" style="color:#9fb3ff">今天想留住哪一件事？</p>
-      <h1>{{ user.display_name }}，你的故事正在慢慢成形。</h1>
-      <p>不用一次把五年補齊。先把眼前完成的作品、活動或一點心得放進來，未來回頭看會很有感。</p>
-      <a class="button" href="{{ url_for('student.portfolio_list') }}">新增一塊拼圖 <span aria-hidden="true">+</span></a>
-    </div>
-    <aside class="student-progress" data-motion="reveal">
-      <h2>目前已留下</h2>
-      <strong>{{ portfolio_count }}</strong>
-      <p>件學習成果。每一件都能幫你把下一步想得更清楚。</p>
-    </aside>
-  </section>
-
-  <section class="student-grid">
-    <article class="student-card" data-motion="reveal">
-      <div class="student-card__head"><div><h2>我的五年路線</h2><p>不用趕，走到哪裡就把哪裡點亮。</p></div><span class="status-pill">正在累積</span></div>
-      <div class="student-path" data-journey-path>
-        <div class="student-path__item"><span class="student-path__dot">起點</span><b>探索</b><span>先記下想做的事</span></div>
-        <div class="student-path__item"><span class="student-path__dot">現在</span><b>練習</b><span>留住每次實作</span></div>
-        <div class="student-path__item"><span class="student-path__dot">下一步</span><b>協作</b><span>專題與團隊經驗</span></div>
-        <div class="student-path__item"><span class="student-path__dot">未來</span><b>延伸</b><span>挑戰新舞台</span></div>
-        <div class="student-path__item"><span class="student-path__dot">出發</span><b>選擇</b><span>往想去的地方走</span></div>
-      </div>
-    </article>
-
-    <aside class="student-card" data-motion="reveal">
-      <div class="student-card__head"><div><h2>接下來可以補的拼圖</h2><p>選一件最有感的就好。</p></div></div>
-      <div class="next-piece">
-        <div class="next-piece__item"><span class="next-piece__icon" aria-hidden="true">⌘</span><div><b>課程作品</b><span>把你做出的東西留成紀錄。</span></div></div>
-        <div class="next-piece__item"><span class="next-piece__icon" aria-hidden="true">✦</span><div><b>專題成果</b><span>寫下你在團隊裡完成了什麼。</span></div></div>
-        <div class="next-piece__item"><span class="next-piece__icon" aria-hidden="true">↗</span><div><b>競賽或證照</b><span>挑戰過，也值得被好好收著。</span></div></div>
-      </div>
-    </aside>
-  </section>
-
-  <section class="student-advice" data-motion="reveal">
-    <div><strong>小提醒：作品不必完美，說清楚你做了什麼就很有力量。</strong><p>先放上標題和一句描述，之後想起更多細節再回來補。</p></div>
-    <a class="button" href="{{ url_for('student.portfolio_list') }}">管理我的成果</a>
-  </section>
-</div>
-{% elif user.role == "teacher" %}
+{% if user.role == "teacher" %}
 <section class="work-shell work-shell--wide" data-work-role="teacher">
   <header class="work-heading">
-    <div><p class="eyebrow">Teacher workspace</p><h1>{{ user.display_name }}，今天先看需要你的地方。</h1><p>這裡只放指派給你的審查項目；共同結論會由科辦統一登錄。</p></div>
+    <div><p class="eyebrow">TEACHER · 工作台</p><h1>{{ user.display_name }} 老師</h1><p>這裡列出指派給你的審查項目。共同結論由科主任或科助登錄。</p></div>
     <a class="button" href="{{ url_for('review.teacher_reviews') }}">查看全部審查 <span aria-hidden="true">→</span></a>
   </header>
   <div class="work-metrics">
     <article class="work-metric"><span>已指派審查</span><strong>{{ teacher_assignments|length }}</strong><small>件需要先閱讀與提供意見</small></article>
-    <article class="work-metric"><span>今天的重點</span><strong>{% if teacher_assignments %}先看第一件{% else %}暫時清空{% endif %}</strong><small>有新指派會出現在這裡</small></article>
-    <article class="work-metric"><span>審查原則</span><strong>先給方向</strong><small>用具體回饋，讓學生知道怎麼補強</small></article>
+    
   </div>
   <section class="work-panel">
     <div class="work-panel__head"><div><h2>最近指派</h2><p>先整理觀察，再交由共同流程完成結論。</p></div><a href="{{ url_for('review.teacher_reviews') }}">前往完整清單</a></div>
     <ul class="work-list">
       {% for assignment in teacher_assignments[:4] %}
       <li><span class="work-list__index">{{ loop.index }}</span><div><strong>{{ assignment.submission.portfolio.title }}</strong><span>版本 {{ assignment.submission.version_no }} · {{ assignment.submission.portfolio.category }}</span></div><span class="queue-badge">待閱讀</span></li>
-      <li class="work-feedback-form"><form method="post" action="{{ url_for('review.teacher_feedback', submission_id=assignment.submission_id) }}"><label>給科辦參考的意見<textarea name="comment" required placeholder="例如：作品架構完整，建議補上資料模型圖與操作畫面。"></textarea></label><button class="button" type="submit">送出意見</button></form></li>
+      <li class="work-feedback-form"><form method="post" action="{{ url_for('review.teacher_feedback', submission_id=assignment.submission_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>給科辦參考的意見<textarea name="comment" required placeholder="例如：作品架構完整，建議補上資料模型圖與操作畫面。"></textarea></label><button class="button" type="submit">送出意見</button></form></li>
       {% else %}
       <li class="work-empty"><strong>目前沒有新的審查項目。</strong><span>有指派進來時，會在這裡提醒你。</span></li>
       {% endfor %}
@@ -85,13 +33,12 @@
 {% elif user.role == "staff" %}
 <section class="work-shell work-shell--wide" data-work-role="staff" data-work-queue>
   <header class="work-heading">
-    <div><p class="eyebrow">Office workspace</p><h1>{{ user.display_name }}，送件都集中在這裡。</h1><p>先處理已送審的成果，再登錄共同結論。補正時記得留下一句學生看得懂的說明。</p></div>
+    <div><p class="eyebrow">OFFICE · 待處理送件</p><h1>待處理送件</h1><p>已送審的成果會列在這裡。登錄共同結論時，請寫下學生看得懂的補正說明。</p></div>
     <span class="queue-badge queue-badge--strong">{{ staff_pending_submissions|length }} 件待處理</span>
   </header>
   <div class="work-metrics">
     <article class="work-metric"><span>待登錄結論</span><strong>{{ staff_pending_submissions|length }}</strong><small>目前狀態為已送審</small></article>
-    <article class="work-metric"><span>處理方式</span><strong>逐件確認</strong><small>核可、補正與退件都有記錄</small></article>
-    <article class="work-metric"><span>給學生的話</span><strong>說清楚就好</strong><small>讓下一步不需要猜</small></article>
+    
   </div>
   <section class="work-panel">
     <div class="work-panel__head"><div><h2>已送審成果</h2><p>提交共同結論後，系統會同步更新該筆送件狀態。</p></div></div>

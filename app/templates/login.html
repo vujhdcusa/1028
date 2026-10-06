@@ -1,22 +1,36 @@
 {% extends "base.html" %}
+{% from "partials/nav.html" import masthead with context %}
 {% set page_name = "login" %}
 
 {% block title %}登入｜資管科智慧學習歷程系統{% endblock %}
 
+{% block navigation %}{{ masthead() }}{% endblock %}
+
 {% block content %}
-<section class="auth-shell">
-  <div class="surface" data-motion="reveal">
-    <p class="eyebrow">Welcome back</p>
-    <h1>回來把你的路，<br>再往前放一點。</h1>
-    <p class="muted">登入後就能查看自己的學習路徑，或依帳號權限處理需要完成的工作。</p>
-    {% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
-    <form method="post">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="field">帳號 <input name="username" autocomplete="username" required></label>
-      <label class="field">密碼 <input name="password" type="password" autocomplete="current-password" required></label>
-      <button class="button" type="submit">登入系統 <span aria-hidden="true">→</span></button>
-    </form>
-    <p><a href="{{ url_for('main.index') }}">← 回到系統介紹</a></p>
+<section class="auth">
+  <div class="auth__side">
+    <p class="kicker">STUDENT · TEACHER · ADMIN</p>
+    <div>
+      <h1>歡迎回來。<br>上次整理到哪裡了？</h1>
+      <p class="lead-gap">學生、導師與管理者都從這裡登入，系統會依帳號帶你到自己的頁面。</p>
+    </div>
+    <div class="auth__years" aria-hidden="true">
+      {% for n in range(1, 6) %}<span style="--y: var(--year-{{ n }});"></span>{% endfor %}
+    </div>
+  </div>
+  <div class="auth__form">
+    <div class="auth__card" data-motion="reveal">
+      <p class="kicker">LOGIN</p>
+      <h2>登入系統</h2>
+      {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
+      <form method="post" class="form-stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="field">帳號 <small>學生請輸入學號</small><input name="username" autocomplete="username" required></label>
+        <label class="field">密碼<input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="button" type="submit">登入 →</button>
+      </form>
+      <p class="muted small mt-1">展示用帳號皆為測試資料，密碼不得使用真實身分證字號。</p>
+    </div>
   </div>
 </section>
 {% endblock %}

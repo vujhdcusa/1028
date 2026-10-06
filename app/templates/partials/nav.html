@@ -1,0 +1,43 @@
+{# 共用刊頭導覽。用法：{% from "partials/nav.html" import masthead %}{{ masthead(user, "我的五年") }} #}
+{% macro masthead(user=None, active="") %}
+{% set links = {
+  "student": [("我的五年", url_for("main.student_dashboard")), ("成績與證照", url_for("student.learning_profile")), ("活動與經歷", url_for("student.portfolio_list"))],
+  "teacher": [("工作台", url_for("main.teacher_dashboard")), ("我的審查", url_for("review.teacher_reviews"))],
+  "staff": [("待處理送件", url_for("main.staff_dashboard"))],
+  "admin": [("系統總覽", url_for("main.admin_dashboard")), ("帳號管理", url_for("admin.accounts")), ("專題規則", url_for("admin.project_types")), ("課程規則", url_for("admin.course_rules"))],
+} %}
+<header class="masthead">
+  <div class="masthead__inner">
+    <a class="brand" href="{{ url_for('main.index') }}">
+      <span class="brand__mark" aria-hidden="true">IM</span>
+      <span>資管科學習歷程</span>
+      <span class="brand__issue">康寧大學 · 資訊管理科五專</span>
+    </a>
+    <nav class="masthead__links" aria-label="主要導覽">
+      {% if user %}
+        {% for label, href in links.get(user.role, []) %}
+        <a href="{{ href }}"{% if label == active %} aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+        <span class="masthead__user">{{ user.display_name }}</span>
+        <form method="post" action="{{ url_for('main.logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="button button--small button--quiet" type="submit">登出</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('main.index') }}#route">五年路徑</a>
+        <a href="{{ url_for('main.index') }}#agent">校系資料</a>
+        <a class="button button--small" href="{{ url_for('main.login') }}">登入</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+{% endmacro %}
+
+{% macro footer() %}
+<footer class="footer">
+  <div class="footer__inner">
+    <span>資管科智慧學習歷程系統 · 康寧大學資訊管理科畢業專題</span>
+    <span class="mono">展示資料皆為測試資料</span>
+  </div>
+</footer>
+{% endmacro %}

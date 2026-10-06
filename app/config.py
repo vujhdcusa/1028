@@ -29,9 +29,15 @@ class Config:
     MAX_CONTENT_LENGTH = max_mb * 1024 * 1024
     
     AI_ENABLED = os.getenv("AI_ENABLED", "false").lower() == "true"
+    DOCUMENT_ANALYSIS_PROVIDER = os.getenv("DOCUMENT_ANALYSIS_PROVIDER", "fake")
     CSRF_ENABLED = os.getenv("CSRF_ENABLED", "true").lower() == "true"
     ALLOWED_UPLOAD_EXTENSIONS = {
         value.strip().lower()
         for value in os.getenv("ALLOWED_UPLOAD_EXTENSIONS", "pdf,png,jpg,jpeg,doc,docx,odt,txt").split(",")
+        if value.strip()
+    }
+    LEARNING_PROFILE_ALLOWED_EXTENSIONS = {
+        value.strip().lower()
+        for value in os.getenv("LEARNING_PROFILE_ALLOWED_EXTENSIONS", "pdf,png,jpg,jpeg").split(",")
         if value.strip()
     }

@@ -1,49 +1,93 @@
 {% extends "base.html" %}
+{% from "partials/nav.html" import masthead, footer with context %}
+{% from "partials/record_fields.html" import record_fields %}
 {% set page_name = "student-portfolio" %}
+{% set slot_colors = {"activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
+{% set semester_labels = {1: "上學期", 2: "下學期"} %}
 
-{% block title %}我的成果｜資管科智慧學習歷程系統{% endblock %}
+{% block title %}活動與經歷｜資管科智慧學習歷程系統{% endblock %}
 
-{% block navigation %}
-<header class="workspace-header">
-  <nav class="workspace-nav" aria-label="系統導覽">
-    <a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark">IM</span>資管科學習歷程</a>
-    <div class="workspace-nav__links">
-      <a href="{{ url_for('main.student_dashboard') }}">我的路徑</a>
-      <a href="{{ url_for('student.portfolio_list') }}">我的成果</a>
-      <form method="post" action="{{ url_for('main.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit">登出</button></form>
-    </div>
-  </nav>
-</header>
-{% endblock %}
+{% block navigation %}{{ masthead(user, "活動與經歷") }}{% endblock %}
 
 {% block content %}
-<section class="form-shell">
-  <div class="surface" data-motion="reveal">
-    <p class="eyebrow">My pieces</p>
-    <h1>把剛完成的事，先放進來。</h1>
-    <p class="muted">名稱先寫清楚就好；描述想起來再慢慢補。這不是交作業的壓力，是替未來的自己留線索。</p>
-    {% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}
-    <form method="post">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="field">成果名稱 <input name="title" placeholder="例如：校園活動報名系統" required></label>
-      <label class="field">成果類型 <input name="category" placeholder="例如：課程作品、專題、競賽" required></label>
-      <label class="field">一句描述（選填） <textarea name="description" placeholder="你做了什麼、學到什麼，想到哪裡寫到哪裡。"></textarea></label>
-      <button class="button" type="submit">新增這塊拼圖 <span aria-hidden="true">+</span></button>
-    </form>
-  </div>
+<div class="page">
+  <header class="page-head">
+    <p class="kicker"><b>03–06</b> · 活動、競賽、服務學習、幹部經歷</p>
+    <h1>活動與經歷</h1>
+    <p>成績與證照之外的經歷，自己新增在這裡。填上年級，就會自動放進「我的五年」對應的資料夾。</p>
+  </header>
 
-  <section class="surface" style="margin-top:1.25rem" data-motion="reveal">
-    <div class="student-card__head"><div><p class="eyebrow">Archive</p><h2>我已經留下的成果</h2><p>送出前可以繼續補充，準備好再送審。</p></div></div>
-    <ul class="portfolio-list">
-      {% for portfolio in portfolios %}
-      <li>
-        <div class="student-card__head"><div><strong>{{ portfolio.title }}</strong><p>{{ portfolio.category }} · {{ portfolio.status }}</p></div><div><a class="button button--quiet" href="{{ url_for('student.portfolio_edit', portfolio_id=portfolio.id) }}">編輯</a><form method="post" action="{{ url_for('student.portfolio_submit', portfolio_id=portfolio.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button" type="submit">送出</button></form></div></div>
-        {% if portfolio.description %}<p class="muted">{{ portfolio.description }}</p>{% endif %}
-      </li>
-      {% else %}
-      <li><strong>第一塊拼圖還在等你。</strong><p class="muted">可以從最近做完、最想被記住的一件事開始。</p></li>
+  <div class="split split--form-first">
+    <section class="sheet sticky" id="form" aria-labelledby="form-title">
+      <div class="sheet__head"><h2 id="form-title">新增一筆</h2><span class="kicker">NEW</span></div>
+      {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
+      {% if request.args.get("added") %}<p class="notice mb-1" role="status">已新增一筆{{ category_labels.get(request.args.get("added"), "") }}。</p>{% endif %}
+      <form method="post" class="form-stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {{ record_fields(categories, category_labels, form) }}
+        <button class="button" type="submit">新增</button>
+      </form>
+    </section>
+
+    <div>
+      {% for key in categories %}
+      {% set records = grouped[key] %}
+      <section class="record-group" style="--slot: {{ slot_colors[key] }};" aria-labelledby="group-{{ key }}">
+        <div class="record-group__head">
+          <h2 id="group-{{ key }}">{{ category_labels[key] }}</h2>
+          <span class="kicker">{{ records|length }} 筆</span>
+        </div>
+        {% if records %}
+        <div class="record-cards">
+          {% for record in records %}
+          <article class="record-card">
+            <div class="record-card__meta">
+              {% if record.school_year %}<span class="tag tag--info">{% if record.school_year <= 5 %}專{{ "一二三四五"[record.school_year - 1] }}{% else %}{{ record.school_year }} 學年度{% endif %}</span>{% else %}<span class="tag tag--warn">未填年級</span>{% endif %}
+              {% if record.semester %}<span class="tag">{{ semester_labels.get(record.semester) }}</span>{% endif %}
+            </div>
+            <h3>{{ record.title }}</h3>
+            {% if record.description %}<p>{{ record.description }}</p>{% endif %}
+            {% if record.evidence_items %}
+            <ul class="evidence-list">
+              {% for evidence in record.evidence_items %}<li><a href="{{ url_for('student.evidence_download', evidence_id=evidence.id) }}">{{ evidence.display_name }}</a></li>{% endfor %}
+            </ul>
+            {% endif %}
+            <details>
+              <summary>上傳佐證（照片、證明）</summary>
+              <form method="post" action="{{ url_for('student.evidence_upload', portfolio_id=record.id) }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input class="input" type="file" name="file" required>
+                <button class="button button--small" type="submit">上傳</button>
+              </form>
+            </details>
+            <div class="record-card__actions">
+              <a class="button button--small button--line" href="{{ url_for('student.portfolio_edit', portfolio_id=record.id) }}">編輯</a>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <a class="paper-empty" href="#form">還沒有{{ category_labels[key] }}。用左邊的表單新增第一筆。</a>
+        {% endif %}
+      </section>
       {% endfor %}
-    </ul>
-  </section>
-</section>
+
+      {% if legacy %}
+      <section class="record-group" aria-labelledby="group-legacy">
+        <div class="record-group__head"><h2 id="group-legacy">舊的類別</h2><span class="kicker">{{ legacy|length }} 筆</span></div>
+        <p class="muted mb-1">這些資料是舊版系統建立的，類別不在六類之中。按「編輯」選一個新類別，就會放進五年資料夾。</p>
+        <div class="record-cards">
+          {% for record in legacy %}
+          <article class="record-card"><span class="tag tag--warn">{{ record.category }}</span><h3>{{ record.title }}</h3>
+            <div class="record-card__actions"><a class="button button--small button--line" href="{{ url_for('student.portfolio_edit', portfolio_id=record.id) }}">編輯</a></div>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endblock %}
+
+{% block footer %}{{ footer() }}{% endblock %}

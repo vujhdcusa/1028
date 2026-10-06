@@ -1,20 +1,14 @@
 {% extends "base.html" %}
+{% from "partials/nav.html" import masthead with context %}
 {% set page_name = "admin-dashboard" %}
 
 {% block title %}系統管理｜資管科智慧學習歷程系統{% endblock %}
 
-{% block navigation %}
-<header class="workspace-header">
-  <nav class="workspace-nav" aria-label="系統導覽">
-    <a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark">IM</span>資管科學習歷程</a>
-    <div class="workspace-nav__links"><a href="{{ url_for('main.admin_dashboard') }}">系統總覽</a><a href="{{ url_for('admin.accounts') }}">帳號管理</a><a href="{{ url_for('admin.project_types') }}">規則管理</a><form method="post" action="{{ url_for('main.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit">登出</button></form></div>
-  </nav>
-</header>
-{% endblock %}
+{% block navigation %}{{ masthead(user, "系統總覽") }}{% endblock %}
 
 {% block content %}
 <section class="work-shell work-shell--wide" data-work-role="admin" data-system-overview>
-  <header class="work-heading"><div><p class="eyebrow">System overview</p><h1>{{ user.display_name }}，系統目前的節奏一眼就能看完。</h1><p>這裡先聚焦帳號分布、送件量與正在等待處理的資料；帳號與規則維護會沿用既有權限機制逐步擴充。</p></div><span class="queue-badge queue-badge--strong">{{ pending_submission_count }} 件待處理</span></header>
+  <header class="work-heading"><div><p class="eyebrow">ADMIN · 系統總覽</p><h1>系統總覽</h1><p>帳號數量、送件量與待處理資料。</p></div><span class="queue-badge queue-badge--strong">{{ pending_submission_count }} 件待處理</span></header>
   <div class="work-metrics work-metrics--four">
     <article class="work-metric"><span>啟用學生</span><strong>{{ student_count }}</strong><small>可建立與管理學習成果</small></article>
     <article class="work-metric"><span>教師帳號</span><strong>{{ teacher_count }}</strong><small>可查看指派的審查項目</small></article>

@@ -1,20 +1,20 @@
 {% extends "base.html" %}
+{% from "partials/nav.html" import masthead with context %}
 {% set page_name = "review-queue" %}
 
 {% block title %}我的審查｜資管科智慧學習歷程系統{% endblock %}
 
-{% block navigation %}
-<header class="workspace-header"><nav class="workspace-nav" aria-label="系統導覽"><a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark">IM</span>資管科學習歷程</a><div class="workspace-nav__links"><a href="{{ url_for('main.teacher_dashboard') }}">工作台</a><a href="{{ url_for('review.teacher_reviews') }}">我的審查</a><form method="post" action="{{ url_for('main.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--quiet" type="submit">登出</button></form></div></nav></header>
-{% endblock %}
+{% block navigation %}{{ masthead(user, "我的審查") }}{% endblock %}
 
 {% block content %}
 <section class="work-shell" data-work-role="teacher">
-  <header class="work-heading"><div><p class="eyebrow">Assigned reviews</p><h1>我的審查清單</h1><p>先查看作品與目標快照，留下可執行的意見；共同審查結論由科辦統一登錄。</p></div></header>
+  <header class="work-heading"><div><p class="eyebrow">TEACHER · 我的審查</p><h1>我的審查清單</h1><p>先查看作品與目標快照，留下可執行的意見；共同審查結論由科辦統一登錄。</p></div></header>
   <section class="work-panel"><ul class="work-list">
     {% for assignment in assignments %}
     <li><span class="work-list__index">{{ loop.index }}</span><div><strong>{{ assignment.submission.portfolio.title }}</strong><span>送件 #{{ assignment.submission_id }} · 第 {{ assignment.submission.version_no }} 版 · {{ assignment.submission.status }}</span></div><span class="queue-badge">已指派</span></li>
     <li class="work-feedback-form">
       <form method="post" action="{{ url_for('review.teacher_feedback', submission_id=assignment.submission_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>留下給科辦參考的意見<textarea name="comment" required placeholder="例如：專題方向清楚，建議補上資料來源與操作畫面。"></textarea></label>
         <button class="button" type="submit">送出意見</button>
       </form>

@@ -1,11 +1,65 @@
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 
 from app.extensions import db
-from app.models import ProjectType, RequirementItem, RequirementTemplate, User
+from app.models import CourseRule, ProjectType, RequirementItem, RequirementTemplate, User
 from app.routes.main import get_current_user, role_required
 
 
 admin_bp = Blueprint("admin", __name__)
+
+
+def _normalise_course_name(value):
+    return "".join(value.split())
+
+
+@admin_bp.route("/admin/course-rules", methods=["GET", "POST"])
+@role_required("admin")
+def course_rules():
+    if request.method == "POST":
+        course_name = request.form.get("course_name", "").strip()
+        normalized_course_name = _normalise_course_name(course_name)
+        category = request.form.get("category", "").strip()
+        requirement_type = request.form.get("requirement_type", "").strip()
+        try:
+            school_year = int(request.form.get("school_year", ""))
+            credits_value = request.form.get("credits", "").strip()
+            credits = int(credits_value) if credits_value else None
+        except ValueError:
+            abort(400, description="School year and credits must be numbers")
+        if not normalized_course_name or not category or requirement_type not in {"required", "elective"}:
+            abort(400, description="Course name, category, and requirement type are required")
+        if CourseRule.query.filter_by(
+            school_year=school_year, normalized_course_name=normalized_course_name
+        ).first():
+            abort(400, description="A rule for this school year and course already exists")
+        db.session.add(CourseRule(
+            school_year=school_year,
+            course_name=course_name,
+            normalized_course_name=normalized_course_name,
+            category=category,
+            requirement_type=requirement_type,
+            credits=credits,
+            ability_domain=request.form.get("ability_domain", "").strip() or None,
+            is_active=True,
+        ))
+        db.session.commit()
+        return redirect(url_for("admin.course_rules"))
+    return render_template(
+        "admin_course_rules.html",
+        user=get_current_user(),
+        course_rules=CourseRule.query.order_by(CourseRule.school_year.desc(), CourseRule.course_name.asc()).all(),
+    )
+
+
+@admin_bp.post("/admin/course-rules/<int:rule_id>/toggle-active")
+@role_required("admin")
+def toggle_course_rule_active(rule_id):
+    rule = db.session.get(CourseRule, rule_id)
+    if not rule:
+        abort(404)
+    rule.is_active = not rule.is_active
+    db.session.commit()
+    return redirect(url_for("admin.course_rules"))
 
 
 @admin_bp.get("/admin/accounts")

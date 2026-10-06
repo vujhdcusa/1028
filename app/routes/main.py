@@ -3,7 +3,10 @@ from functools import wraps
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
 from app.extensions import db
-from app.models import Portfolio, PortfolioSubmission, SubmissionAssignment, TeacherReviewFeedback, User
+from app.models import PortfolioSubmission, SourceDocument, SubmissionAssignment, TeacherReviewFeedback, User
+from app.content.five_year_plan import FIVE_YEAR_PLAN, NEXT_STOPS
+from app.services.admission_sample import load_sample_programs
+from app.services.journey_service import CATEGORY_KEYS, CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 
 main_bp = Blueprint("main", __name__)
 
@@ -32,7 +35,12 @@ def feedback_by_submission(submission_ids):
 
 @main_bp.route("/")
 def index():
-    return render_template("index.html")
+    return render_template(
+        "index.html",
+        plan=FIVE_YEAR_PLAN,
+        next_stops=NEXT_STOPS,
+        sample_programs=load_sample_programs(),
+    )
 
 
 @main_bp.route("/login", methods=["GET", "POST"])
@@ -86,12 +94,15 @@ def role_required(*allowed_roles):
 @main_bp.get("/student/dashboard")
 @role_required("student")
 def student_dashboard():
-    user = db.session.get(User, session["user_id"])
+    user = get_current_user()
     return render_template(
-        "dashboard.html",
-        title="學生首頁",
+        "student_home.html",
         user=user,
-        portfolio_count=Portfolio.query.filter_by(student_id=user.id).count(),
+        journey=build_journey(user),
+        category_keys=CATEGORY_KEYS,
+        category_labels=CATEGORY_LABELS,
+        experience_categories=EXPERIENCE_CATEGORIES,
+        source_documents=SourceDocument.query.filter_by(owner_id=user.id).all(),
     )
 
 

@@ -29,7 +29,9 @@ def test_public_home_uses_the_shared_design_system_and_motion_shell():
     assert b'data-page="public-home"' in response.data
     assert b"/static/css/design-system.css" in response.data
     assert b"/static/js/motion.js" in response.data
-    assert b'data-motion="hero-cards"' in response.data
+    assert b"data-scatter" in response.data
+    assert b'id="route"' in response.data
+    assert b'id="agent"' in response.data
 
 
 def test_student_dashboard_exposes_a_personal_journey_layout():
@@ -44,8 +46,8 @@ def test_student_dashboard_exposes_a_personal_journey_layout():
 
     assert response.status_code == 200
     assert b'data-page="student-dashboard"' in response.data
-    assert b'data-journey-path' in response.data
-    assert b'data-motion="reveal"' in response.data
+    assert b"data-folders" in response.data
+    assert response.data.count(b"data-year-folder=") == 5
 
 
 def test_student_portfolio_page_stays_in_the_shared_student_experience():

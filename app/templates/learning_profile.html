@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% from "partials/nav.html" import masthead, footer with context %}
+{% set page_name = "learning-profile" %}
+{% set status_tags = {
+  "uploaded": ("已上傳", "tag"),
+  "extracted": ("待你確認", "tag--warn"),
+  "analysis_failed": ("無法辨識，請手動輸入", "tag--danger"),
+  "confirmed": ("已確認", "tag--ok"),
+} %}
+{% set type_labels = {"transcript": "成績單", "credential": "證照"} %}
+{% set output_labels = {"profile_summary": "學習摘要", "curriculum_gap": "課程缺漏", "autobiography": "自傳草稿", "study_plan": "讀書計畫草稿"} %}
+
+{% block title %}成績與證照｜資管科智慧學習歷程系統{% endblock %}
+
+{% block navigation %}{{ masthead(user, "成績與證照") }}{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="page-head">
+    <p class="kicker"><b>01–02</b> · 成績與學分、證照</p>
+    <h1>成績與證照</h1>
+    <p>請自己登入學校系統下載成績單，或掃描證照，再上傳到這裡。上傳後確認每一筆內容，確認過的資料才會放進「我的五年」。</p>
+  </header>
+
+  <div class="split split--form-first">
+    <section class="sheet sticky" aria-labelledby="upload-title">
+      <div class="sheet__head"><h2 id="upload-title">上傳文件</h2><span class="kicker">UPLOAD</span></div>
+      <form method="post" action="{{ url_for('student.learning_profile_document_upload') }}" enctype="multipart/form-data" class="form-stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <fieldset class="field">
+          <legend>這是什麼文件？</legend>
+          <div class="choice-group">
+            <label class="choice"><input type="radio" name="document_type" value="transcript" checked><span><b>成績單</b><small>建議用列印版，比較完整</small></span></label>
+            <label class="choice"><input type="radio" name="document_type" value="credential"><span><b>證照</b><small>證書正面的照片或 PDF</small></span></label>
+          </div>
+        </fieldset>
+        <label class="field">檔案 <small>PDF、PNG、JPG，最大 10MB</small><input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg" required></label>
+        <button class="button" type="submit">上傳</button>
+        <p class="muted small">系統不會登入學校系統，也不會保存你的學校帳號密碼。</p>
+      </form>
+    </section>
+
+    <div>
+      <section class="record-group" aria-labelledby="docs-title">
+        <div class="record-group__head"><h2 id="docs-title">我上傳的文件</h2><span class="kicker">{{ documents|length }} 份</span></div>
+        {% if documents %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>檔案</th><th>類型</th><th>狀態</th><th>上傳時間</th><th><span class="visually-hidden">操作</span></th></tr></thead>
+            <tbody>
+              {% for document in documents %}
+              {% set label, tag_class = status_tags.get(document.status, (document.status, "tag")) %}
+              <tr>
+                <td>{{ document.display_name }}</td>
+                <td>{{ type_labels.get(document.document_type, document.document_type) }}</td>
+                <td><span class="tag {{ tag_class }}">{{ label }}</span></td>
+                <td class="mono small">{{ document.created_at.strftime("%Y-%m-%d") }}</td>
+                <td><a class="button button--small {{ 'button--line' if document.status == 'confirmed' else '' }}" href="{{ url_for('student.learning_profile_document_review', document_id=document.id) }}">{{ "修改" if document.status == "confirmed" else "確認" }}</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="paper-empty">還沒有上傳文件。先從最新的一份成績單開始。</p>
+        {% endif %}
+      </section>
+
+      <section class="record-group" style="--slot: var(--year-1);" aria-labelledby="courses-title">
+        <div class="record-group__head"><h2 id="courses-title">成績與學分</h2><span class="kicker">{{ courses|length }} 門課</span></div>
+        {% if courses %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>年級</th><th>學期</th><th>課程</th><th>學分</th><th>分數</th></tr></thead>
+            <tbody>
+              {% for course in courses %}
+              <tr><td>{{ course.school_year or "—" }}</td><td>{{ course.semester or "—" }}</td><td>{{ course.course_name }}</td><td>{{ course.credits if course.credits is not none else "—" }}</td><td>{{ course.score if course.score is not none else (course.status_mark or "—") }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="paper-empty">確認成績單後，課程會列在這裡。</p>
+        {% endif %}
+      </section>
+
+      <section class="record-group" style="--slot: var(--year-2);" aria-labelledby="credentials-title">
+        <div class="record-group__head"><h2 id="credentials-title">證照</h2><span class="kicker">{{ credentials|length }} 張</span></div>
+        {% if credentials %}
+        <div class="record-cards">
+          {% for credential in credentials %}
+          <article class="record-card">
+            <div class="record-card__meta">{% if credential.level %}<span class="tag tag--info">{{ credential.level }}</span>{% endif %}{% if credential.issue_date %}<span class="tag mono">{{ credential.issue_date.isoformat() }}</span>{% else %}<span class="tag tag--warn">未填取得日期</span>{% endif %}</div>
+            <h3>{{ credential.credential_name }}</h3>
+            {% if credential.issuing_organization %}<p>{{ credential.issuing_organization }}</p>{% endif %}
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="paper-empty">確認證照後，會列在這裡。</p>
+        {% endif %}
+      </section>
+
+      <details class="sheet">
+        <summary><b>學習歷程草稿（舊功能，保留）</b></summary>
+        <p class="muted mt-1">依已確認的課程與證照產生四份草稿，可下載 Word。下一階段會改為依目標校系產出完整備審資料。</p>
+        <form method="post" action="{{ url_for('student.learning_profile_generate') }}" class="field-row mt-1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label class="field">課程規則學年度<input type="number" name="school_year" min="1" max="999" placeholder="例如 111" required></label>
+          <button class="button button--line align-end" type="submit">產生草稿</button>
+        </form>
+        {% if outputs %}
+        <ul class="evidence-list mt-1">
+          {% for output in outputs %}<li><a href="{{ url_for('student.learning_profile_output_docx', output_id=output.id) }}">{{ output_labels.get(output.output_type, output.output_type) }}（{{ output.created_at.strftime("%Y-%m-%d") }}）.docx</a></li>{% endfor %}
+        </ul>
+        {% endif %}
+      </details>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block footer %}{{ footer() }}{% endblock %}

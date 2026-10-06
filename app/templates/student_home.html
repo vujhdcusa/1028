@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "partials/nav.html" import masthead, footer with context %}
+{% set page_name = "student-dashboard" %}
+{% set slot_colors = {"grades": "var(--year-1)", "credential": "var(--year-2)", "activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
+{% set add_links = {"grades": url_for("student.learning_profile"), "credential": url_for("student.learning_profile")} %}
+
+{% block title %}我的五年｜資管科智慧學習歷程系統{% endblock %}
+
+{% block navigation %}{{ masthead(user, "我的五年") }}{% endblock %}
+
+{% block content %}
+<div class="page">
+  <header class="student-cover">
+    <div>
+      <p class="kicker"><b>STUDENT FILE</b>{% if user.student_profile %} · {{ user.student_profile.student_no }}{% endif %}{% if user.student_profile and user.student_profile.class_name %} · {{ user.student_profile.class_name }}{% endif %}</p>
+      <h1>{{ user.display_name }}的五年</h1>
+      <p>每一筆資料都放進它所屬的年級。空著的格子就是還可以補的地方，不用一次補完。</p>
+    </div>
+    {% if journey.current_grade %}
+    <div class="grade-mark" aria-label="目前是專{{ '一二三四五'[journey.current_grade - 1] }}">
+      <strong>0{{ journey.current_grade }}</strong>
+      <span>NOW · 專{{ '一二三四五'[journey.current_grade - 1] }}</span>
+    </div>
+    {% endif %}
+  </header>
+
+  {# 六類資料：空格（虛線）代表還沒有資料 #}
+  <section aria-labelledby="slots-title">
+    <h2 id="slots-title" class="visually-hidden">六類學習資料</h2>
+    <div class="slots">
+      {% for key in category_keys %}
+      {% set total = journey.totals[key] %}
+      <a class="slot{% if total == 0 %} slot--empty{% endif %}" style="--slot: {{ slot_colors[key] }};" href="{{ add_links.get(key, url_for('student.portfolio_list') ~ '#form') }}">
+        <strong>{{ total }}</strong>
+        <span>{{ category_labels[key] }}</span>
+        <small>{{ "還沒有資料，點這裡新增" if total == 0 else "筆" }}</small>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="split">
+    {# 五年資料夾 #}
+    <section class="folders" data-folders aria-labelledby="folders-title">
+      <h2 id="folders-title" class="visually-hidden">五年資料夾</h2>
+      <div class="folder-tabs" role="tablist" aria-label="選擇年級">
+        {% for year in journey.years %}
+        <button class="folder-tab" type="button" role="tab" id="tab-{{ year.grade }}" aria-controls="year-{{ year.grade }}"
+                style="--year: var(--year-{{ year.grade }});"
+                data-initial="{{ 'true' if year.grade == (journey.current_grade or 1) else 'false' }}">
+          <span class="mono">0{{ year.grade }}</span>{{ year.label }}{% if year.grade == journey.current_grade %}<span class="folder-tab__now">NOW</span>{% endif %}
+          <span class="folder-tab__count">{{ year.count }}</span>
+        </button>
+        {% endfor %}
+      </div>
+      {% for year in journey.years %}
+      <div class="folder-panel" role="tabpanel" id="year-{{ year.grade }}" aria-labelledby="tab-{{ year.grade }}"
+           style="--year: var(--year-{{ year.grade }});" data-year-folder="{{ year.grade }}">
+        <div class="folder-panel__head">
+          <h2>{{ year.label }}</h2>
+          <span class="kicker">{{ year.count }} 筆資料</span>
+        </div>
+        <div class="drawer">
+          {% for key in category_keys %}
+          {% set items = year.categories[key] %}
+          <div class="drawer__col">
+            <h3>{{ category_labels[key] }} <span class="mono">{{ items|length }}</span></h3>
+            {% for item in items %}
+            <div class="paper-item"><b>{{ item.title }}</b>{% if item.detail %}<small>{{ item.detail }}</small>{% endif %}</div>
+            {% else %}
+            <a class="paper-empty" href="{{ add_links.get(key, url_for('student.portfolio_list') ~ '#form') }}">＋ 新增{{ category_labels[key] }}</a>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+      {% if journey.unsorted_count %}
+      <p class="notice mt-1">有 {{ journey.unsorted_count }} 筆資料還沒填年級，或屬於舊的類別，所以沒有放進資料夾。到「成績與證照」或「活動與經歷」補上年級即可。</p>
+      {% endif %}
+    </section>
+
+    {# 側欄：下一步 #}
+    <aside class="sticky form-stack">
+      <section class="sheet">
+        <div class="sheet__head"><h2>下一步</h2><span class="kicker">NEXT</span></div>
+        <ol class="next-list">
+          {% set pending = source_documents|selectattr("status", "ne", "confirmed")|list %}
+          {% if pending %}
+          <li><div><b>{{ pending|length }} 份上傳的文件還沒確認</b><a href="{{ url_for('student.learning_profile') }}">去確認 →</a></div></li>
+          {% endif %}
+          {% for key in journey.missing_categories[:3] %}
+          <li><div><b>補上第一筆{{ category_labels[key] }}</b><a href="{{ add_links.get(key, url_for('student.portfolio_list') ~ '#form') }}">新增 →</a></div></li>
+          {% endfor %}
+          {% if not pending and not journey.missing_categories %}
+          <li><div><b>六類資料都有了</b><span class="muted">接下來可以選目標校系，比對還缺什麼。</span></div></li>
+          {% endif %}
+        </ol>
+      </section>
+      <section class="sheet locked">
+        <div class="sheet__head"><h2>目標校系</h2><span class="tag">下一階段開放</span></div>
+        <p class="muted">選擇想申請的二技校系後，系統會依該校系的備審加權，列出你還缺的資料，最後產出完整備審資料。</p>
+      </section>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block footer %}{{ footer() }}{% endblock %}
