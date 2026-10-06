@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/nav.html" import masthead, footer with context %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% set page_name = "student-gap" %}
 {% set status_text = {"complete": "已備齊", "partial": "還差一點", "missing": "還沒有資料", "prepare": "需自己準備"} %}
 {% set add_links = {"grades": url_for("student.learning_profile"), "credential": url_for("student.learning_profile")} %}
@@ -7,10 +7,11 @@
 
 {% block title %}{{ program.school_name }} {{ program.department_name }}｜缺件比對{% endblock %}
 
-{% block navigation %}{{ masthead(user, "補齊缺件") }}{% endblock %}
+{% block navigation %}{{ masthead(user, "備審資料") }}{% endblock %}
 
 {% block content %}
-<div class="page">
+{{ page_band("備審資料", [("目標校系", url_for('student.target_list'))]) }}
+<div class="page page--banded">
   <nav class="target-switch" aria-label="切換目標校系">
     {% for target in targets %}
     <a href="{{ url_for('student.target_gap', program_id=target.id) }}"{% if target.id == program.id %} aria-current="page"{% endif %}>{{ target.school_name|replace("國立", "") }} {{ target.department_name }}</a>
@@ -21,7 +22,7 @@
   <header class="student-cover">
     <div>
       <p class="muted small">志願代碼 {{ program.program_code }} · {{ program.admission_year }} 學年度簡章</p>
-      <h1>{{ program.school_name }}<br>{{ program.department_name }}</h1>
+      <h2 class="program-title">{{ program.school_name }} {{ program.department_name }}</h2>
       <p>方塊越寬，佔分越多；裝得越滿，準備得越完整。點方塊看細節。</p>
     </div>
     <div class="readiness">

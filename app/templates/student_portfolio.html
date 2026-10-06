@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/nav.html" import masthead, footer with context %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% from "partials/record_fields.html" import record_fields %}
 {% set page_name = "student-portfolio" %}
 {% set slot_colors = {"activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
@@ -10,11 +10,9 @@
 {% block navigation %}{{ masthead(user, "活動與經歷") }}{% endblock %}
 
 {% block content %}
-<div class="page">
-  <header class="page-head">
-    <h1>活動與經歷</h1>
-    <p>活動、競賽、服務學習、幹部經歷自己新增在這裡，填上年級就會放進「我的五年」。</p>
-  </header>
+{{ page_band("活動與經歷") }}
+<div class="page page--banded">
+  <p class="muted mb-1">活動、競賽、服務學習、幹部經歷在這裡新增，填上年級就會放進「我的五年」。</p>
 
   <div class="split split--form-first">
     <section class="sheet sticky" id="form" aria-labelledby="form-title">

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/nav.html" import masthead, footer with context %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% set page_name = "learning-profile" %}
 {% set status_tags = {
   "uploaded": ("已上傳", "tag"),
@@ -15,11 +15,9 @@
 {% block navigation %}{{ masthead(user, "成績與證照") }}{% endblock %}
 
 {% block content %}
-<div class="page">
-  <header class="page-head">
-    <h1>成績與證照</h1>
-    <p>從學校系統下載成績單（或拍下證照）後上傳，確認內容就會放進「我的五年」。</p>
-  </header>
+{{ page_band("成績與證照") }}
+<div class="page page--banded">
+  <p class="muted mb-1">從學校系統下載成績單（或拍下證照）後上傳，確認內容就會放進「我的五年」。</p>
 
   <div class="split split--form-first">
     <section class="sheet sticky" aria-labelledby="upload-title">

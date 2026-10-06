@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/nav.html" import masthead, footer with context %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% set page_name = "student-targets" %}
 
 {% block title %}目標校系｜資管科智慧學習歷程系統{% endblock %}
@@ -7,11 +7,9 @@
 {% block navigation %}{{ masthead(user, "目標校系") }}{% endblock %}
 
 {% block content %}
-<div class="page">
-  <header class="page-head">
-    <h1>想申請哪裡？</h1>
-    <p>每張卡片顯示：用你現在的資料申請這裡，準備度是多少。</p>
-  </header>
+{{ page_band("目標校系") }}
+<div class="page page--banded">
+  <p class="muted mb-1">每張卡片顯示：用你現在的資料申請這裡，準備度是多少。</p>
 
   {% if programs %}
   <div class="program-cards">

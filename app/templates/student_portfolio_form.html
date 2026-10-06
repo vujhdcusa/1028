@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/nav.html" import masthead, footer with context %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% from "partials/record_fields.html" import record_fields %}
 {% set page_name = "student-portfolio-edit" %}
 
@@ -8,11 +8,8 @@
 {% block navigation %}{{ masthead(user, "活動與經歷") }}{% endblock %}
 
 {% block content %}
-<div class="page narrow">
-  <header class="page-head">
-    <p class="small"><a href="{{ url_for('student.portfolio_list') }}">← 活動與經歷</a></p>
-    <h1>編輯：{{ portfolio.title }}</h1>
-  </header>
+{{ page_band("編輯經歷", [("活動與經歷", url_for('student.portfolio_list'))], note=portfolio.title) }}
+<div class="page narrow page--banded">
   <section class="sheet">
     {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
     <form method="post" class="form-stack">
