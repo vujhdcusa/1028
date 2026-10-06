@@ -100,7 +100,13 @@ def main():
     # 不同埠號用不同資料庫檔，可以同時開兩個展示網站
     demo_db = PROJECT_ROOT / "instance" / ("demo.db" if port == 5000 else f"demo-{port}.db")
     demo_db.parent.mkdir(parents=True, exist_ok=True)
-    demo_db.unlink(missing_ok=True)
+    try:
+        demo_db.unlink(missing_ok=True)
+    except PermissionError:
+        print(f"展示網站好像已經在執行了（{demo_db.name} 正在使用中）。")
+        print(f"請直接打開 http://127.0.0.1:{port} ，或先關掉另一個視窗的展示網站（按 Ctrl+C）再重新啟動。")
+        print("想同時開兩個，可以換埠號：$env:DEMO_PORT=5001 再執行一次。")
+        sys.exit(1)
     app = create_app({
         "SQLALCHEMY_DATABASE_URI": f"sqlite:///{demo_db.as_posix()}",
         "UPLOAD_FOLDER": str(PROJECT_ROOT / "instance" / "demo-uploads"),
