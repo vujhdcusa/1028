@@ -5,7 +5,7 @@
   "student": [("我的五年", url_for("main.student_dashboard")), ("成績與證照", url_for("student.learning_profile")), ("活動與經歷", url_for("student.portfolio_list")), ("目標校系", url_for("student.target_list"))],
   "teacher": [("工作台", url_for("main.teacher_dashboard")), ("我的審查", url_for("review.teacher_reviews"))],
   "staff": [("待處理送件", url_for("main.staff_dashboard"))],
-  "admin": [("系統總覽", url_for("main.admin_dashboard")), ("帳號管理", url_for("admin.accounts")), ("專題規則", url_for("admin.project_types")), ("課程規則", url_for("admin.course_rules")), ("校系資料", url_for("admin.programs")), ("導師班級", url_for("admin.classes"))],
+  "admin": [("系統總覽", url_for("main.admin_dashboard")), ("帳號管理", url_for("admin.accounts")), ("專題規則", url_for("admin.project_types")), ("課程規則", url_for("admin.course_rules")), ("校系資料", url_for("admin.programs")), ("招生資料 Agent", url_for("admin.agent_home")), ("導師班級", url_for("admin.classes"))],
 } %}
 <header class="masthead">
   <div class="masthead__inner">
@@ -67,7 +67,7 @@
 </header>
 {% endmacro %}
 
-{# 頁面標題列：左邊色塊是頁名，右邊是麵包屑；學生頁下面多一行「主線進度與下一步」。
+{# 頁面標題列：左邊色塊是頁名，右邊是麵包屑。
    用法：{{ page_band("成績與證照") }} 或 {{ page_band("確認資料", [("成績與證照", url)]) }} #}
 {% macro page_band(title, crumbs=[], note="") %}
 <div class="band">
@@ -79,12 +79,16 @@
   </nav>
   {% if note %}<span class="band__note">{{ note }}</span>{% endif %}
 </div>
+{% endmacro %}
+
+{# 首頁專用：只在「我的五年」放一張下一步卡片，其他頁不顯示。 #}
+{% macro next_card() %}
 {% if student_progress is defined %}
 {% set finished = student_progress.steps|selectattr("state", "equalto", "done")|list|length %}
-<div class="next-line">
-  <span class="next-line__progress" title="收集資料 → 選目標校系 → 補齊缺件 → 導師確認與下載">主線進度 <b>{{ finished }}</b>／4</span>
-  <a href="{{ student_progress.next.href }}"><span class="muted">下一步：</span>{{ student_progress.next.text }} →</a>
-</div>
+<a class="next-card" href="{{ student_progress.next.href }}">
+  <span class="next-card__progress">主線進度 <b>{{ finished }}</b>／4</span>
+  <span class="next-card__text"><span class="muted">下一步</span>{{ student_progress.next.text }} →</span>
+</a>
 {% endif %}
 {% endmacro %}
 

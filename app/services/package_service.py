@@ -6,6 +6,7 @@ from docx import Document
 from docx.shared import Pt
 
 from app.models import CredentialRecord, LearningCourseRecord, PackageReview, Portfolio
+from app.services.autobiography_service import latest_draft
 from app.services.gap_service import analyze_gap, chapter_order
 
 REVIEW_TEXT = {
@@ -29,7 +30,7 @@ def _semester_text(year, semester):
     return " ".join(parts)
 
 
-def _chapter_body(document, student, chapter):
+def _chapter_body(document, student, chapter, program):
     codes = chapter["keys"]
     if chapter["code"] == "02":
         document.add_paragraph("請附上報名資格證明（依當年度簡章規定）。")
@@ -63,8 +64,18 @@ def _chapter_body(document, student, chapter):
         if not credentials:
             document.add_paragraph("（尚未提供證照資料）")
         return
+    if chapter["code"] == "04":
+        # 自傳：有學生儲存過的「自傳小幫手」版本就放進來，沒有就留撰寫提示
+        draft = latest_draft(student, program)
+        if draft:
+            for paragraph in draft.content_json.get("paragraphs", []):
+                if paragraph.get("text"):
+                    document.add_paragraph(paragraph["text"])
+            return
+        document.add_paragraph("請在此撰寫。可用系統的「自傳小幫手」產生草稿，或參考「我的五年」中的活動、競賽與幹部經歷。")
+        return
     if "autobiography" in codes:
-        document.add_paragraph("請在此撰寫。可參考「我的五年」中的活動、競賽與幹部經歷，說明學習歷程與申請動機。")
+        document.add_paragraph("請在此撰寫讀書計畫：進二技後的學習目標、想修的課程與畢業後規劃。")
         return
     if "project" in codes:
         document.add_paragraph("請附上專題或作品集，說明個人負責的部分與成果。")
@@ -107,7 +118,7 @@ def build_package_docx(student, program):
                 note = f"（相關加權 {item['weight']}%）" if item["weight"] else ""
                 document.add_paragraph(f"第{position}部分：{item['title']}{note}")
             continue
-        _chapter_body(document, student, chapter)
+        _chapter_body(document, student, chapter, program)
 
     document.add_paragraph("本文件內容皆為學生確認之資料；正式規定以當年度招生簡章與各校系分則為準。")
     stream = BytesIO()

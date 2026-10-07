@@ -77,5 +77,10 @@ def import_seed_programs(path=SEED_FILE, status="published"):
 
 
 def published_programs():
-    return (AdmissionProgram.query.filter_by(status="published")
-            .order_by(AdmissionProgram.admission_year.desc(), AdmissionProgram.program_code).all())
+    """學生可以選的校系：同一個志願代碼只顯示最新學年度的正式版。"""
+    programs = (AdmissionProgram.query.filter_by(status="published")
+                .order_by(AdmissionProgram.admission_year.desc(), AdmissionProgram.program_code).all())
+    newest = {}
+    for program in programs:
+        newest.setdefault(program.program_code, program)
+    return sorted(newest.values(), key=lambda p: (-p.admission_year, p.program_code))

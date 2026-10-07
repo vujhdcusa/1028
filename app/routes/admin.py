@@ -1,8 +1,13 @@
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 
 from app.extensions import db
+from app.security import validate_upload_filename
 from app.models import (
     AdmissionProgram,
+    AgentTask,
+    PublicSource,
+    PublicSourceChange,
+    PublicSourceSnapshot,
     AdmissionRequirementItem,
     ClassAdvisor,
     CourseRule,
@@ -12,7 +17,9 @@ from app.models import (
     StudentProfile,
     User,
 )
+from app.services import admission_agent_service as agent
 from app.services.admission_service import import_seed_programs
+from app.services.gemini_client import ai_ready
 from app.services.gap_service import ALL_LABELS
 from app.routes.main import get_current_user, role_required
 
@@ -205,6 +212,7 @@ def programs():
             AdmissionProgram.status, AdmissionProgram.admission_year.desc(), AdmissionProgram.program_code).all(),
         mappable=list(ALL_LABELS.items()),
         message=request.args.get("message"),
+        compare=agent.compare_with_published,
     )
 
 
@@ -240,6 +248,84 @@ def program_item_update(item_id):
     item.mapping_status = status if status in {"confirmed", "pending"} else "pending"
     db.session.commit()
     return redirect(url_for("admin.programs") + f"#program-{item.rule_version_id}")
+
+
+# ---------- 招生資料 Agent（系統亮點第二、三階段） ----------
+
+@admin_bp.get("/admin/agent")
+@role_required("admin")
+def agent_home():
+    sources = PublicSource.query.order_by(PublicSource.id).all()
+    latest = {}
+    for source in sources:
+        latest[source.id] = (PublicSourceSnapshot.query.filter_by(source_id=source.id)
+                             .order_by(PublicSourceSnapshot.id.desc()).first())
+    changes = (db.session.query(PublicSourceChange, PublicSourceSnapshot, PublicSource)
+               .join(PublicSourceSnapshot, PublicSourceChange.snapshot_id == PublicSourceSnapshot.id)
+               .join(PublicSource, PublicSourceSnapshot.source_id == PublicSource.id)
+               .order_by(PublicSourceChange.id.desc()).limit(20).all())
+    tasks = (AgentTask.query.filter(AgentTask.task_type.in_(["admission_source_check", "admission_extract"]))
+             .order_by(AgentTask.id.desc()).limit(15).all())
+    return render_template(
+        "admin_agent.html",
+        user=get_current_user(),
+        sources=sources,
+        latest=latest,
+        changes=changes,
+        tasks=tasks,
+        ai_ready=ai_ready(),
+        keywords=current_app.config["AGENT_PROGRAM_KEYWORDS"],
+        message=request.args.get("message"),
+        error=request.args.get("error"),
+    )
+
+
+@admin_bp.post("/admin/agent/sources")
+@role_required("admin")
+def agent_add_source():
+    uploaded = request.files.get("file")
+    try:
+        if uploaded and uploaded.filename:
+            safe_name = validate_upload_filename(uploaded.filename, {"pdf", "html", "htm"})
+            content = uploaded.read()
+            if not content:
+                raise ValueError("檔案是空的")
+            source = agent.add_source(request.form.get("name"), upload_name=safe_name)
+            content_type = "application/pdf" if safe_name.lower().endswith(".pdf") else "text/html"
+            agent.check_source(source, get_current_user(), content=content, content_type=content_type)
+            return redirect(url_for("admin.agent_home", message=f"已上傳「{source.name}」，可以按「擷取加權」"))
+        source = agent.add_source(request.form.get("name"), url=request.form.get("url", "").strip())
+    except ValueError as exc:
+        return redirect(url_for("admin.agent_home", error=str(exc)))
+    return redirect(url_for("admin.agent_home", message=f"已新增來源「{source.name}」，按「立即檢查」抓第一次"))
+
+
+@admin_bp.post("/admin/agent/sources/<int:source_id>/check")
+@role_required("admin")
+def agent_check_source(source_id):
+    source = db.session.get(PublicSource, source_id)
+    if not source or source.source_type != "url":
+        abort(404)
+    task = agent.check_source(source, get_current_user())
+    if task.status != "succeeded":
+        return redirect(url_for("admin.agent_home", error=task.error_message))
+    text = "內容有更新，已建立變更，可以擷取加權" if task.result_json["changed"] else "內容和上次一樣，沒有更新"
+    return redirect(url_for("admin.agent_home", message=f"「{source.name}」：{text}"))
+
+
+@admin_bp.post("/admin/agent/changes/<int:change_id>/extract")
+@role_required("admin")
+def agent_extract(change_id):
+    change = db.session.get(PublicSourceChange, change_id)
+    if not change:
+        abort(404)
+    task = agent.extract_programs(change, get_current_user())
+    if task.status != "succeeded":
+        return redirect(url_for("admin.agent_home", error=task.error_message))
+    created = task.result_json["created"]
+    if not created:
+        return redirect(url_for("admin.agent_home", message="沒有新的校系（可能已擷取過，或沒有符合關鍵字的科系）"))
+    return redirect(url_for("admin.programs", message=f"Agent 建立了 {len(created)} 個候選校系，請核對加權與對應後再核准"))
 
 
 # ---------- 導師班級 ----------

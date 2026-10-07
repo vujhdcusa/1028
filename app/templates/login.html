@@ -28,6 +28,18 @@
         <button class="button" type="submit">登入 →</button>
       </form>
       <p class="muted small mt-1">展示用帳號皆為測試資料，密碼不得使用真實身分證字號。</p>
+      {% if config.DEMO_ACCOUNTS %}
+      {# 只有 scripts/run_demo.py 會開這個設定，正式環境不會顯示 #}
+      <table class="data-table mt-1 demo-accounts">
+        <caption class="small">展示帳號（密碼都是 demo1234）</caption>
+        <tbody>
+          <tr><th>學生</th><td class="mono">111534105</td><td class="small">王小明，還沒選校系</td></tr>
+          <tr><th>學生</th><td class="mono">111534107</td><td class="small">林小美，已送導師確認</td></tr>
+          <tr><th>導師</th><td class="mono">teacher01</td><td class="small">陳導師，資管科三甲</td></tr>
+          <tr><th>管理者</th><td class="mono">admin</td><td class="small">校系資料、導師班級</td></tr>
+        </tbody>
+      </table>
+      {% endif %}
     </div>
   </div>
 </section>

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/nav.html" import masthead with context %}
+{% from "partials/files.html" import evidence_grid, lightbox with context %}
 {% set page_name = "teacher-student" %}
 {% set status_text = {"complete": "已備齊", "partial": "還差一點", "missing": "沒有資料", "prepare": "需自己準備"} %}
 {% set review_text = {"pending": ("等待確認", "tag--warn"), "confirmed": ("已確認", "tag--ok"), "needs_revision": ("已請學生修改", "tag--danger")} %}
@@ -47,6 +48,15 @@
         </tbody>
       </table>
     </div>
+    {% if target.autobiography %}
+    {% set auto = target.autobiography.content_json %}
+    <details class="source-doc mt-1">
+      <summary>自傳（{{ "學生已修改儲存" if auto.edited else "AI 草稿，學生尚未修改" }}{{ "，示範草稿" if auto.provider == "demo" else "" }}）</summary>
+      {% for paragraph in auto.paragraphs %}<h3 class="h3 mt-1">{{ paragraph.title }}</h3><p>{{ paragraph.text }}</p>{% endfor %}
+    </details>
+    {% else %}
+    <p class="small muted mt-1">學生還沒有寫自傳。</p>
+    {% endif %}
     {% if target.review and target.review.status == "pending" %}
     <form class="decision-form mt-1" method="post" action="{{ url_for('teacher.decide_review', review_id=target.review.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -65,6 +75,27 @@
   <section class="work-panel"><p class="work-empty"><strong>學生還沒有選擇目標校系。</strong><span>選好後，這裡會顯示該校系的缺件比對。</span></p></section>
   {% endfor %}
 
+  {# 學生上傳的成績單、證照原始檔（學生已確認的） #}
+  <section class="work-panel">
+    <div class="work-panel__head"><div><h2>成績單與證照原始檔</h2><p>和下面的資料對照，確認學生輸入的內容沒有錯。</p></div></div>
+    {% if documents %}
+    {{ evidence_grid(documents, "teacher.document_view", id_arg="document_id") }}
+    {% else %}
+    <p class="muted">學生還沒有確認過任何成績單或證照。</p>
+    {% endif %}
+  </section>
+
+  {# 學生上傳的佐證照片：導師確認時可以直接看，不用下載 #}
+  <section class="work-panel">
+    <div class="work-panel__head"><div><h2>佐證照片</h2><p>點照片可以放大。</p></div></div>
+    {% for record in records_with_evidence %}
+    <h3 class="mt-1">{{ record.title }} <span class="muted small">{{ category_labels.get(record.category, record.category) }}</span></h3>
+    {{ evidence_grid(record.evidence_items, "teacher.evidence_view") }}
+    {% else %}
+    <p class="muted">學生還沒有上傳佐證。</p>
+    {% endfor %}
+  </section>
+
   <section class="work-panel">
     <div class="work-panel__head"><div><h2>五年資料</h2></div></div>
     {% for year in journey.years if year.count %}
@@ -77,4 +108,5 @@
     {% endfor %}
   </section>
 </section>
+{{ lightbox() }}
 {% endblock %}

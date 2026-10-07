@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{% from "partials/nav.html" import masthead, footer, page_band with context %}
+{% from "partials/nav.html" import masthead, footer, page_band, next_card with context %}
 {% set page_name = "student-dashboard" %}
 {% set slot_colors = {"grades": "var(--year-1)", "credential": "var(--year-2)", "activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
-{% set add_links = {"grades": url_for("student.learning_profile"), "credential": url_for("student.learning_profile")} %}
+{% set view_links = {"grades": url_for("student.learning_profile"), "credential": url_for("student.learning_profile")} %}
+{% set add_links = {"grades": url_for("student.learning_profile_upload_page"), "credential": url_for("student.learning_profile_upload_page")} %}
 
 {% block title %}我的五年｜資管科智慧學習歷程系統{% endblock %}
 
@@ -12,6 +13,7 @@
 {% set grade_note = ('目前 專' ~ '一二三四五'[journey.current_grade - 1]) if journey.current_grade else '' %}
 {{ page_band("我的五年", note=grade_note ~ (' · ' ~ user.student_profile.class_name if user.student_profile and user.student_profile.class_name else '')) }}
 <div class="page page--banded">
+  {{ next_card() }}
 
   {# 六類資料：空格（虛線）代表還沒有資料 #}
   <section aria-labelledby="slots-title">
@@ -19,7 +21,7 @@
     <div class="slots">
       {% for key in category_keys %}
       {% set total = journey.totals[key] %}
-      <a class="slot{% if total == 0 %} slot--empty{% endif %}" style="--slot: {{ slot_colors[key] }};" href="{{ add_links.get(key, url_for('student.portfolio_list') ~ '#form') }}">
+      <a class="slot{% if total == 0 %} slot--empty{% endif %}" style="--slot: {{ slot_colors[key] }};" href="{{ view_links.get(key, url_for('student.portfolio_list') ~ '#group-' ~ key) }}">
         <strong>{{ total }}</strong>
         <span>{{ category_labels[key] }}</span>
         <small>{{ "還沒有" if total == 0 else "筆" }}</small>
@@ -57,7 +59,7 @@
             {% for item in items %}
             <div class="paper-item"><b>{{ item.title }}</b>{% if item.detail %}<small>{{ item.detail }}</small>{% endif %}</div>
             {% else %}
-            <a class="paper-empty" href="{{ add_links.get(key, url_for('student.portfolio_list') ~ '#form') }}">＋ 新增{{ category_labels[key] }}</a>
+            <a class="paper-empty" href="{{ add_links.get(key, url_for('student.portfolio_new', category=key)) }}">＋ 新增{{ category_labels[key] }}</a>
             {% endfor %}
           </div>
           {% endfor %}
@@ -84,8 +86,7 @@
       {% else %}
       <section class="sheet">
         <div class="sheet__head"><h2>目標校系</h2></div>
-        <p class="muted mb-1">選擇想申請的二技校系，系統會依該校系的加權，告訴你還缺哪些資料。</p>
-        <a class="button button--small" href="{{ url_for('student.target_list') }}">選擇目標校系 →</a>
+        <p class="muted">還沒選。選好後，這裡會顯示每個校系的準備度。</p>
       </section>
       {% endif %}
     </aside>

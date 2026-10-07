@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from app.extensions import db
+from app.services import file_preview
 
 
 def _utcnow():
@@ -27,6 +28,15 @@ class SourceDocument(db.Model):
         "DocumentExtraction", back_populates="source_document", uselist=False,
         cascade="all, delete-orphan",
     )
+
+    @property
+    def extension(self):
+        return file_preview.extension(self.display_name)
+
+    @property
+    def preview_kind(self):
+        """"image"、"pdf" 或 None（不能預覽）。"""
+        return file_preview.preview_kind(self.display_name)
 
 
 class DocumentExtraction(db.Model):

@@ -1,5 +1,238 @@
 # 開發日誌
 
+## 2026-10-06 主線實作、瀏覽動線簡化與佐證照片預覽
+
+日期：2026-10-06
+開發者：Claude Code
+分支：`feat/main-line-2`（尚未合併回 `main`）
+詳細交接：`docs/05_交接與專案管理/AI_交接_主線前後半實作與下一步_2026-10-06.md`
+
+今日目標：依指導老師 10-06 討論完成主線（選校系 → 上傳六類資料 → 缺件比對 → 導師確認 → 產出備審 Word），並依使用者試用回饋整理畫面與動線。
+
+### 一、主線功能（上午～下午，已 commit）
+
+- 新設計系統、「我的五年」、成績與證照、活動與經歷（第一批，已合併 `main`）。
+- 目標校系、缺件比對與準備度、送導師確認、備審 Word 產出、導師本班名冊與確認、管理者校系資料與導師班級（第二批）。
+- 新增 5 張資料表（migration `b7d2e9a41c35`），**尚未在 MySQL 執行**。
+
+### 二、使用者回饋與處理
+
+| 回饋 | 處理 |
+| --- | --- |
+| 「網頁好亂」 | 拿掉裝飾小標；改用仿臺大教務處的一排主選單＋藍色頁名色塊＋麵包屑（commit `d849ad8`） |
+| 「引導式動線太亂」 | 使用者決定：主選單維持五項；清單頁只放資料，按「＋新增」才到表單頁；「下一步」只放首頁；管理者選單全部保留 |
+| 「看不到教師端和管理者」 | 兩端都已做好，只是要換帳號登入；展示網站登入頁現在列出展示帳號（`DEMO_ACCOUNTS`，正式環境不顯示） |
+| 「圖片上傳後不能預覽還要下載」「手機也要用」 | 佐證改成縮圖格子，點了放大；PDF 開新分頁；選照片後上傳前先預覽；可刪除；清單卡片顯示第一張照片；手機主選單五格全部看得到 |
+
+### 三、主要修改檔案（動線＋預覽）
+
+- `app/routes/student.py`：新增 `GET /student/learning-profile/upload`、`GET /student/portfolio/new`、`GET /student/evidence/<id>/view`（只開放 PNG／JPG／PDF，加 `nosniff`）、`POST /student/evidence/<id>/delete`；佐證上傳後回到編輯頁。
+- `app/models/portfolio.py`：`PortfolioEvidence.extension`、`preview_kind`（不需 migration）。
+- `app/templates/`：`learning_profile.html`、`learning_profile_upload.html`（新）、`student_portfolio.html`、`student_portfolio_form.html`（新增／編輯共用＋佐證區）、`student_home.html`、`partials/nav.html`（`next_card()`）、`login.html`。
+- `app/static/js/components.js`：放大檢視（`<dialog>`）、上傳前預覽、刪除前確認。
+- `app/static/css/design-system.css`：`.next-card`、`.list-head`、`.evidence-grid`、`.lightbox`、手機主選單。
+- `app/services/student_progress.py`：「下一步」連到新的表單頁。
+- `scripts/run_demo.py`：開啟 `DEMO_ACCOUNTS`，啟動時印出四個帳號。
+
+### 四、驗證
+
+- `pytest`：**108 passed**（新增 `tests/test_student_navigation.py` 11 個：清單頁無表單、新增頁預選類別、錯誤回表單頁、上傳獨立頁、下一步只在首頁、佐證預覽、文字檔不得內嵌顯示、他人不能看、刪除、展示帳號只在展示模式）。
+- 真實瀏覽器（Puppeteer）：上傳照片 → 上傳前預覽出現 → 回編輯頁縮圖載入 → 點縮圖放大 → 刪除後縮圖消失；桌機 1366px 與手機 390px 皆無橫向溢出、無 JavaScript 錯誤；`teacher01`、`admin` 登入後分別進到導師工作台與管理者總覽。
+
+### 五、所有上傳都要預覽、限制 10MB、導師可看佐證（同日稍晚）
+
+使用者回饋：「照片上傳時都該要有預覽，要限制圖片上傳大小，大概 10MB」；導師要能看佐證照片（使用者答「要」）。使用者並提供學校現有「證照登錄」頁截圖作為反例：表格排版、手機跑版。
+
+處理：
+
+- **共用上傳元件** `app/templates/partials/files.html`：
+  - `upload_field()`：整塊虛線框可點選或拖入檔案（手機可直接拍照），選好後先預覽；超過上限就清掉並以中文說明大小。
+  - `evidence_grid()`：縮圖格子，圖片點了放大，PDF 開新分頁。
+  - `lightbox()`：放大檢視視窗。
+  - 學生佐證、成績單／證照上傳、導師學生頁都用這三個元件，改樣式只需改這一個檔案。
+- **預覽規則集中** `app/services/file_preview.py`：只有 PNG／JPG／PDF 能直接顯示，並加上 `nosniff`。`PortfolioEvidence`、`SourceDocument` 都提供 `preview_kind`。
+- **確認頁**：上方顯示學生上傳的原始文件，方便逐筆對照（新路由 `GET /student/learning-profile/documents/<id>/view`）。
+- **導師**：學生詳情頁新增「佐證照片」區（新路由 `GET /teacher/evidence/<id>/view`），只看得到 `class_advisors` 指定班級的學生，其他導師一律 403。
+- **10MB 上限**：沿用設定 `MAX_CONTENT_LENGTH_MB=10`（`.env` 可改）。瀏覽器端先檢查，伺服器端超過時回 413，並顯示中文說明頁 `upload_too_large.html`，內容包括如何縮小檔案，以及只會連回本站的「回上一頁」。
+
+驗證：
+
+- `pytest`：**113 passed**（新增 `tests/test_file_preview.py` 5 個：導師看本班佐證、他班導師 403、確認頁顯示原始文件、上傳頁帶大小上限、超過上限回中文 413）。
+- Puppeteer 手機 390px：
+  - 選 11MB 檔案時出現紅框與中文提醒，檔案被清掉。
+  - 選照片後出現預覽，上傳後確認頁顯示原始文件。
+  - 佐證上傳後顯示縮圖。
+  - 無橫向溢出、無 JavaScript 錯誤。
+- Puppeteer 桌機：`teacher01` 打開王小明的頁面可看到照片，點了能放大。
+
+### 六、導師看原始檔、旋轉照片（同日稍晚，使用者回答「都要」）
+
+- 導師學生頁新增「成績單與證照原始檔」區，路由為 `GET /teacher/documents/<id>/view`。只顯示學生**已確認**的文件，並且只限本班學生；其他導師會收到 403，未確認的文件回 404。
+- `partials/files.html` 的 `evidence_grid()` 新增 `id_arg` 參數，原始文件與佐證共用同一個縮圖格子。
+- 上傳框選好照片後，會出現「↺ 向左轉／↻ 向右轉」按鈕。照片在瀏覽器裡用 canvas 轉正後，換掉要上傳的檔案，伺服器收到的就是轉正後的照片。轉完會重新檢查 10MB 上限。
+- 驗證：
+  - `pytest`：**116 passed**（新增 3 個測試：本班導師看原始檔、他班導師 403、上傳框有旋轉按鈕）。
+  - Puppeteer（手機）：640×420 的照片按「向右轉」後，預覽變成 420×640；上傳後在確認頁顯示也是 420×640。
+  - Puppeteer（桌機）：`teacher01` 看得到學生已確認的原始檔。
+  - 兩者都沒有 JavaScript 錯誤。
+
+### 七、使用者問「自傳怎麼沒有可以生成的？核心 AI Agent 去哪裡了？」
+
+現況盤點（尚未修改，等使用者決定）：
+
+- 規格書指定 AI 使用 **Google Gemini API**（`services/gemini_client.py`），但程式**從未接上**。`.env` 的 `AI_ENABLED=false`、`AI_PROVIDER=none`，也沒有安裝任何 AI 套件。
+- 目前的「自傳草稿」（`services/learning_profile_service.py`）是固定句型套入姓名與證照名稱，不是 AI 生成。備審 Word 的自傳章節只有撰寫提示。
+- 系統亮點「二技招生資料 Agent」目前只完成第一階段：管理者手動匯入種子資料、核准。第二階段（偵測簡章更新）與第三階段（擷取加權成候選版本）尚未開發。
+- 文件辨識（`DOCUMENT_ANALYSIS_PROVIDER=fake`）同樣尚未接 AI，學生需手動輸入。
+
+### 八、AI 自傳小幫手＋招生資料 Agent 第二、三階段
+
+使用者的決定：兩個功能一起做；AI 使用 Google Gemini；自傳採「先回答幾題再生成」。計畫書：`docs/02_需求與設計/AI_實作計畫_AI自傳小幫手與招生資料Agent_2026-10-06.md`。
+
+#### 共用：Gemini 連線
+
+- 新增 `app/services/gemini_client.py`，用 Python 內建的 urllib 呼叫 Gemini REST API，並要求依 `responseSchema` 回傳固定格式的 JSON。可以附上 PDF。各種錯誤都轉成中文訊息。
+- 不需要安裝新套件。
+- 新增設定：`config.py` 加入 `AI_PROVIDER`、`AI_API_KEY`、`GEMINI_MODEL`、`AGENT_PROGRAM_KEYWORDS`、`AGENT_SOURCE_FOLDER`，並寫進 `.env.example`。**`.env` 未修改，金鑰由使用者自行填入。**
+
+#### AI 自傳小幫手
+
+- 程式：`services/autobiography_service.py`、`templates/student_autobiography.html`。
+- 路由：`/student/autobiography`、`/generate`、`/<id>/save`。
+- 使用流程：
+  1. 學生先選目標校系，再回答 4 題。畫面一次只顯示一題。
+  2. 右邊列出「AI 只會用這些資料」：學生資料與校系加權。
+  3. AI 依學生的回答、編號事實（F1…）與加權寫 4 段草稿。每段標示「依據」，不存在的事實編號會被濾掉。
+  4. 學生逐段修改後儲存，段落輸入框會隨內容長高，並顯示總字數。
+- 沒有金鑰時會產生「示範草稿」，並清楚標示「尚未接上 AI」。
+- 草稿存在 `learning_profile_outputs`（`autobiography_ai`），**不需要 migration**。
+- 其他頁面的串接：
+  - 備審 Word 的「04 自傳」章節改放學生儲存的版本；「05 讀書計畫」改成讀書計畫的撰寫提示。
+  - 缺件比對頁新增「自傳」卡片，可直接進入小幫手。
+  - 導師的學生頁在每個目標校系下可以展開看自傳。
+
+#### 招生資料 Agent
+
+- 程式：`services/admission_agent_service.py`、`templates/admin_agent.html`。
+- 路由：`/admin/agent`（管理者選單新增「招生資料 Agent」）。
+- 第二階段（偵測更新）：
+  - 可以登記網址來源（只接受 http／https）或上傳簡章 PDF。
+  - Agent 計算 sha256 和上次比對，內容有變就建立變更。檔案存在 `instance/agent-sources/`。
+  - 每次執行都記錄在 `agent_tasks`，失敗也會記錄。
+  - 可在管理頁按「立即檢查」，也可以排程執行 `flask agent-check`。
+- 第三階段（擷取加權）：
+  - 把簡章 PDF 交給 Gemini，只擷取科系名稱符合關鍵字的志願。
+  - 檢查志願代碼必須是 6 碼、學年度與加權範圍正確，資料類別只保留合法代碼。
+  - 建立 `candidate`／`agent` 的候選版本，對應狀態一律為「待確認」，同一志願不會重複建立。
+  - 「校系資料」頁顯示 Agent 候選版本和前一年正式版的加權差異。
+- 學生端：`published_programs()` 對同一志願代碼只顯示最新學年度的正式版，已選舊版本的目標不受影響。
+- 使用既有的 `public_sources`、`public_source_snapshots`、`public_source_changes`、`agent_tasks` 資料表，**不需要 migration**。
+
+#### 驗證
+
+- `pytest`：**137 passed**。新增的測試：
+  - `test_autobiography.py`：7 個。
+  - `test_admission_agent.py`：11 個。
+  - `test_gemini_client.py`：3 個，檢查送出的格式與錯誤訊息，不會連網路。
+- Puppeteer（手機 390px）：林小美依序回答 4 題（畫面一次一題，有「第 n 題，共 4 題」）→ 產生示範草稿 4 段 → 修改後儲存 → 導師頁看得到修改後的文字。無橫向溢出、無 JavaScript 錯誤。
+- Puppeteer（桌機）：管理者上傳真實的 `116二技技優甄審_時程與備審加權_修訂版.pdf`（643KB）→ 建立「第一次抓取」變更。因為沒有金鑰，「擷取加權」按鈕停用，並顯示設定說明。
+- **尚未用真的 Gemini 金鑰測試**：自傳的實際品質和簡章擷取的準確度，要等使用者填入金鑰後再驗證。
+
+### 九、金鑰位置修正、真實 AI 實測、學生自帶金鑰
+
+#### 金鑰放錯檔案（已處理）
+
+- 使用者把 Gemini 金鑰填在三個資料夾的 `.env.example`。這個檔案會被 git 追蹤，系統真正讀取的 `ai/.env` 反而是空的。
+- 已確認三個 repo 都**還沒 commit／push**，金鑰沒有外流。
+- 處理方式（過程中未顯示金鑰內容）：
+  - 把金鑰搬進 `ai/.env`（已列入 `.gitignore`），並設定 `AI_ENABLED=true`、`AI_PROVIDER=gemini`。
+  - 清空三個 `.env.example` 的 `AI_API_KEY`。
+- 防範再犯：
+  - 新增測試 `test_env_example_never_contains_a_real_key`，`.env.example` 一出現金鑰就會失敗。
+  - 新增 `tests/conftest.py`，所有測試一律關掉真的 AI，不會連網路、不花額度。
+
+#### 真實 Gemini 實測（gemini-2.5-flash）
+
+- 招生 Agent：上傳 116 簡章 PDF，27 秒擷取完成。208001、208003 的加權和 115 種子資料**完全相同**。
+  - 208002（資訊應用菁英班）、299003（資訊工程系）因為不符合關鍵字而被略過。
+  - 已把預設關鍵字改為「資訊管理,資管,資訊應用,資訊工程」，和種子資料的範圍一致。
+- 自傳小幫手：約 15 秒產生 4 段草稿，引用的事實都是學生真的有的資料（計算機概論 90 分、丙級證照、技藝競賽佳作）。
+  - 發現學生跳過「困難」題時，AI 仍會從競賽經驗推想出一段。
+  - 已把提示詞改嚴：沒回答的題目只寫「（請補上：…）」。重測確認有效。
+
+#### 學生使用自己的金鑰（使用者要求：不保存、只用一次、提醒刪除）
+
+- 自傳表單新增「用自己的 Gemini 金鑰（選填）」：欄位為 `type=password`、`autocomplete=off`，出錯時也不會回填。
+- 金鑰只在 `autobiography_generate()` 的區域變數裡用一次，傳給 `gemini_client.generate_json(api_key=…)`。
+  - 不寫入資料庫、session 或網址。
+  - 例外訊息一律 `from None`，不夾帶原始請求內容。
+- 產生後頁面顯示紅色提醒：「記得刪除你的金鑰！」，並附上 Google AI Studio 的連結。
+- 錯誤訊息改得更清楚：400／401／403 顯示「金鑰無效」，429 顯示「額度用完，可改用自己的金鑰」。
+- 測試確認：金鑰有被用到，但資料庫的 `content_json`、`source_snapshot_json`、session、轉址網址、頁面內容都找不到它。
+
+#### 其他
+
+- 修正我造成的首頁錯誤：管理者 Agent 頁的 `.agent-steps` 樣式和首頁同名，害首頁 STEP 1～4 的字看不見。已把管理者頁的樣式改名為 `.agent-phases`。
+- `pytest`：**140 passed**。
+
+### 十、資管科小助手（AI Agent）
+
+使用者決定：四種功能都要做（回答科上規定、查自己的進度、規劃下一步、檢查備審一致性），學生和導師都能使用。
+
+#### 架構（Agent 會自己決定要查什麼）
+
+1. **知識庫**：`scripts/build_knowledge.py` 用 Gemini 把 `school/` 裡的 9 份科上文件轉寫成 Markdown，存在 `app/content/knowledge/*.md`。
+   - 涵蓋：畢業門檻、116 二技時程、專題評量表、重補修、修業科目表、專題繳交、專題表格、轉科、實務專題課程大綱。
+   - 每份文件開頭都標明來源。規定改了可以直接改 .md。
+   - 超過 14MB 的 PDF（重補修簡報）改用 Gemini File API 上傳。
+   - **人工核對**：畢業門檻已逐條對照原始 PDF，數字全部正確。但 AI 把原本三欄獨立的表格逐列合併，會讓人誤解，已改寫成三個清單。其他文件只抽查。
+2. **搜尋**：`services/knowledge_service.py` 依「## 小標題」切段，用兩字一組比對，標題命中加倍計分，並有同義詞表（重修→重補修…）。不需要安裝套件。
+3. **工具**：`services/assistant_tools.py`，全部唯讀。
+   - 學生：查科上規定、查校系加權、查你的資料、缺件比對、自傳一致性檢查。
+   - 導師：查科上規定、查校系加權、查本班學生、查學生資料、缺件比對、自傳一致性檢查。
+   - 「是誰在問」一律由登入帳號決定。導師查別班學生時，工具會回傳錯誤，不會給資料。
+4. **Agent 迴圈**：`services/assistant_service.py` 用 Gemini function calling，最多查 5 次後回答，回傳「查了哪些項目」與「引用的文件」。
+   - 系統提示詞規定：先查再答、不能編造、不能做正式決定、要用系統的真實頁面名稱、需要志願代碼時自己查。
+5. **介面**：`partials/assistant.html`，學生和導師每一頁右下角都有「資管科小助手」，手機上為全螢幕。
+   - 提供建議問題、顯示「查了：…」與來源標籤。
+   - AI 回答先跳脫 HTML，再轉換粗體與條列，避免被插入程式碼。
+6. **隱私**：對話只存在瀏覽器分頁（sessionStorage）。伺服器的 `agent_tasks` 只記錄用了哪些工具，不記錄問題與回答。
+7. 路由：`POST /assistant/ask`（只限學生、導師）。
+
+#### 額度問題（重要）
+
+- 這把金鑰的免費方案，`gemini-2.5-flash` **每天只有 20 次**。今天的測試已經用完（約 15 小時後恢復）。
+- 處理方式：
+  - 小助手改用另一個模型 `ASSISTANT_MODEL=gemini-flash-lite-latest`，和自傳、簡章擷取分開計算額度。
+  - 遇到「每分鐘次數」限制時，依 Google 建議的秒數自動等待，最多 30 秒，重試一次。
+  - 每日額度用完時，顯示中文說明：「明天恢復，急用可改用自己的金鑰」。
+- **正式給全班使用時，免費額度一定不夠**，需要和指導老師討論是否申請付費方案或學校帳號。
+
+#### 驗證（小助手）
+
+- `pytest`：**151 passed**。
+  - `test_assistant.py` 10 個：工具呼叫流程、學生看不到導師工具、導師查他班被拒、導師只看到本班、對話內容不落地、最多 5 步、沒有金鑰的提示、管理者 403、聊天視窗只出現在學生與導師頁。
+  - `test_gemini_client.py` 新增 429 等待後重試的測試。
+- 用真的 Gemini 在瀏覽器測 6 題，全部正確：
+  - 畢業門檻：查規定＋查個人資料，得出還差 1 張。
+  - 先考哪張：依規定建議打字證照，並引導到「目標校系」。
+  - 自傳檢查：自己查到目標校系，發現還沒有草稿，引導到自傳小幫手。
+  - 二技報名日期：和文件相符，並註明以正式簡章為準。
+  - 導師問「誰在等確認」：找到林小美，說明準備度 90% 和缺少的項目。
+  - 導師查他班學號：拒絕。
+- 第一輪實測發現 AI 會叫錯頁面名稱、會要學生自己提供志願代碼，已修改提示詞後重測改善。
+- 手機 390px 與桌機截圖正常，沒有 JavaScript 錯誤。
+
+### 十一、待確認／下一步
+
+- AI 額度：全班使用時需要付費方案或學校帳號（和指導老師討論）。
+- 知識庫其餘 8 份文件，請組員對照原始文件核對一次（特別是表格）。
+- 使用者看過畫面後再 commit，並合併 `feat/main-line-2` 回 `main`。
+- 讀書計畫是否也要做成小幫手（可沿用同一套流程）。
+- 學生已選的舊學年度目標，是否要提示「升級到新年度版本」。
+- 導師與管理者頁尚未改成學生頁的「頁名色塊＋麵包屑」版面。
+- MySQL migration（需先備份並取得同意）、同步到 `ai-team`／`ai-personal`、首頁驚訝感與互動、Agent 第二三階段。
+
 ## 2026-09-29 教師端需求漏洞修正：行政表單數位化與申請追蹤
 
 日期：2026-09-29

@@ -110,11 +110,13 @@ def main():
     app = create_app({
         "SQLALCHEMY_DATABASE_URI": f"sqlite:///{demo_db.as_posix()}",
         "UPLOAD_FOLDER": str(PROJECT_ROOT / "instance" / "demo-uploads"),
+        "DEMO_ACCOUNTS": True,  # 登入頁顯示展示帳號；正式環境不要設定
     })
     with app.app_context():
         db.create_all()
         seed()
-    print(f"展示網站：http://127.0.0.1:{port}  （學生 111534105 / {DEMO_PASSWORD}）")
+    print(f"展示網站：http://127.0.0.1:{port}")
+    print(f"帳號（密碼都是 {DEMO_PASSWORD}）：學生 111534105、111534107｜導師 teacher01｜管理者 admin")
     app.run(port=port, debug=False)
 
 

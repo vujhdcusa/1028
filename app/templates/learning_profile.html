@@ -17,25 +17,10 @@
 {% block content %}
 {{ page_band("成績與證照") }}
 <div class="page page--banded">
-  <p class="muted mb-1">從學校系統下載成績單（或拍下證照）後上傳，確認內容就會放進「我的五年」。</p>
-
-  <div class="split split--form-first">
-    <section class="sheet sticky" aria-labelledby="upload-title">
-      <div class="sheet__head"><h2 id="upload-title">上傳文件</h2></div>
-      <form method="post" action="{{ url_for('student.learning_profile_document_upload') }}" enctype="multipart/form-data" class="form-stack">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <fieldset class="field">
-          <legend>這是什麼文件？</legend>
-          <div class="choice-group">
-            <label class="choice"><input type="radio" name="document_type" value="transcript" checked><span><b>成績單</b><small>建議用列印版，比較完整</small></span></label>
-            <label class="choice"><input type="radio" name="document_type" value="credential"><span><b>證照</b><small>證書正面的照片或 PDF</small></span></label>
-          </div>
-        </fieldset>
-        <label class="field">檔案 <small>PDF、PNG、JPG，最大 10MB</small><input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg" required></label>
-        <button class="button" type="submit">上傳</button>
-        <p class="muted small">系統不會登入學校系統，也不會保存你的學校帳號密碼。</p>
-      </form>
-    </section>
+  <div class="list-head">
+    <p class="muted">從學校系統下載成績單（或拍下證照）後上傳，確認內容就會放進「我的五年」。</p>
+    <a class="button" href="{{ url_for('student.learning_profile_upload_page') }}">＋ 上傳成績單或證照</a>
+  </div>
 
     <div>
       <section class="record-group" aria-labelledby="docs-title">
@@ -59,7 +44,7 @@
           </table>
         </div>
         {% else %}
-        <p class="paper-empty">還沒有上傳文件。先從最新的一份成績單開始。</p>
+        <a class="paper-empty" href="{{ url_for('student.learning_profile_upload_page') }}">還沒有上傳文件。先從最新的一份成績單開始 →</a>
         {% endif %}
       </section>
 
@@ -99,7 +84,6 @@
       </section>
 
     </div>
-  </div>
 </div>
 {% endblock %}
 

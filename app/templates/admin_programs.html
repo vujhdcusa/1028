@@ -20,13 +20,26 @@
     <div class="work-panel__head">
       <div>
         <h2>{{ program.school_name }} {{ program.department_name }}</h2>
-        <p class="mono">{{ program.program_code }} · {{ program.admission_category or "—" }} · {{ program.admission_year }} 學年度 · 來源：{{ "Agent" if program.data_origin == "agent" else "手動／種子資料" }} · 加權合計 {{ program.total_weight }}%{% if program.total_weight != 100 %} <span class="tag tag--danger">不等於 100%</span>{% endif %}</p>
+        <p class="mono">{{ program.program_code }} · {{ program.admission_category or "—" }} · {{ program.admission_year }} 學年度 · 來源：{{ "Agent 擷取" if program.data_origin == "agent" else "手動／種子資料" }} · 加權合計 {{ program.total_weight }}%{% if program.total_weight != 100 %} <span class="tag tag--danger">不等於 100%</span>{% endif %}</p>
       </div>
       <div class="admin-action">
         <span class="tag {{ 'tag--ok' if program.status == 'published' else 'tag--warn' }}">{{ "正式" if program.status == "published" else "候選" }}</span>
         <form method="post" action="{{ url_for('admin.program_toggle_status', program_id=program.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--quiet" type="submit">{{ "改回候選" if program.status == "published" else "核准為正式" }}</button></form>
       </div>
     </div>
+    {% if program.data_origin == "agent" and program.status == "candidate" %}
+    {% set diff = compare(program) %}
+    <div class="agent-diff mb-1">
+      <p class="small"><b>Agent 擷取</b>：{{ program.source_note }}{% if program.source_url %}（<a href="{{ program.source_url }}" target="_blank" rel="noopener noreferrer">原始來源</a>）{% endif %}。
+        {% if diff.previous %}和 {{ diff.previous.admission_year }} 學年度正式版比較：{% else %}沒有前一年的正式版可以比較。{% endif %}</p>
+      {% if diff.previous %}
+      <ul class="agent-diff__rows">
+        {% for row in diff["rows"] %}<li class="{{ 'is-changed' if row.changed else '' }}">{{ row.name }}：{{ row.old if row.old is not none else "（新項目）" }}{% if row.old is not none %}%{% endif %} → {{ row.new if row.new is not none else "（已刪除）" }}{% if row.new is not none %}%{% endif %}</li>{% endfor %}
+      </ul>
+      {% endif %}
+      <p class="small muted">請核對下方加權與對應類別都正確，再按「核准為正式」。核准後，學生只會看到最新學年度的版本。</p>
+    </div>
+    {% endif %}
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr><th>簡章項目</th><th>加權</th><th>對應本系統資料類別</th><th>對應狀態</th><th><span class="visually-hidden">儲存</span></th></tr></thead>

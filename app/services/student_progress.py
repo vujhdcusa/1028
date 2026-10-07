@@ -21,8 +21,8 @@ STEP_TITLES = ["收集資料", "選目標校系", "補齊缺件", "導師確認�
 
 def _add_link(category):
     if category in ("grades", "credential"):
-        return url_for("student.learning_profile")
-    return url_for("student.portfolio_list") + "#form"
+        return url_for("student.learning_profile_upload_page")
+    return url_for("student.portfolio_new", category=category)
 
 
 def student_progress(user):
@@ -54,7 +54,7 @@ def student_progress(user):
     if pending_docs:
         action = {"text": f"確認你上傳的 {pending_docs} 份文件", "href": url_for("student.learning_profile")}
     elif not done[0]:
-        action = {"text": "上傳成績單，開始整理", "href": url_for("student.learning_profile")}
+        action = {"text": "上傳成績單，開始整理", "href": url_for("student.learning_profile_upload_page")}
     elif not done[1]:
         action = {"text": "選一個想申請的目標校系", "href": url_for("student.target_list")}
     elif not done[2] and gap["priority_id"]:

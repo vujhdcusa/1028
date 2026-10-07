@@ -18,6 +18,7 @@
       {% block content %}{% endblock %}
     </main>
     {% block footer %}{% endblock %}
+    {% if user is defined and user and user.role in ("student", "teacher") %}{% include "partials/assistant.html" %}{% endif %}
     <script src="{{ url_for('static', filename='js/motion.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components.js') }}" defer></script>
     {% block scripts %}{% endblock %}

@@ -109,3 +109,236 @@ document.querySelectorAll("[data-count]").forEach((el) => {
   el.textContent = "0";
   requestAnimationFrame(step);
 });
+
+// 佐證照片：點縮圖放大（用瀏覽器內建的 <dialog>，按 Esc、× 或點旁邊都能關）
+const lightbox = document.querySelector("[data-lightbox-dialog]");
+if (lightbox) {
+  document.querySelectorAll("[data-lightbox]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const img = lightbox.querySelector("img");
+      img.src = button.dataset.lightbox;
+      img.alt = button.getAttribute("aria-label") || "";
+      lightbox.showModal();
+    });
+  });
+  lightbox.addEventListener("click", (event) => { if (event.target === lightbox) lightbox.close(); });
+}
+
+// 上傳框（partials/files.html 的 upload_field）：選好檔案先預覽；超過大小就清掉並提醒；照片可以旋轉
+document.querySelectorAll("[data-upload]").forEach((zone) => {
+  const field = zone.parentElement;
+  const input = zone.querySelector("input[type=file]");
+  const preview = zone.querySelector(".dropzone__preview");
+  const tools = field.querySelector(".dropzone__tools");
+  const status = field.querySelector(".dropzone__status");
+  const maxBytes = Number(zone.dataset.maxBytes);
+  const toMB = (bytes) => (bytes / 1024 / 1024).toFixed(1) + "MB";
+
+  const show = () => {
+    const file = input.files[0];
+    if (preview.src) URL.revokeObjectURL(preview.src);
+    preview.removeAttribute("src");
+    preview.hidden = true;
+    tools.hidden = true;
+    zone.classList.remove("is-chosen", "is-error");
+    status.textContent = "";
+    if (!file) return;
+    if (maxBytes && file.size > maxBytes) {
+      input.value = "";
+      zone.classList.add("is-error");
+      status.textContent = `「${file.name}」有 ${toMB(file.size)}，超過上限 ${toMB(maxBytes)}。請裁切或壓縮後再選一次。`;
+      return;
+    }
+    zone.classList.add("is-chosen");
+    status.textContent = `已選擇：${file.name}（${toMB(file.size)}）`;
+    if (file.type.startsWith("image/")) {
+      preview.src = URL.createObjectURL(file);
+      preview.hidden = false;
+      tools.hidden = false;
+    }
+  };
+
+  // 旋轉：把照片畫到畫布上轉 90 度，再換掉要上傳的檔案（上傳的就是轉正後的照片）
+  const rotate = (degrees) => {
+    const file = input.files[0];
+    if (!file || !preview.src) return;
+    const canvas = document.createElement("canvas");
+    const sideways = Math.abs(degrees) === 90;
+    canvas.width = sideways ? preview.naturalHeight : preview.naturalWidth;
+    canvas.height = sideways ? preview.naturalWidth : preview.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((degrees * Math.PI) / 180);
+    ctx.drawImage(preview, -preview.naturalWidth / 2, -preview.naturalHeight / 2);
+    const type = file.type === "image/png" ? "image/png" : "image/jpeg";
+    canvas.toBlob((blob) => {
+      const files = new DataTransfer();
+      files.items.add(new File([blob], file.name, { type }));
+      input.files = files.files;
+      show();
+    }, type, 0.92);
+  };
+  tools.querySelectorAll("[data-rotate]").forEach((button) => {
+    button.addEventListener("click", () => rotate(Number(button.dataset.rotate)));
+  });
+
+  input.addEventListener("change", show);
+  // 拖檔案進來時框變色（真正接收檔案的是蓋在上面的 input）
+  input.addEventListener("dragenter", () => zone.classList.add("is-dragging"));
+  ["dragleave", "drop"].forEach((type) => input.addEventListener(type, () => zone.classList.remove("is-dragging")));
+});
+
+// 刪除前先問一次
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+  form.addEventListener("submit", (event) => {
+    if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+  });
+});
+
+// 自傳小幫手：一次只顯示一題（沒有 JavaScript 時全部題目都會顯示）
+document.querySelectorAll("[data-steps]").forEach((form) => {
+  const steps = [...form.querySelectorAll("[data-step]")];
+  const progress = form.querySelector("[data-step-progress]");
+  const prev = form.querySelector("[data-step-prev]");
+  const next = form.querySelector("[data-step-next]");
+  const submit = form.querySelector("[data-step-submit]");
+  let current = 0;
+  const go = (index) => {
+    current = Math.max(0, Math.min(index, steps.length - 1));
+    steps.forEach((step, i) => { step.hidden = i !== current; });
+    progress.textContent = `第 ${current + 1} 題，共 ${steps.length} 題`;
+    prev.hidden = current === 0;
+    next.hidden = current === steps.length - 1;
+    submit.hidden = current !== steps.length - 1;
+    steps[current].querySelector("textarea").focus();
+  };
+  prev.addEventListener("click", () => go(current - 1));
+  next.addEventListener("click", () => go(current + 1));
+  go(0);
+});
+
+// 送出後按鈕改成「處理中」，避免重複按（AI 需要一點時間）
+document.querySelectorAll("[data-busy-text]").forEach((button) => {
+  button.form.addEventListener("submit", () => {
+    button.disabled = true;
+    button.textContent = button.dataset.busyText;
+  });
+});
+
+// 草稿段落：輸入框隨內容長高，並顯示總字數
+const charTotal = document.querySelector("[data-char-total]");
+const paragraphs = [...document.querySelectorAll("textarea[data-char]")];
+const refreshDraft = () => {
+  paragraphs.forEach((area) => { area.style.height = "auto"; area.style.height = area.scrollHeight + 4 + "px"; });
+  if (charTotal) charTotal.textContent = `　目前共 ${paragraphs.reduce((sum, area) => sum + area.value.replace(/\s/g, "").length, 0)} 字`;
+};
+paragraphs.forEach((area) => area.addEventListener("input", refreshDraft));
+refreshDraft();
+
+// 資管科小助手：右下角聊天視窗（partials/assistant.html）
+document.querySelectorAll("[data-assistant]").forEach((root) => {
+  const panel = root.querySelector(".assistant__panel");
+  const log = root.querySelector("[data-assistant-log]");
+  const form = root.querySelector("[data-assistant-form]");
+  const input = form.querySelector("textarea");
+  const send = form.querySelector("button[type=submit]");
+  const toggles = root.querySelectorAll("[data-assistant-toggle]");
+  const KEY = "assistant-history";
+  let history = [];
+  try { history = JSON.parse(sessionStorage.getItem(KEY) || "[]"); } catch (e) { history = []; }
+
+  // 把 AI 回答的簡單 Markdown（粗體、條列）轉成畫面；先跳脫 HTML，避免被插入程式碼
+  const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
+  const escape = (text) => text.replace(/[&<>"']/g, (c) => ESCAPES[c]);
+  const render = (text) => {
+    let html = "";
+    let inList = false;
+    escape(text).split("\n").forEach((line) => {
+      const item = line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)$/);
+      if (item && !inList) { html += "<ul>"; inList = true; }
+      if (!item && inList) { html += "</ul>"; inList = false; }
+      if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) return; // 分隔線不顯示
+      const body = (item ? item[1] : line).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<i>$1</i>").replace(/^#+\s*/, "");
+      if (item) html += `<li>${body}</li>`;
+      else if (body.trim()) html += `<p>${body}</p>`;
+    });
+    return html + (inList ? "</ul>" : "");
+  };
+
+  const add = (role, text, extra = {}) => {
+    const box = document.createElement("div");
+    box.className = `assistant__msg assistant__msg--${role === "user" ? "me" : "bot"}`;
+    if (role === "user") box.textContent = text;
+    else box.innerHTML = render(text);
+    if (extra.steps && extra.steps.length) {
+      const steps = document.createElement("p");
+      steps.className = "assistant__steps";
+      steps.textContent = "查了：" + extra.steps.join("、");
+      box.prepend(steps);
+    }
+    if (extra.sources && extra.sources.length) {
+      const list = document.createElement("p");
+      list.className = "assistant__sources";
+      list.textContent = "來源：";
+      extra.sources.forEach((source) => {
+        const tag = document.createElement(source.url ? "a" : "span");
+        tag.className = "tag";
+        tag.textContent = source.title;
+        if (source.url) { tag.href = source.url; tag.target = "_blank"; tag.rel = "noopener noreferrer"; }
+        list.append(tag);
+      });
+      box.append(list);
+    }
+    log.append(box);
+    log.scrollTop = log.scrollHeight;
+    return box;
+  };
+
+  history.forEach((turn) => add(turn.role, turn.text));
+
+  const setOpen = (open) => {
+    panel.hidden = !open;
+    toggles[0].setAttribute("aria-expanded", String(open));
+    root.classList.toggle("is-open", open);
+    if (open) input.focus();
+  };
+  toggles.forEach((button) => button.addEventListener("click", () => setOpen(panel.hidden)));
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !panel.hidden) setOpen(false); });
+
+  const submit = async (raw) => {
+    const text = raw.trim();
+    if (!text) return;
+    add("user", text);
+    input.value = "";
+    send.disabled = true;
+    const waiting = add("bot", "正在查資料…");
+    waiting.classList.add("is-waiting");
+    const data = new FormData();
+    data.append("csrf_token", form.querySelector("[name=csrf_token]").value);
+    data.append("message", text);
+    data.append("history", JSON.stringify(history.slice(-8)));
+    data.append("page", document.title);
+    try {
+      const response = await fetch(root.dataset.endpoint, { method: "POST", body: data, credentials: "same-origin" });
+      if (!response.ok) throw new Error(String(response.status));
+      const result = await response.json();
+      waiting.remove();
+      add("bot", result.answer, result);
+      history.push({ role: "user", text }, { role: "assistant", text: result.answer });
+      try { sessionStorage.setItem(KEY, JSON.stringify(history.slice(-20))); } catch (e) { /* 存不了也沒關係 */ }
+    } catch (error) {
+      waiting.remove();
+      add("bot", "小助手暫時連不上，請稍後再試。");
+    } finally {
+      send.disabled = false;
+      input.focus();
+    }
+  };
+  form.addEventListener("submit", (event) => { event.preventDefault(); submit(input.value); });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); submit(input.value); }
+  });
+  root.querySelectorAll("[data-assistant-suggest]").forEach((chip) => {
+    chip.addEventListener("click", () => { setOpen(true); submit(chip.textContent); });
+  });
+});

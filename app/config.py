@@ -29,6 +29,14 @@ class Config:
     MAX_CONTENT_LENGTH = max_mb * 1024 * 1024
     
     AI_ENABLED = os.getenv("AI_ENABLED", "false").lower() == "true"
+    AI_PROVIDER = os.getenv("AI_PROVIDER", "none").lower()
+    AI_API_KEY = os.getenv("AI_API_KEY", "")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    # 小助手對話次數多，用較輕量的模型，和自傳、簡章擷取分開計算每日額度
+    ASSISTANT_MODEL = os.getenv("ASSISTANT_MODEL", "gemini-flash-lite-latest")
+    # 招生資料 Agent 只擷取科系名稱含這些字的校系（逗號分隔）
+    AGENT_PROGRAM_KEYWORDS = [k.strip() for k in os.getenv("AGENT_PROGRAM_KEYWORDS", "資訊管理,資管,資訊應用,資訊工程").split(",") if k.strip()]
+    AGENT_SOURCE_FOLDER = os.getenv("AGENT_SOURCE_FOLDER", "instance/agent-sources")
     DOCUMENT_ANALYSIS_PROVIDER = os.getenv("DOCUMENT_ANALYSIS_PROVIDER", "fake")
     CSRF_ENABLED = os.getenv("CSRF_ENABLED", "true").lower() == "true"
     ALLOWED_UPLOAD_EXTENSIONS = {

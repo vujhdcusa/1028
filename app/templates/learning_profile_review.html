@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
+{% from "partials/files.html" import lightbox with context %}
 {% set page_name = "learning-profile-review" %}
 {% set is_transcript = document.document_type == "transcript" %}
 
@@ -11,6 +12,22 @@
 {{ page_band("確認資料", [("成績與證照", url_for('student.learning_profile'))], note=document.display_name) }}
 <div class="page page--banded">
   <p class="muted mb-1">對照你的文件逐筆檢查；辨識不出來的欄位會留空，不會自己猜。</p>
+
+  {# 學生上傳的原始文件：放在最上面，邊看邊核對 #}
+  {% set source_url = url_for('student.learning_profile_document_view', document_id=document.id) %}
+  <details class="source-doc mb-1" open>
+    <summary>你上傳的文件：{{ document.display_name }}</summary>
+    {% if document.preview_kind == "image" %}
+    <button type="button" class="source-doc__image" data-lightbox="{{ source_url }}" aria-label="放大 {{ document.display_name }}">
+      <img src="{{ source_url }}" alt="{{ document.display_name }}">
+      <span class="small">點圖片放大</span>
+    </button>
+    {% elif document.preview_kind == "pdf" %}
+    <a class="button button--small button--line" href="{{ source_url }}" target="_blank" rel="noopener">在新分頁開啟 PDF</a>
+    {% else %}
+    <p class="muted small">這種檔案無法預覽。</p>
+    {% endif %}
+  </details>
 
   {% if document.status == "analysis_failed" %}<p class="alert mb-1">這份文件無法自動辨識，請手動輸入內容。</p>{% endif %}
   {% for warning in warnings %}<p class="notice mb-1">{{ warning }}</p>{% endfor %}
@@ -78,6 +95,7 @@
     </div>
   </form>
 </div>
+{{ lightbox() }}
 {% endblock %}
 
 {% block footer %}{{ footer() }}{% endblock %}

@@ -5,11 +5,13 @@ from datetime import datetime, timezone
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 
 from app.extensions import db
-from app.models import PackageReview, StudentTarget, User
+from app.models import PackageReview, Portfolio, PortfolioEvidence, SourceDocument, StudentTarget, User
 from app.routes.main import get_current_user, role_required
 from app.services.gap_service import ALL_LABELS, analyze_gap
 from app.services.journey_service import CATEGORY_KEYS, CATEGORY_LABELS, build_journey
 from app.services.package_service import latest_review
+from app.services.autobiography_service import latest_draft
+from app.services.file_preview import inline_file
 from app.services.teacher_scope import can_view_student
 
 teacher_bp = Blueprint("teacher", __name__)
@@ -29,6 +31,7 @@ def student_detail(student_id):
             "program": target.program,
             "gap": analyze_gap(student, target.program, journey),
             "review": latest_review(student, target.program),
+            "autobiography": latest_draft(student, target.program),
         })
     return render_template(
         "teacher_student.html",
@@ -36,11 +39,39 @@ def student_detail(student_id):
         student=student,
         journey=journey,
         targets=targets,
+        documents=SourceDocument.query.filter_by(owner_id=student.id, status="confirmed")
+                                      .order_by(SourceDocument.created_at).all(),
+        records_with_evidence=[r for r in Portfolio.query.filter_by(student_id=student.id).order_by(Portfolio.id).all()
+                               if r.evidence_items],
         category_keys=CATEGORY_KEYS,
         category_labels=CATEGORY_LABELS,
         labels=ALL_LABELS,
         error=request.args.get("error"),
     )
+
+
+@teacher_bp.get("/teacher/evidence/<int:evidence_id>/view")
+@role_required("teacher")
+def evidence_view(evidence_id):
+    """導師看本班學生的佐證照片；不是自己班的學生就 403。"""
+    evidence = db.session.get(PortfolioEvidence, evidence_id)
+    if not evidence:
+        abort(404)
+    if not can_view_student(get_current_user(), evidence.portfolio.student):
+        abort(403)
+    return inline_file(evidence.file_path, evidence.display_name)
+
+
+@teacher_bp.get("/teacher/documents/<int:document_id>/view")
+@role_required("teacher")
+def document_view(document_id):
+    """導師看本班學生上傳的成績單、證照原始檔（只限學生已確認的）。"""
+    document = db.session.get(SourceDocument, document_id)
+    if not document or document.status != "confirmed":
+        abort(404)
+    if not can_view_student(get_current_user(), document.owner):
+        abort(403)
+    return inline_file(document.file_path, document.display_name)
 
 
 @teacher_bp.post("/teacher/package-reviews/<int:review_id>")
