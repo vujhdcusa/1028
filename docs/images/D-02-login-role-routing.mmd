@@ -17,7 +17,7 @@ flowchart TD
     Role -- student --> S[學生首頁<br/>選校系、上傳資料、查看缺件]:::student
     Role -- teacher --> T[導師工作台<br/>本班學生資料與確認]:::teacher
     Role -- admin --> A[管理工作區<br/>帳號、權限與校系備審要求]:::admin
-    Role -- staff --> F[科辦工作區<br/>上傳服務、公假、嘉獎紀錄]:::staff
+    Role -- staff --> F[科辦工作區<br/>核准電子獎狀]:::staff
     Role -- 未設定角色 --> NoRole[顯示「此帳號尚未設定可用角色」<br/>並清除登入狀態]:::alert
     S --> Guard{每次開啟頁面或操作時<br/>再次檢查角色權限}
     T --> Guard

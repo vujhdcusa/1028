@@ -7,10 +7,11 @@ flowchart LR
     classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
     Recommend[AI 推薦校系]:::ai --> Target[學生選擇目標校系]:::student
-    Target --> Upload[上傳六類學習資料]:::student
+    Target --> Upload[上傳六類資料<br/>含獎懲記錄、電子證書]:::student
     Upload --> Check[AI 辨識、說明錯誤<br/>判斷證照真偽]:::ai
     Check --> Confirm[學生確認並補齊資料]:::student
-    Staff[科辦上傳服務、<br/>公假、嘉獎紀錄]:::staff -.-> Core
+    Confirm -.科上派的服務.-> Staff[科辦核准<br/>電子獎狀]:::staff
+    Staff -.-> Core
     Confirm --> Core[系統比對缺件]:::system
     Core --> Teacher
     Teacher[導師確認備審內容]:::teacher

@@ -33,7 +33,7 @@
 | 圖 13 | DFD 資料流程圖 | `images/D-06-dfd.mmd`／`.png`／`.svg` |
 | 圖 14 | ERD 資料庫關聯圖 | `images/D-09-erd-v2.mmd`／`.png`／`.svg` |
 | 圖 15 | 報告用總體流程圖 | `images/D-15-report-overview.mmd`／`.png`／`.svg` |
-| 圖 16 | 科辦上傳紀錄流程圖 | `images/D-18-staff-service-record-flow.mmd`／`.png`／`.svg` |
+| 圖 16 | 科辦核准電子獎狀流程圖 | `images/D-18-staff-service-record-flow.mmd`／`.png`／`.svg` |
 
 ## 圖 1～3：依角色的使用案例圖
 
@@ -58,11 +58,12 @@
 | 上傳後 | AI 辨識並判斷格式；辨識失敗時說明可能原因與修正方式；確認前 AI 標出可疑處，一定要學生本人確認 |
 | 成績單、證照、競賽證明 | 不經導師審核。證照由 AI 初判真偽；競賽證明由主辦方（例如 AREC）開立、學生自行上傳，AI 只整理欄位並標出可疑處，不判斷真偽；每筆資料標示證明來源 |
 | 教師端 | 導師、專任教師、指導老師共用 `teacher` 角色，以與學生的關係決定範圍 |
-| 科辦／科助 | 用固定 Excel 範本上傳服務（例如帶高中機器人社團）、公假、嘉獎紀錄，依學號列入學生資料並可產出電子證明；不逐筆審核、**不審備審資料** |
-| 自傳與備審 | AI 可引用學生資料與科辦紀錄撰寫，標示依據 |
+| 學校紀錄 | 獎懲記錄（學校統整的正式紀錄）與電子證書，和成績單一樣由學生下載後上傳；AI 逐列讀出並分類，讀出電子證書驗證碼 |
+| 科辦／科助 | 替科上派的服務核准電子獎狀：學生從獎懲記錄勾選並申請 → 科辦對照、編輯內文後核准 → 系統產出含驗證碼的獎狀（固定外框、內文可編輯）；**不審備審資料** |
+| 自傳與備審 | AI 可引用學生資料（含獎懲記錄、電子證書、電子獎狀）撰寫，標示依據 |
 | 備審資料 | 只由導師確認 |
 
-待確認（不畫進主線）：學生發現漏列時可否線上請科辦補登；電子證明版面；科辦是否在系統開放競賽報名、處理公假與嘉獎申請（後續擴充，性質同行政表單）。
+待確認（不畫進主線）：電子獎狀可否放學校 logo；科辦核准時需要學生附什麼佐證；系統可否自動到學校網站查驗驗證碼；科辦是否在系統開放競賽報名、處理公假與嘉獎申請（後續擴充，性質同行政表單）。
 
 ## 參考：使用者案例總覽（所有角色合併；規格書改用圖 1～3）
 
@@ -91,7 +92,8 @@ flowchart LR
         UC8([辨識上傳文件]):::usecase
         UC11([AI 判斷證照真偽]):::usecase
         UC12([AI 推薦校系並回答問題]):::usecase
-        UC13([上傳服務、公假、嘉獎紀錄並產出電子證明]):::usecase
+        UC13([核准電子獎狀]):::usecase
+        UC14([申請科上服務的電子獎狀]):::usecase
         UC9([維護校系備審要求]):::usecase
         UC10([維護帳號與權限]):::usecase
     end
@@ -105,9 +107,10 @@ flowchart LR
     Student --- UC3
     Student --- UC4
     Student --- UC5
+    Student --- UC14
+    UC14 -. 送科辦 .-> UC13
     UC1 -. 包含 .-> UC12
     UC2 -. 包含 .-> UC11
-    UC13 -. 自傳與備審引用 .-> UC5
     Teacher --- UC6
     Teacher --- UC7
     UC2 -. 包含 .-> UC8
@@ -144,7 +147,7 @@ flowchart TD
     Role -- student --> S[學生首頁<br/>選校系、上傳資料、查看缺件]:::student
     Role -- teacher --> T[導師工作台<br/>本班學生資料與確認]:::teacher
     Role -- admin --> A[管理工作區<br/>帳號、權限與校系備審要求]:::admin
-    Role -- staff --> F[科辦工作區<br/>上傳服務、公假、嘉獎紀錄]:::staff
+    Role -- staff --> F[科辦工作區<br/>核准電子獎狀]:::staff
     Role -- 未設定角色 --> NoRole[顯示「此帳號尚未設定可用角色」<br/>並清除登入狀態]:::alert
     S --> Guard{每次開啟頁面或操作時<br/>再次檢查角色權限}
     T --> Guard
@@ -172,13 +175,13 @@ flowchart TD
     Recommend --> Choose[學生選擇想申請的校系<br/>可重選、可選多個]:::student
     Choose --> Req
     HasTarget -- 是 --> Req[系統列出該校系需要的<br/>備審資料項目與標準]:::system
-    Req --> Download[學生自行登入學校系統<br/>下載成績單等資料]:::student
+    Req --> Download[學生自行登入學校系統<br/>下載成績單、獎懲記錄、電子證書]:::student
     Download -.- Note1[本系統不使用學生帳號登入或爬取學校系統<br/>期中修畢課程以列印版成績單為準<br/>微學分另上傳證明（處理方式待確認）]:::note
     Download --> Upload[上傳資料並選擇類別<br/>成績與學分、證照、活動、<br/>競賽、服務學習、幹部經歷]:::student
     Upload --> FileOK{檔案格式與大小正確？}
     FileOK -- 否 --> FileErr[顯示錯誤原因，請重新上傳]:::alert
     FileErr --> Upload
-    FileOK -- 是 --> Extract[AI 辨識文件並判斷格式<br/>證照另判斷真偽]:::ai
+    FileOK -- 是 --> Extract[AI 辨識文件並判斷格式<br/>獎懲記錄逐列分類；證照初判真偽；<br/>電子證書讀出驗證碼]:::ai
     Extract --> Recognized{辨識成功？}
     Recognized -- 否 --> Explain[AI 說明可能哪裡有問題<br/>與建議怎麼修正]:::alert
     Explain --> Retry{重新上傳？}
@@ -188,7 +191,8 @@ flowchart TD
     Manual --> Confirm
     Confirm -.- Note2[一定要學生本人確認後才存入<br/>成績單、證照與競賽證明不經導師審核<br/>競賽證明由主辦方開立，學生自行上傳]:::note
     Confirm --> Compare[系統比對校系要求]:::system
-    StaffRec[科辦上傳的服務、公假、嘉獎紀錄<br/>依學號自動列入（見圖 16）]:::staff --> Compare
+    Confirm -.科上派的服務.-> StaffRec[申請電子獎狀 → 科辦核准<br/>產出後列入學生資料（見圖 16）]:::staff
+    StaffRec -.-> Compare
     Compare --> Enough{資料符合要求？}
     Enough -- 否 --> Missing[列出還缺什麼]:::alert
     Missing --> Upload
@@ -196,7 +200,7 @@ flowchart TD
     Teacher --> Reasonable{內容合理？}
     Reasonable -- 否 --> Advice[導師留下修改建議]:::teacher
     Advice --> Confirm
-    Reasonable -- 是 --> Output[導師確認後產出完整備審資料<br/>自傳可由 AI 依學生資料與科辦紀錄協助撰寫]:::system
+    Reasonable -- 是 --> Output[導師確認後產出完整備審資料<br/>自傳可由 AI 依學生資料協助撰寫]:::system
     Output --> Print([學生下載列印])
 ```
 
@@ -315,7 +319,7 @@ flowchart TD
 
     Start([導師登入]) --> List[查看本班學生清單<br/>與資料完成度]:::teacher
     List -.- Scope[導師只能查看本班學生<br/>其他班級一律拒絕存取]:::pending
-    Start -.- NoCert[成績單、證照與競賽證明不經導師審核<br/>（證照由 AI 初判真偽；競賽證明只標出可疑處）<br/>服務、公假、嘉獎紀錄由科辦提供<br/>導師只確認最後整理好的備審內容]:::pending
+    Start -.- NoCert[成績單、證照與競賽證明不經導師審核<br/>（證照由 AI 初判真偽；競賽證明只標出可疑處）<br/>科上派的服務由科辦核准電子獎狀<br/>導師只確認最後整理好的備審內容]:::pending
     List --> Pick[選擇一位學生]:::teacher
     Pick --> View[查看學生資料、目標校系與缺件清單]:::teacher
     View --> Original[可查看成績單、證照、佐證照片與自傳原始檔]:::teacher
@@ -366,11 +370,11 @@ flowchart TD
     Student --> S2[產出並下載完整備審資料]:::student
     Teacher[導師]:::teacher --> T1[查看本班學生資料]:::teacher
     Teacher --> T2[確認備審內容並提供修改建議]:::teacher
-    Staff[科辦／科助]:::staff --> F1[上傳科上的官方紀錄<br/>服務（如帶高中機器人社團）、公假、嘉獎]:::staff
-    Staff --> F2[系統依學號列入學生資料<br/>並可產出電子證明]:::staff
+    Staff[科辦／科助]:::staff --> F1[審核電子獎狀申請<br/>對照學生的獎懲記錄]:::staff
+    Staff --> F2[編輯內文後核准<br/>系統產出含驗證碼的電子獎狀]:::staff
     Staff -.不審備審資料.-> T2
     Admin[系統管理者（開發者）]:::staff --> A1[管理帳號、權限、系統設定與校系備審要求]:::staff
-    Agent[AI Agent]:::ai --> G1[推薦校系、辨識文件並說明錯誤、<br/>判斷證照真偽、標出可疑處、<br/>依學生與科辦紀錄協助寫自傳、小助手回答]:::ai
+    Agent[AI Agent]:::ai --> G1[推薦校系、辨識文件並說明錯誤、<br/>判斷證照真偽、標出可疑處、<br/>讀獎懲記錄並分類、依學生資料協助寫自傳、小助手回答]:::ai
     G1 -.不直接定案.-> Block[必須經學生或人工確認]:::alert
 ```
 
@@ -442,9 +446,9 @@ flowchart TD
     D4 --> P5
     P5 --> D6[(D6 備審資料檔)]:::store
     D6 --> Download[學生下載列印]:::student
-    Staff[科辦]:::admin --> P7[7.0 匯入科辦紀錄]:::system
-    P7 --> D7[(D7 科辦紀錄與電子證明)]:::store
-    D7 --> P3
+    D4 --> P7[7.0 電子獎狀申請與核准]:::system
+    Staff[科辦]:::admin --> P7
+    P7 --> D7[(D7 電子獎狀)]:::store
     D7 --> P5
 ```
 
@@ -586,19 +590,20 @@ flowchart LR
     classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
     Recommend[AI 推薦校系]:::ai --> Target[學生選擇目標校系]:::student
-    Target --> Upload[上傳六類學習資料]:::student
+    Target --> Upload[上傳六類資料<br/>含獎懲記錄、電子證書]:::student
     Upload --> Check[AI 辨識、說明錯誤<br/>判斷證照真偽]:::ai
     Check --> Confirm[學生確認並補齊資料]:::student
-    Staff[科辦上傳服務、<br/>公假、嘉獎紀錄]:::staff -.-> Core
+    Confirm -.科上派的服務.-> Staff[科辦核准<br/>電子獎狀]:::staff
+    Staff -.-> Core
     Confirm --> Core[系統比對缺件]:::system
     Core --> Teacher
     Teacher[導師確認備審內容]:::teacher
     Teacher --> Output[產出完整備審資料]:::system
 ```
 
-## 圖 16：科辦上傳紀錄流程圖
+## 圖 16：科辦核准電子獎狀流程圖
 
-依 2026-10-07 錄音討論與 2026-10-08 使用者決定：科辦是「科上官方紀錄」的資料來源，用固定 Excel 範本一次上傳服務、公假、嘉獎名單，不逐筆審核、不審備審資料。
+依 2026-10-07 錄音討論與 2026-10-08 使用者決定：科上派的服務記在學校統整的獎懲記錄（正式紀錄），但每件服務沒有個別獎狀。學生從獎懲記錄勾選並申請，科辦對照後核准，系統依固定外框、可編輯內文的範本產出含驗證碼的電子獎狀。電子獎狀是補充，不取代獎懲記錄；科辦不審備審資料。
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
@@ -610,20 +615,22 @@ flowchart TD
     classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef note fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
 
-    Start([科辦登入]):::staff --> Template[下載固定 Excel 範本<br/>學號、項目類別、名稱、日期、說明]:::staff
-    Template --> Upload[填好名單後上傳<br/>例如帶高中機器人社團、公假、嘉獎]:::staff
-    Upload --> Check{系統檢查格式<br/>學號存在、日期正確？}
-    Check -- 否 --> Err[列出第幾列有問題與原因]:::alert
-    Err --> Upload
-    Check -- 是 --> Preview[預覽：每位學生會新增哪些紀錄]:::system
-    Preview --> Publish[科辦按「確認匯入」]:::staff
-    Publish --> Record[依學號列入學生學習資料<br/>標示「科辦提供」，學生不能修改]:::system
-    Record --> Cert[系統可依紀錄產出電子證明<br/>（類似電子獎狀）]:::system
-    Record --> Student[學生在「活動與經歷」看到紀錄]:::student
-    Record --> AI[自傳小幫手與備審資料引用<br/>標示「依據：科辦紀錄」]:::ai
-    Note1[取代過去「做備審時才一次匯整給科助、<br/>在電子證書平台開證明」的做法]:::note -.- Upload
-    Note2[科辦是官方資料來源，不逐筆審核、<br/>不審備審資料（備審由導師確認）]:::note -.- Publish
-    Note3[待確認：學生發現漏列時可否線上請科辦補登；<br/>電子證明的版面]:::note -.- Cert
+    Start([學生從學校系統下載獎懲記錄並上傳]):::student --> Read[AI 逐列讀出並分類<br/>例如「協助資管科麗山國中社團活動」→服務學習]:::ai
+    Read --> Pick[學生勾選科上派的服務<br/>申請電子獎狀]:::student
+    Pick --> Draft[系統依範本自動帶入內文<br/>姓名、學號、學年度學期、服務內容、次數或時數]:::system
+    Draft --> Review[科辦查看申請<br/>對照學生上傳的獎懲記錄]:::staff
+    Review --> Valid{確有這筆服務？}
+    Valid -- 否 --> Return[退回並說明原因]:::alert
+    Return --> Pick
+    Valid -- 是 --> Edit[科辦視需要修改內文]:::staff
+    Edit --> Approve[科辦按「核准」]:::staff
+    Approve --> Cert[系統產出電子獎狀 PDF<br/>固定外框＋內文＋驗證碼與 QR code]:::system
+    Cert --> Student[學生下載；列入學習資料<br/>來源標示「科辦電子獎狀」]:::student
+    Cert --> Verify[任何人輸入驗證碼<br/>可在本系統驗證頁查到]:::system
+    Student --> Package([產出備審資料、AI 寫自傳時可引用])
+    Note1[現況：科辦找指導老師、指導老師找學生組隊；<br/>完成後記在學校統整的獎懲記錄（正式紀錄，可印 A4），<br/>但每件服務沒有個別獎狀。電子獎狀是補充，不取代獎懲記錄]:::note -.- Start
+    Note2[科辦只核准電子獎狀；<br/>不審備審資料（備審由導師確認）]:::note -.- Approve
+    Note3[外框參考學校電子證書：校名、證明類別、發證單位、<br/>民國日期、驗證碼位置固定；可否放學校 logo 待確認]:::note -.- Cert
 ```
 
 ## 修改圖表的步驟

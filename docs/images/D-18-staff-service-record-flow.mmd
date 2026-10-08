@@ -7,17 +7,19 @@ flowchart TD
     classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef note fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
 
-    Start([科辦登入]):::staff --> Template[下載固定 Excel 範本<br/>學號、項目類別、名稱、日期、說明]:::staff
-    Template --> Upload[填好名單後上傳<br/>例如帶高中機器人社團、公假、嘉獎]:::staff
-    Upload --> Check{系統檢查格式<br/>學號存在、日期正確？}
-    Check -- 否 --> Err[列出第幾列有問題與原因]:::alert
-    Err --> Upload
-    Check -- 是 --> Preview[預覽：每位學生會新增哪些紀錄]:::system
-    Preview --> Publish[科辦按「確認匯入」]:::staff
-    Publish --> Record[依學號列入學生學習資料<br/>標示「科辦提供」，學生不能修改]:::system
-    Record --> Cert[系統可依紀錄產出電子證明<br/>（類似電子獎狀）]:::system
-    Record --> Student[學生在「活動與經歷」看到紀錄]:::student
-    Record --> AI[自傳小幫手與備審資料引用<br/>標示「依據：科辦紀錄」]:::ai
-    Note1[取代過去「做備審時才一次匯整給科助、<br/>在電子證書平台開證明」的做法]:::note -.- Upload
-    Note2[科辦是官方資料來源，不逐筆審核、<br/>不審備審資料（備審由導師確認）]:::note -.- Publish
-    Note3[待確認：學生發現漏列時可否線上請科辦補登；<br/>電子證明的版面]:::note -.- Cert
+    Start([學生從學校系統下載獎懲記錄並上傳]):::student --> Read[AI 逐列讀出並分類<br/>例如「協助資管科麗山國中社團活動」→服務學習]:::ai
+    Read --> Pick[學生勾選科上派的服務<br/>申請電子獎狀]:::student
+    Pick --> Draft[系統依範本自動帶入內文<br/>姓名、學號、學年度學期、服務內容、次數或時數]:::system
+    Draft --> Review[科辦查看申請<br/>對照學生上傳的獎懲記錄]:::staff
+    Review --> Valid{確有這筆服務？}
+    Valid -- 否 --> Return[退回並說明原因]:::alert
+    Return --> Pick
+    Valid -- 是 --> Edit[科辦視需要修改內文]:::staff
+    Edit --> Approve[科辦按「核准」]:::staff
+    Approve --> Cert[系統產出電子獎狀 PDF<br/>固定外框＋內文＋驗證碼與 QR code]:::system
+    Cert --> Student[學生下載；列入學習資料<br/>來源標示「科辦電子獎狀」]:::student
+    Cert --> Verify[任何人輸入驗證碼<br/>可在本系統驗證頁查到]:::system
+    Student --> Package([產出備審資料、AI 寫自傳時可引用])
+    Note1[現況：科辦找指導老師、指導老師找學生組隊；<br/>完成後記在學校統整的獎懲記錄（正式紀錄，可印 A4），<br/>但每件服務沒有個別獎狀。電子獎狀是補充，不取代獎懲記錄]:::note -.- Start
+    Note2[科辦只核准電子獎狀；<br/>不審備審資料（備審由導師確認）]:::note -.- Approve
+    Note3[外框參考學校電子證書：校名、證明類別、發證單位、<br/>民國日期、驗證碼位置固定；可否放學校 logo 待確認]:::note -.- Cert

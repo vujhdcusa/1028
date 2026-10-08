@@ -30,7 +30,7 @@ flowchart TD
     D4 --> P5
     P5 --> D6[(D6 備審資料檔)]:::store
     D6 --> Download[學生下載列印]:::student
-    Staff[科辦]:::admin --> P7[7.0 匯入科辦紀錄]:::system
-    P7 --> D7[(D7 科辦紀錄與電子證明)]:::store
-    D7 --> P3
+    D4 --> P7[7.0 電子獎狀申請與核准]:::system
+    Staff[科辦]:::admin --> P7
+    P7 --> D7[(D7 電子獎狀)]:::store
     D7 --> P5

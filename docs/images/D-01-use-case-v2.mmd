@@ -22,7 +22,8 @@ flowchart LR
         UC8([辨識上傳文件]):::usecase
         UC11([AI 判斷證照真偽]):::usecase
         UC12([AI 推薦校系並回答問題]):::usecase
-        UC13([上傳服務、公假、嘉獎紀錄並產出電子證明]):::usecase
+        UC13([核准電子獎狀]):::usecase
+        UC14([申請科上服務的電子獎狀]):::usecase
         UC9([維護校系備審要求]):::usecase
         UC10([維護帳號與權限]):::usecase
     end
@@ -36,9 +37,10 @@ flowchart LR
     Student --- UC3
     Student --- UC4
     Student --- UC5
+    Student --- UC14
+    UC14 -. 送科辦 .-> UC13
     UC1 -. 包含 .-> UC12
     UC2 -. 包含 .-> UC11
-    UC13 -. 自傳與備審引用 .-> UC5
     Teacher --- UC6
     Teacher --- UC7
     UC2 -. 包含 .-> UC8
