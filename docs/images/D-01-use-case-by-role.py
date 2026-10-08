@@ -19,9 +19,10 @@ ROLES = [
         "color": "#DBEAFE",
         "title": "學生",
         "items": [
-            ("選擇目標校系", "查看該校系需要的備審資料與標準", False),
+            ("選擇目標校系", "AI 依條件推薦；可選多個，查看備審要求", False),
             ("上傳學習資料", "成績與學分、證照、活動、競賽、服務學習、幹部經歷", False),
-            ("確認整理結果", "AI 輔助辨識；可修正或手動輸入", False),
+            ("確認整理結果", "AI 辨識並標出可疑處；出錯時說明原因", False),
+            ("查看科辦紀錄", "服務、公假、嘉獎；可下載電子證明", False),
             ("查看缺件清單", "對照目標校系還缺什麼", False),
             ("查看導師建議", "依建議修改後重新送出", False),
             ("產出備審資料", "下載可列印的完整備審資料", False),
@@ -36,9 +37,24 @@ ROLES = [
         "title": "導師",
         "items": [
             ("本班學生清單", "查看資料完成度；只能看本班學生", False),
-            ("學生資料檢視", "學習資料、目標校系與缺件清單", False),
-            ("確認內容", "標記已確認或留下修改建議", False),
+            ("學生資料檢視", "學習資料、原始檔、目標校系與缺件", False),
+            ("確認備審內容", "標記已確認或留下修改建議", False),
             ("班級統計", "預計申請學校、完成度與缺件；Phase 2", True),
+            ("個人資料", "查看個人資料、修改密碼", False),
+            ("登出", "", False),
+        ],
+    },
+    {
+        "file": "D-01-use-case-staff",
+        "actor": "科辦",
+        "color": "#EDE9FE",
+        "title": "科辦／科助",
+        "items": [
+            ("下載紀錄範本", "固定 Excel 格式：學號、項目、日期、說明", False),
+            ("上傳紀錄名單", "服務、公假、嘉獎；有錯列出第幾列", False),
+            ("預覽並確認匯入", "依學號列入學生資料；不審備審資料", False),
+            ("產出電子證明", "依紀錄以固定格式產出", False),
+            ("學生申請補登", "學生發現漏列時線上申請；待確認", True),
             ("個人資料", "查看個人資料、修改密碼", False),
             ("登出", "", False),
         ],
@@ -134,7 +150,7 @@ def to_png(svg_path, png_path, width, height):
             "const pp=require(path.join(process.env.APPDATA,'npm','node_modules','@mermaid-js','mermaid-cli',"
             "'node_modules','puppeteer'));\n"
             "(async()=>{const [svg,png,w,h]=process.argv.slice(2);"
-            "const b=await pp.launch({headless:'new'});const p=await b.newPage();"
+            "const b=await pp.launch({headless:'new',args:['--no-sandbox','--disable-setuid-sandbox','--disable-gpu']});const p=await b.newPage();"
             "await p.setViewport({width:+w,height:+h,deviceScaleFactor:2});"
             "await p.goto('file:///'+path.resolve(svg).replace(/\\\\/g,'/'));"
             "await p.screenshot({path:png,clip:{x:0,y:0,width:+w,height:+h}});await b.close();})();\n"

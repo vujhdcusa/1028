@@ -5,7 +5,7 @@ flowchart LR
     classDef admin fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef usecase fill:#FFFFFF,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-    classDef pending fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
     Student[學生]:::student
     Teacher[導師]:::teacher
@@ -20,23 +20,32 @@ flowchart LR
         UC6([查看本班學生資料]):::usecase
         UC7([確認內容或留下修改建議]):::usecase
         UC8([辨識上傳文件]):::usecase
+        UC11([AI 判斷證照真偽]):::usecase
+        UC12([AI 推薦校系並回答問題]):::usecase
+        UC13([上傳服務、公假、嘉獎紀錄並產出電子證明]):::usecase
         UC9([維護校系備審要求]):::usecase
         UC10([維護帳號與權限]):::usecase
     end
 
     Admin[系統管理者（開發者）]:::admin
     AI[AI 輔助服務]:::ai
-    Staff[科助：任務待確認，第一版不實作]:::pending
+    Staff[科辦／科助<br/>不審備審資料]:::staff
 
     Student --- UC1
     Student --- UC2
     Student --- UC3
     Student --- UC4
     Student --- UC5
+    UC1 -. 包含 .-> UC12
+    UC2 -. 包含 .-> UC11
+    UC13 -. 自傳與備審引用 .-> UC5
     Teacher --- UC6
     Teacher --- UC7
     UC2 -. 包含 .-> UC8
     UC8 --- AI
+    UC11 --- AI
+    UC12 --- AI
+    Staff --- UC13
     UC9 --- Admin
     UC10 --- Admin
     SYS ~~~ Staff

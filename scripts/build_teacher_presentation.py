@@ -147,6 +147,7 @@ def make_deck():
     for filename, title, role in [
         ("D-01-use-case-student.png", "學生端使用案例", "學生"),
         ("D-01-use-case-teacher.png", "導師端使用案例", "導師"),
+        ("D-01-use-case-staff.png", "科辦／科助使用案例", "科辦／科助"),
         ("D-01-use-case-admin.png", "管理端使用案例", "行政／管理員"),
     ]:
         slide = base_slide(prs, title, f"{role}端")
@@ -227,6 +228,7 @@ def make_deck():
         ("D-15-report-overview.png", "附錄｜報表總覽（第二版）"),
         ("D-16-teacher-confirm-flow.png", "附錄｜導師確認流程"),
         ("D-17-admin-maintain-requirements.png", "附錄｜管理員維護招生要求流程"),
+        ("D-18-staff-service-record-flow.png", "附錄｜科辦上傳紀錄流程（服務、公假、嘉獎）"),
     ]
     for filename, title in appendix:
         diagram_slide(prs, filename, title, "原圖取自 docs/images，作為目前規格與實作的對照版本")

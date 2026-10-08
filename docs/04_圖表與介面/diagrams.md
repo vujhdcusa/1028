@@ -1,6 +1,6 @@
 # 系統流程圖與架構圖
 
-> 版本：2026-10-06（依指導老師確認的主線重繪）
+> 版本：2026-10-08（依 10-07 錄音討論更新角色與主線）
 > 每張圖的原始碼存放在 `docs/images/` 的 `.mmd` 檔，本文件內容與 `.mmd` 檔一致；PNG／SVG 由 Mermaid CLI 匯出，正式規格書引用 PNG。
 > 流程以正式規格書為準；登入導頁與資料表以目前程式（`app/routes/main.py`、`app/models/`）為準，尚未實作的部分在圖中標示「待新增」或以虛線框表示。
 
@@ -33,6 +33,7 @@
 | 圖 13 | DFD 資料流程圖 | `images/D-06-dfd.mmd`／`.png`／`.svg` |
 | 圖 14 | ERD 資料庫關聯圖 | `images/D-09-erd-v2.mmd`／`.png`／`.svg` |
 | 圖 15 | 報告用總體流程圖 | `images/D-15-report-overview.mmd`／`.png`／`.svg` |
+| 圖 16 | 科辦上傳紀錄流程圖 | `images/D-18-staff-service-record-flow.mmd`／`.png`／`.svg` |
 
 ## 圖 1～3：依角色的使用案例圖
 
@@ -43,8 +44,24 @@
 | 圖 1 | 學生 | `images/D-01-use-case-student.png`／`.svg` |
 | 圖 2 | 導師 | `images/D-01-use-case-teacher.png`／`.svg` |
 | 圖 3 | 系統管理者（開發者） | `images/D-01-use-case-admin.png`／`.svg` |
+| 圖 1-1 | 科辦／科助 | `images/D-01-use-case-staff.png`／`.svg` |
 
-修改方式：打開 `D-01-use-case-by-role.py`，修改最上方 `ROLES` 裡的功能清單，再到 `docs/images` 資料夾執行 `python D-01-use-case-by-role.py`，三張圖會一起更新。虛線橢圓代表後續功能；科助任務確認後，可在 `ROLES` 加入一個科助角色。
+修改方式：打開 `D-01-use-case-by-role.py`，修改最上方 `ROLES` 裡的功能清單，再到 `docs/images` 資料夾執行 `python D-01-use-case-by-role.py`，四張圖（含科辦）會一起更新。
+
+### 2026-10-08 錄音討論後的流程圖基準
+
+依 [10-07 會議紀錄](../06_會議錄音與逐字稿/AI_會議紀錄_科助使用者端與小助手_2026-10-07.md) 與 10-08 使用者決定：
+
+| 項目 | 決定 |
+| --- | --- |
+| 選校系 | AI Agent 依學生條件推薦，學生自己選，可選多個 |
+| 上傳後 | AI 辨識並判斷格式；辨識失敗時說明可能原因與修正方式；確認前 AI 標出可疑處，一定要學生本人確認 |
+| 成績單、證照、競賽證明 | 不經導師審核；證照與競賽證明由 AI 判斷。競賽證明由主辦方（例如 AREC）開立，學生自行上傳 |
+| 科辦／科助 | 用固定 Excel 範本上傳服務（例如帶高中機器人社團）、公假、嘉獎紀錄，依學號列入學生資料並可產出電子證明；不逐筆審核、**不審備審資料** |
+| 自傳與備審 | AI 可引用學生資料與科辦紀錄撰寫，標示依據 |
+| 備審資料 | 只由導師確認 |
+
+待確認（不畫進主線）：學生發現漏列時可否線上請科辦補登；電子證明版面；科辦是否在系統開放競賽報名、處理公假與嘉獎申請（後續擴充，性質同行政表單）。
 
 ## 參考：使用者案例總覽（所有角色合併；規格書改用圖 1～3）
 
@@ -56,7 +73,7 @@ flowchart LR
     classDef admin fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef usecase fill:#FFFFFF,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-    classDef pending fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
     Student[學生]:::student
     Teacher[導師]:::teacher
@@ -71,23 +88,32 @@ flowchart LR
         UC6([查看本班學生資料]):::usecase
         UC7([確認內容或留下修改建議]):::usecase
         UC8([辨識上傳文件]):::usecase
+        UC11([AI 判斷證照真偽]):::usecase
+        UC12([AI 推薦校系並回答問題]):::usecase
+        UC13([上傳服務、公假、嘉獎紀錄並產出電子證明]):::usecase
         UC9([維護校系備審要求]):::usecase
         UC10([維護帳號與權限]):::usecase
     end
 
     Admin[系統管理者（開發者）]:::admin
     AI[AI 輔助服務]:::ai
-    Staff[科助：任務待確認，第一版不實作]:::pending
+    Staff[科辦／科助<br/>不審備審資料]:::staff
 
     Student --- UC1
     Student --- UC2
     Student --- UC3
     Student --- UC4
     Student --- UC5
+    UC1 -. 包含 .-> UC12
+    UC2 -. 包含 .-> UC11
+    UC13 -. 自傳與備審引用 .-> UC5
     Teacher --- UC6
     Teacher --- UC7
     UC2 -. 包含 .-> UC8
     UC8 --- AI
+    UC11 --- AI
+    UC12 --- AI
+    Staff --- UC13
     UC9 --- Admin
     UC10 --- Admin
     SYS ~~~ Staff
@@ -104,6 +130,7 @@ flowchart TD
     classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef admin fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef pending fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
 
@@ -116,7 +143,7 @@ flowchart TD
     Role -- student --> S[學生首頁<br/>選校系、上傳資料、查看缺件]:::student
     Role -- teacher --> T[導師工作台<br/>本班學生資料與確認]:::teacher
     Role -- admin --> A[管理工作區<br/>帳號、權限與校系備審要求]:::admin
-    Role -- staff --> F[科辦工作區<br/>任務待確認]:::pending
+    Role -- staff --> F[科辦工作區<br/>上傳服務、公假、嘉獎紀錄]:::staff
     Role -- 未設定角色 --> NoRole[顯示「此帳號尚未設定可用角色」<br/>並清除登入狀態]:::alert
     S --> Guard{每次開啟頁面或操作時<br/>再次檢查角色權限}
     T --> Guard
@@ -134,12 +161,14 @@ flowchart TD
     classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef system fill:#E0F2FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef note fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
 
     Start([學生登入]) --> HasTarget{已選擇目標校系？}
-    HasTarget -- 否 --> Choose[選擇想申請的二技校系]:::student
+    HasTarget -- 否 --> Recommend[AI Agent 依學生條件<br/>推薦適合的二技校系]:::ai
+    Recommend --> Choose[學生選擇想申請的校系<br/>可重選、可選多個]:::student
     Choose --> Req
     HasTarget -- 是 --> Req[系統列出該校系需要的<br/>備審資料項目與標準]:::system
     Req --> Download[學生自行登入學校系統<br/>下載成績單等資料]:::student
@@ -148,20 +177,25 @@ flowchart TD
     Upload --> FileOK{檔案格式與大小正確？}
     FileOK -- 否 --> FileErr[顯示錯誤原因，請重新上傳]:::alert
     FileErr --> Upload
-    FileOK -- 是 --> Extract[系統整理資料<br/>AI 可協助辨識]:::ai
+    FileOK -- 是 --> Extract[AI 辨識文件並判斷格式<br/>證照另判斷真偽]:::ai
     Extract --> Recognized{辨識成功？}
-    Recognized -- 否 --> Manual[學生手動輸入]:::student
-    Recognized -- 是 --> Confirm[學生確認與修正]:::student
+    Recognized -- 否 --> Explain[AI 說明可能哪裡有問題<br/>與建議怎麼修正]:::alert
+    Explain --> Retry{重新上傳？}
+    Retry -- 是 --> Upload
+    Retry -- 否 --> Manual[學生手動輸入]:::student
+    Recognized -- 是 --> Confirm[學生確認與修正<br/>AI 在旁標出可疑或不合理之處]:::student
     Manual --> Confirm
+    Confirm -.- Note2[一定要學生本人確認後才存入<br/>成績單、證照與競賽證明不經導師審核<br/>競賽證明由主辦方開立，學生自行上傳]:::note
     Confirm --> Compare[系統比對校系要求]:::system
+    StaffRec[科辦上傳的服務、公假、嘉獎紀錄<br/>依學號自動列入（見圖 16）]:::staff --> Compare
     Compare --> Enough{資料符合要求？}
     Enough -- 否 --> Missing[列出還缺什麼]:::alert
     Missing --> Upload
-    Enough -- 是 --> Teacher[導師查看本班學生資料]:::teacher
+    Enough -- 是 --> Teacher[導師查看本班學生的備審內容]:::teacher
     Teacher --> Reasonable{內容合理？}
     Reasonable -- 否 --> Advice[導師留下修改建議]:::teacher
     Advice --> Confirm
-    Reasonable -- 是 --> Output[產出完整備審資料]:::system
+    Reasonable -- 是 --> Output[導師確認後產出完整備審資料<br/>自傳可由 AI 依學生資料與科辦紀錄協助撰寫]:::system
     Output --> Print([學生下載列印])
 ```
 
@@ -280,12 +314,14 @@ flowchart TD
 
     Start([導師登入]) --> List[查看本班學生清單<br/>與資料完成度]:::teacher
     List -.- Scope[導師只能查看本班學生<br/>其他班級一律拒絕存取]:::pending
+    Start -.- NoCert[成績單、證照與競賽證明不經導師審核（由 AI 判斷）<br/>服務、公假、嘉獎紀錄由科辦提供<br/>導師只確認最後整理好的備審內容]:::pending
     List --> Pick[選擇一位學生]:::teacher
     Pick --> View[查看學生資料、目標校系與缺件清單]:::teacher
-    View --> Reasonable{內容合理？}
-    Reasonable -- 是 --> Confirm[標記為已確認]:::teacher
+    View --> Original[可查看成績單、證照、佐證照片與自傳原始檔]:::teacher
+    Original --> Reasonable{備審內容合理？}
+    Reasonable -- 是 --> Confirm[導師標記為已確認]:::teacher
     Confirm --> Ready[學生可產出完整備審資料]:::system
-    Reasonable -- 否 --> Advice[留下修改建議]:::teacher
+    Reasonable -- 否 --> Advice[導師留下修改建議]:::teacher
     Advice --> Fix[學生修正後重新送出]:::student
     Fix --> View
 ```
@@ -327,11 +363,13 @@ flowchart TD
 
     Student[學生]:::student --> S1[上傳、校正與確認本人資料]:::student
     Student --> S2[產出並下載完整備審資料]:::student
-    Teacher[教師／導師]:::teacher --> T1[查看本班學生資料與班級統計]:::teacher
-    Teacher --> T2[確認內容並提供修改建議]:::teacher
-    Staff[科辦／行政（待確認）]:::staff --> F1[任務待確認]:::staff
+    Teacher[導師]:::teacher --> T1[查看本班學生資料]:::teacher
+    Teacher --> T2[確認備審內容並提供修改建議]:::teacher
+    Staff[科辦／科助]:::staff --> F1[上傳科上的官方紀錄<br/>服務（如帶高中機器人社團）、公假、嘉獎]:::staff
+    Staff --> F2[系統依學號列入學生資料<br/>並可產出電子證明]:::staff
+    Staff -.不審備審資料.-> T2
     Admin[系統管理者（開發者）]:::staff --> A1[管理帳號、權限、系統設定與校系備審要求]:::staff
-    Agent[分析服務]:::ai --> G1[產生可校正草稿與候選提示]:::ai
+    Agent[AI Agent]:::ai --> G1[推薦校系、辨識文件並說明錯誤、<br/>判斷證照真偽、標出可疑處、<br/>依學生與科辦紀錄協助寫自傳、小助手回答]:::ai
     G1 -.不直接定案.-> Block[必須經學生或人工確認]:::alert
 ```
 
@@ -351,18 +389,20 @@ flowchart LR
     School[學校成績系統<br/>（本系統不連線）]:::external
     Student[學生]:::student
     Teacher[導師]:::teacher
+    Staff[科辦／科助]:::admin
     Admin[系統管理者（開發者）]:::admin
 
     School -. 學生自行下載成績單 .-> Student
     Student --> UI
     Teacher --> UI
+    Staff --> UI
     Admin --> UI
 
-    UI[瀏覽器前端<br/>HTML／CSS／JavaScript／Bootstrap 5]:::backend
+    UI[瀏覽器前端<br/>HTML／CSS／少量原生 JavaScript]:::backend
     UI --> App[Flask 後端<br/>登入與權限、檔案上傳、資料整理、<br/>缺件比對、備審資料產出]:::backend
     App --> DB[(MySQL 8.0<br/>帳號、學習資料、校系備審要求)]:::db
     App --> Files[(上傳檔案儲存區)]:::db
-    App -. 選用：文件辨識 .-> Gemini[Google Gemini API]:::ai
+    App -. 推薦校系、文件辨識與證照真偽、<br/>自傳小幫手、小助手、招生資料 Agent .-> Gemini[Google Gemini API]:::ai
     App --> Doc[Word 備審資料<br/>（可列印）]:::backend
 ```
 
@@ -386,7 +426,8 @@ flowchart TD
     Student[學生]:::student --> P1
     P1 --> D2[(D2 學生目標校系)]:::store
     Student --> P2[2.0 上傳與確認學習資料]:::system
-    P2 <-. 選用：文件辨識 .-> AI[AI 辨識服務]:::ai
+    P2 <-. 辨識、真偽判斷與可疑處提示 .-> AI[AI 輔助服務]:::ai
+    P1 <-. 推薦校系 .-> AI
     P2 --> D3[(D3 原始檔與辨識結果)]:::store
     P2 --> D4[(D4 成績、證照、活動等學習紀錄)]:::store
     D2 --> P3[3.0 缺件比對]:::system
@@ -400,6 +441,10 @@ flowchart TD
     D4 --> P5
     P5 --> D6[(D6 備審資料檔)]:::store
     D6 --> Download[學生下載列印]:::student
+    Staff[科辦]:::admin --> P7[7.0 匯入科辦紀錄]:::system
+    P7 --> D7[(D7 科辦紀錄與電子證明)]:::store
+    D7 --> P3
+    D7 --> P5
 ```
 
 ## 圖 14：ERD 資料庫關聯圖
@@ -537,12 +582,47 @@ flowchart LR
     classDef system fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
 
-    Target[學生選擇目標校系]:::student --> Upload[上傳六類學習資料]:::student
-    Upload --> Core[系統整理並比對缺件]:::system
-    Core --> Confirm[學生確認並補齊資料]:::student
-    Confirm --> Teacher[導師確認內容]:::teacher
+    Recommend[AI 推薦校系]:::ai --> Target[學生選擇目標校系]:::student
+    Target --> Upload[上傳六類學習資料]:::student
+    Upload --> Check[AI 辨識、說明錯誤<br/>判斷證照真偽]:::ai
+    Check --> Confirm[學生確認並補齊資料]:::student
+    Staff[科辦上傳服務、<br/>公假、嘉獎紀錄]:::staff -.-> Core
+    Confirm --> Core[系統比對缺件]:::system
+    Core --> Teacher
+    Teacher[導師確認備審內容]:::teacher
     Teacher --> Output[產出完整備審資料]:::system
+```
+
+## 圖 16：科辦上傳紀錄流程圖
+
+依 2026-10-07 錄音討論與 2026-10-08 使用者決定：科辦是「科上官方紀錄」的資料來源，用固定 Excel 範本一次上傳服務、公假、嘉獎名單，不逐筆審核、不審備審資料。
+
+```mermaid
+%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
+flowchart TD
+    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef system fill:#E0F2FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef note fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
+
+    Start([科辦登入]):::staff --> Template[下載固定 Excel 範本<br/>學號、項目類別、名稱、日期、說明]:::staff
+    Template --> Upload[填好名單後上傳<br/>例如帶高中機器人社團、公假、嘉獎]:::staff
+    Upload --> Check{系統檢查格式<br/>學號存在、日期正確？}
+    Check -- 否 --> Err[列出第幾列有問題與原因]:::alert
+    Err --> Upload
+    Check -- 是 --> Preview[預覽：每位學生會新增哪些紀錄]:::system
+    Preview --> Publish[科辦按「確認匯入」]:::staff
+    Publish --> Record[依學號列入學生學習資料<br/>標示「科辦提供」，學生不能修改]:::system
+    Record --> Cert[系統可依紀錄產出電子證明<br/>（類似電子獎狀）]:::system
+    Record --> Student[學生在「活動與經歷」看到紀錄]:::student
+    Record --> AI[自傳小幫手與備審資料引用<br/>標示「依據：科辦紀錄」]:::ai
+    Note1[取代過去「做備審時才一次匯整給科助、<br/>在電子證書平台開證明」的做法]:::note -.- Upload
+    Note2[科辦是官方資料來源，不逐筆審核、<br/>不審備審資料（備審由導師確認）]:::note -.- Publish
+    Note3[待確認：學生發現漏列時可否線上請科辦補登；<br/>電子證明的版面]:::note -.- Cert
 ```
 
 ## 修改圖表的步驟

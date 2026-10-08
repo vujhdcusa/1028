@@ -8,9 +8,11 @@ flowchart TD
 
     Student[學生]:::student --> S1[上傳、校正與確認本人資料]:::student
     Student --> S2[產出並下載完整備審資料]:::student
-    Teacher[教師／導師]:::teacher --> T1[查看本班學生資料與班級統計]:::teacher
-    Teacher --> T2[確認內容並提供修改建議]:::teacher
-    Staff[科辦／行政（待確認）]:::staff --> F1[任務待確認]:::staff
+    Teacher[導師]:::teacher --> T1[查看本班學生資料]:::teacher
+    Teacher --> T2[確認備審內容並提供修改建議]:::teacher
+    Staff[科辦／科助]:::staff --> F1[上傳科上的官方紀錄<br/>服務（如帶高中機器人社團）、公假、嘉獎]:::staff
+    Staff --> F2[系統依學號列入學生資料<br/>並可產出電子證明]:::staff
+    Staff -.不審備審資料.-> T2
     Admin[系統管理者（開發者）]:::staff --> A1[管理帳號、權限、系統設定與校系備審要求]:::staff
-    Agent[分析服務]:::ai --> G1[產生可校正草稿與候選提示]:::ai
+    Agent[AI Agent]:::ai --> G1[推薦校系、辨識文件並說明錯誤、<br/>判斷證照真偽、標出可疑處、<br/>依學生與科辦紀錄協助寫自傳、小助手回答]:::ai
     G1 -.不直接定案.-> Block[必須經學生或人工確認]:::alert

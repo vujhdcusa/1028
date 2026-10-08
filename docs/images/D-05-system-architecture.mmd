@@ -11,16 +11,18 @@ flowchart LR
     School[學校成績系統<br/>（本系統不連線）]:::external
     Student[學生]:::student
     Teacher[導師]:::teacher
+    Staff[科辦／科助]:::admin
     Admin[系統管理者（開發者）]:::admin
 
     School -. 學生自行下載成績單 .-> Student
     Student --> UI
     Teacher --> UI
+    Staff --> UI
     Admin --> UI
 
-    UI[瀏覽器前端<br/>HTML／CSS／JavaScript／Bootstrap 5]:::backend
+    UI[瀏覽器前端<br/>HTML／CSS／少量原生 JavaScript]:::backend
     UI --> App[Flask 後端<br/>登入與權限、檔案上傳、資料整理、<br/>缺件比對、備審資料產出]:::backend
     App --> DB[(MySQL 8.0<br/>帳號、學習資料、校系備審要求)]:::db
     App --> Files[(上傳檔案儲存區)]:::db
-    App -. 選用：文件辨識 .-> Gemini[Google Gemini API]:::ai
+    App -. 推薦校系、文件辨識與證照真偽、<br/>自傳小幫手、小助手、招生資料 Agent .-> Gemini[Google Gemini API]:::ai
     App --> Doc[Word 備審資料<br/>（可列印）]:::backend

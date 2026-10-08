@@ -4,6 +4,7 @@ flowchart TD
     classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef admin fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef pending fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
 
@@ -16,7 +17,7 @@ flowchart TD
     Role -- student --> S[學生首頁<br/>選校系、上傳資料、查看缺件]:::student
     Role -- teacher --> T[導師工作台<br/>本班學生資料與確認]:::teacher
     Role -- admin --> A[管理工作區<br/>帳號、權限與校系備審要求]:::admin
-    Role -- staff --> F[科辦工作區<br/>任務待確認]:::pending
+    Role -- staff --> F[科辦工作區<br/>上傳服務、公假、嘉獎紀錄]:::staff
     Role -- 未設定角色 --> NoRole[顯示「此帳號尚未設定可用角色」<br/>並清除登入狀態]:::alert
     S --> Guard{每次開啟頁面或操作時<br/>再次檢查角色權限}
     T --> Guard
