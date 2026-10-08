@@ -3,6 +3,15 @@ from datetime import datetime, timezone
 from app.extensions import db
 from app.services import file_preview
 
+# 每筆資料的證明來源。之後新增來源（例如競賽報名系統）只要在這裡多加一個。
+SOURCE_LABELS = {
+    "student": "學生填寫",
+    "award_record": "學校獎懲記錄",
+    "school_certificate": "學校電子證書",
+    "organizer": "競賽主辦方",
+    "department_certificate": "科辦電子獎狀",
+}
+
 
 class Portfolio(db.Model):
     __tablename__ = "portfolios"
@@ -16,6 +25,8 @@ class Portfolio(db.Model):
     school_year = db.Column(db.Integer, nullable=True)
     semester = db.Column(db.Integer, nullable=True)
     status = db.Column(db.String(20), nullable=False, default="draft", index=True)
+    source = db.Column(db.String(30), nullable=False, default="student", server_default="student")
+    source_document_id = db.Column(db.Integer, db.ForeignKey("source_documents.id"), nullable=True, index=True)
     submitted_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(
         db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
@@ -28,6 +39,7 @@ class Portfolio(db.Model):
     )
 
     student = db.relationship("User", back_populates="portfolios")
+    source_document = db.relationship("SourceDocument")
     evidence_items = db.relationship(
         "PortfolioEvidence", back_populates="portfolio", cascade="all, delete-orphan"
     )
@@ -35,6 +47,10 @@ class Portfolio(db.Model):
         "PortfolioSubmission", back_populates="portfolio", cascade="all, delete-orphan",
         order_by="PortfolioSubmission.version_no",
     )
+
+    @property
+    def source_label(self):
+        return SOURCE_LABELS.get(self.source, self.source)
 
 
 class PortfolioEvidence(db.Model):

@@ -140,6 +140,8 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .tag--warn { color: var(--warn); border-color: currentColor; background: var(--warn-soft); }
 .tag--danger { color: var(--danger); border-color: currentColor; background: var(--danger-soft); }
 .tag--info { color: var(--accent); border-color: currentColor; background: var(--accent-soft); }
+/* 證明來源（學校獎懲記錄、科辦電子獎狀……） */
+.tag--source { color: var(--year-5); border-color: currentColor; background: #ece6f8; }
 
 /* ---------- 版面 ---------- */
 .page { width: var(--page); margin: 0 auto; padding: clamp(1.8rem, 4vw, 3rem) 0 4rem; }
@@ -688,4 +690,13 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
   .assistant { right: .75rem; bottom: .75rem; }
   .assistant.is-open { inset: 0; }
   .assistant.is-open .assistant__panel { width: 100%; height: 100%; border: 0; box-shadow: none; }
+}
+
+/* ---------- 獎懲記錄確認表 ---------- */
+.award-table td { vertical-align: top; }
+.award-table input[name="reason"] { width: 100%; min-width: 18rem; }
+.award-table input[name="school_year"], .award-table input[name="semester"] { width: 4.5rem; }
+.award-table__include { text-align: center; }
+@media (max-width: 720px) {
+  .award-table input[name="reason"] { min-width: 12rem; }
 }

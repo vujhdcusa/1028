@@ -101,7 +101,7 @@
     {% for year in journey.years if year.count %}
     <h3 class="mt-1">{{ year.label }} <span class="mono muted small">{{ year.count }} 筆</span></h3>
     <ul class="rule-item-list">
-      {% for key in category_keys %}{% for item in year.categories[key] %}<li><strong>{{ item.title }}</strong><span>{{ category_labels[key] }}{% if item.detail %} · {{ item.detail }}{% endif %}</span></li>{% endfor %}{% endfor %}
+      {% for key in category_keys %}{% for item in year.categories[key] %}<li><strong>{{ item.title }}</strong><span>{{ category_labels[key] }}{% if item.detail %} · {{ item.detail }}{% endif %}{% if item.source %} <span class="tag tag--source">{{ item.source }}</span>{% endif %}</span></li>{% endfor %}{% endfor %}
     </ul>
     {% else %}
     <p class="muted">學生還沒有已確認的資料。</p>
