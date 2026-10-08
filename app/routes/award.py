@@ -11,7 +11,7 @@ from app.models import DocumentExtraction, Portfolio, SourceDocument
 from app.routes.main import get_current_user, role_required
 from app.security import validate_upload_filename
 from app.services import award_record_service
-from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES
+from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, grade_for
 
 award_bp = Blueprint("award", __name__)
 
@@ -108,15 +108,20 @@ def award_confirm(document_id):
         if row["category"] not in EXPERIENCE_CATEGORIES:
             return _render_review(user, document, rows, [], error=f"第 {index + 1} 列請選擇類別。", status=400)
 
+    profile = user.student_profile
+    admission_year = profile.admission_year if profile else None
     added = 0
     for _, row in chosen:
         title = row["reason"].strip()[:150]
         exists = Portfolio.query.filter_by(student_id=user.id, source="award_record", title=title).first()
         if exists:
             continue
+        year = int(row["school_year"]) if row["school_year"].strip().isdigit() else None
+        # 知道入學年度就換成年級（專一～專五），「我的五年」才放得進對的資料夾
+        year = grade_for(year, admission_year) or year
         db.session.add(Portfolio(
             student_id=user.id, title=title, category=row["category"], description=row["detail"].strip() or None,
-            school_year=int(row["school_year"]) if row["school_year"].strip().isdigit() else None,
+            school_year=year,
             semester=int(row["semester"]) if row["semester"].strip() in ("1", "2") else None,
             source="award_record", source_document_id=document.id,
         ))

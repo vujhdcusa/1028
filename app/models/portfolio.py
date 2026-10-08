@@ -40,6 +40,8 @@ class Portfolio(db.Model):
 
     student = db.relationship("User", back_populates="portfolios")
     source_document = db.relationship("SourceDocument")
+    certificate = db.relationship("AwardCertificate", back_populates="portfolio", uselist=False,
+                                  cascade="all, delete-orphan")
     evidence_items = db.relationship(
         "PortfolioEvidence", back_populates="portfolio", cascade="all, delete-orphan"
     )

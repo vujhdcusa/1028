@@ -130,3 +130,19 @@ def test_review_page_renders_editable_tables_and_real_csrf_token(tmp_path):
 
     assert "data-record-table" in html
     assert "<function" not in html
+
+
+def test_edit_form_keeps_academic_year_value(tmp_path):
+    app = records_app(tmp_path)
+    client = app.test_client()
+    login(client)
+    with app.app_context():
+        student = User.query.filter_by(username="stu").one()
+        record = Portfolio(student_id=student.id, title="舊資料", category="service", school_year=114)
+        db.session.add(record)
+        db.session.commit()
+        record_id = record.id
+
+    html = client.get(f"/student/portfolio/{record_id}/edit").get_data(as_text=True)
+
+    assert '<option value="114" selected>114 學年度</option>' in html

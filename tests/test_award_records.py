@@ -111,7 +111,7 @@ def test_confirm_creates_records_with_school_source(tmp_path, monkeypatch):
         assert records[0].source == "award_record"
         assert records[0].source_label == "學校獎懲記錄"
         assert records[0].source_document_id == SourceDocument.query.one().id
-        assert (records[0].school_year, records[0].semester) == (114, 1)
+        assert (records[0].school_year, records[0].semester) == (4, 1)  # 111 入學，114 學年度是專四
 
 
 def test_confirm_twice_does_not_duplicate(tmp_path, monkeypatch):

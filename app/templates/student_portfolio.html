@@ -37,6 +37,7 @@
           {% if record.semester %}<span class="tag">{{ semester_labels.get(record.semester) }}</span>{% endif %}
           {% if record.evidence_items %}<span class="tag">佐證 {{ record.evidence_items|length }}</span>{% endif %}
           {% if record.source != "student" %}<span class="tag tag--source">{{ record.source_label }}</span>{% endif %}
+          {% if record.certificate and record.certificate.status == "approved" %}<span class="tag tag--ok">科辦電子獎狀</span>{% endif %}
         </div>
         {% set photo = record.evidence_items|selectattr("preview_kind", "equalto", "image")|first %}
         {% if photo %}<img class="record-card__photo" src="{{ url_for('student.evidence_view', evidence_id=photo.id) }}" alt="" loading="lazy">{% endif %}

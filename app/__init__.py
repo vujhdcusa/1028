@@ -23,6 +23,7 @@ def create_app(config_overrides=None):
     from app.routes.teacher import teacher_bp
     from app.routes.assistant import assistant_bp
     from app.routes.award import award_bp
+    from app.routes.certificate import certificate_bp
     from app import models
 
     app.register_blueprint(main_bp)
@@ -33,6 +34,7 @@ def create_app(config_overrides=None):
     app.register_blueprint(teacher_bp)
     app.register_blueprint(assistant_bp)
     app.register_blueprint(award_bp)
+    app.register_blueprint(certificate_bp)
 
     @app.cli.command("agent-check")
     def agent_check_command():

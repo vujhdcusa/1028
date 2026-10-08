@@ -8,6 +8,7 @@
     學生  111534105 / demo1234（王小明，還沒選目標校系）
     學生  111534107 / demo1234（林小美，已送導師確認）
     導師  teacher01 / demo1234（負責資管科三甲）
+    科辦  staff01   / demo1234（林科助，核准電子獎狀）
     管理者 admin     / demo1234
 每次啟動都會重建 instance/demo.db。
 """
@@ -24,8 +25,10 @@ from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.services.admission_service import import_seed_programs  # noqa: E402
 from app.services.gap_service import analyze_gap  # noqa: E402
+from app.services import certificate_service  # noqa: E402
 from app.models import (  # noqa: E402
     AdmissionProgram,
+    AwardCertificate,
     ClassAdvisor,
     CredentialRecord,
     PackageReview,
@@ -43,7 +46,8 @@ def seed():
     student = User(username="111534105", display_name="王小明", role="student")
     teacher = User(username="teacher01", display_name="陳導師", role="teacher")
     admin = User(username="admin", display_name="系統管理者", role="admin")
-    for user in (student, teacher, admin):
+    staff = User(username="staff01", display_name="林科助", role="staff")
+    for user in (student, teacher, admin, staff):
         user.set_password(DEMO_PASSWORD)
         db.session.add(user)
     db.session.flush()
@@ -87,6 +91,15 @@ def seed():
                                     issuing_organization="勞動部", issue_date=date(2025, 4, 12)))
     db.session.add(Portfolio(student_id=classmate.id, category="competition", school_year=2, semester=2,
                              title="全國商業類技藝競賽 佳作", description="電腦軟體應用組。"))
+    # 從學校獎懲記錄匯入的科上派服務，已申請電子獎狀，等科辦核准
+    service_record = Portfolio(student_id=classmate.id, category="service", school_year=2, semester=1,
+                               title="1141學期協助資管科麗山國中社團活動共1次", description="2025/12/30 嘉獎1次",
+                               source="award_record")
+    db.session.add(service_record)
+    db.session.flush()
+    db.session.add(AwardCertificate(student_id=classmate.id, portfolio=service_record, status="pending",
+                                    title=certificate_service.KINDS["service"], issuer=certificate_service.DEFAULT_ISSUER,
+                                    body=certificate_service.default_body(service_record)))
     program = AdmissionProgram.query.filter_by(program_code="208003").one()
     db.session.add(StudentTarget(student_id=classmate.id, rule_version_id=program.id))
     db.session.flush()
@@ -116,7 +129,7 @@ def main():
         db.create_all()
         seed()
     print(f"展示網站：http://127.0.0.1:{port}")
-    print(f"帳號（密碼都是 {DEMO_PASSWORD}）：學生 111534105、111534107｜導師 teacher01｜管理者 admin")
+    print(f"帳號（密碼都是 {DEMO_PASSWORD}）：學生 111534105、111534107｜導師 teacher01｜科辦 staff01｜管理者 admin")
     app.run(port=port, debug=False)
 
 

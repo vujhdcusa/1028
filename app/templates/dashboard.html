@@ -61,6 +61,7 @@
     <span class="queue-badge queue-badge--strong">{{ staff_pending_submissions|length }} 件待處理</span>
   </header>
   <div class="work-metrics">
+    <article class="work-metric"><span>待核准電子獎狀</span><strong>{{ staff_pending_certificates }}</strong><small><a href="{{ url_for('certificate.staff_list') }}">前往電子獎狀 →</a></small></article>
     <article class="work-metric"><span>待登錄結論</span><strong>{{ staff_pending_submissions|length }}</strong><small>目前狀態為已送審</small></article>
     
   </div>

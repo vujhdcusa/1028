@@ -86,6 +86,8 @@ def test_portfolio_source_migration_adds_and_removes_columns(tmp_path):
         db.engine.dispose()
         columns = {column["name"] for column in inspect(db.engine).get_columns("portfolios")}
     assert {"source", "source_document_id"} <= columns
+    with app.app_context():
+        assert inspect(db.engine).has_table("award_certificates")
 
     assert runner.invoke(args=["db", "downgrade", "b7d2e9a41c35"]).exit_code == 0
     with app.app_context():
