@@ -153,10 +153,31 @@ def make_deck():
         slide = base_slide(prs, title, f"{role}端")
         add_image_contain(slide, IMG / filename, 0.55, 1.12, 12.2, 5.9)
 
+    slide = base_slide(prs, "競賽報名流程（後續擴充草稿）", "待問科助")
+    add_text(slide, "以下是討論草稿，不列入目前主線；是否由科辦開放報名，仍要先問科助。", 0.82, 1.22, 11.7, 0.42, 20, ORANGE, True, PP_ALIGN.CENTER)
+    competition_steps = [
+        ("科辦", "建立競賽事項\n報名期限、主辦方、報名方式"),
+        ("學生", "從系統申請報名\n留下參賽紀錄"),
+        ("指導老師", "確認參賽資格或\n指導老師關係"),
+        ("主辦方／AREC", "提供參賽或得獎\n證明"),
+        ("科辦", "管理公假、嘉獎\n等校內行政紀錄"),
+        ("學生", "上傳證明\n納入學習歷程"),
+    ]
+    for i, (actor, action) in enumerate(competition_steps):
+        x = 0.55 + (i % 3) * 4.25
+        y = 1.95 + (i // 3) * 1.75
+        color = [ORANGE, BLUE, TEAL, NAVY, ORANGE, BLUE][i]
+        shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(3.55), Inches(1.18))
+        shape.fill.solid(); shape.fill.fore_color.rgb = PALE
+        shape.line.color.rgb = color; shape.line.width = Pt(1.4)
+        add_text(slide, actor, x + 0.15, y + 0.12, 3.25, 0.27, 14, color, True, PP_ALIGN.CENTER)
+        add_text(slide, action, x + 0.18, y + 0.47, 3.18, 0.55, 15, INK, False, PP_ALIGN.CENTER)
+    add_callout(slide, "草稿中的來源邊界", "外部競賽證明由主辦單位或 AREC 開立；科辦只有在自己是主辦方時才可能開立證明。公假與嘉獎是另一類校內行政紀錄。以上仍待科助確認。", 0.8, 5.65, 11.7, 0.88, ORANGE)
+
     slide = base_slide(prs, "AI Agent：系統的兩個 AI 角色", "AI 功能")
-    add_image_contain(slide, IMG / "D-08-ai-agent-flow.png", 0.55, 1.18, 6.1, 5.55)
-    add_callout(slide, "資管科小助手", "查詢科上規則\n查看自己的進度與缺件\n回答下一步問題\n檢查自傳內容一致性", 7.0, 1.35, 5.35, 2.35, TEAL)
-    add_callout(slide, "自傳小幫手", "一次問四題\n依學生回答產生草稿\n空白內容標示待補\n學生修改後再送導師確認", 7.0, 4.0, 5.35, 2.35, ORANGE)
+    add_callout(slide, "資管科小助手", "查詢科上規則\n查看自己的進度與缺件\n回答下一步問題\n檢查自傳內容一致性", 0.9, 1.55, 5.45, 2.55, TEAL)
+    add_callout(slide, "自傳小幫手", "一次問四題\n依學生回答產生草稿\n空白內容標示待補\n學生修改後再送導師確認", 6.95, 1.55, 5.45, 2.55, ORANGE)
+    add_callout(slide, "共同邊界", "AI 提供草稿、分類與提醒；學生確認資料，導師確認備審，管理者確認招生規則。", 0.9, 4.65, 11.5, 1.15, NAVY)
 
     slide = base_slide(prs, "招生資料 Agent：每年更新，但不自動發布", "AI 功能")
     add_image_contain(slide, IMG / "D-13-admission-rule-update-flow.png", 0.45, 1.15, 7.0, 5.75)
@@ -205,30 +226,22 @@ def make_deck():
     add_text(slide, "謝謝老師，請協助我們先把主線定下來。", 0.9, 5.65, 11.5, 0.55, 25, TEAL, True, PP_ALIGN.CENTER)
 
     appendix = [
-        ("D-01-use-case.png", "附錄｜舊版整體使用案例圖"),
         ("D-01-use-case-v2.png", "附錄｜整體使用案例圖"),
         ("D-01-use-case-student.png", "附錄｜學生使用案例圖"),
         ("D-01-use-case-teacher.png", "附錄｜導師使用案例圖"),
+        ("D-01-use-case-staff.png", "附錄｜科辦／科助使用案例圖"),
         ("D-01-use-case-admin.png", "附錄｜管理員使用案例圖"),
         ("D-02-login-role-routing.png", "附錄｜登入與角色導向流程"),
-        ("D-02-student-flow.png", "附錄｜學生流程"),
-        ("D-03-group-project-review-flow.png", "附錄｜專題審核流程"),
-        ("D-04-admin-maintenance-flow.png", "附錄｜管理維護流程"),
         ("D-05-system-architecture.png", "附錄｜系統架構圖"),
         ("D-06-dfd.png", "附錄｜資料流程圖"),
-        ("D-08-ai-agent-flow.png", "附錄｜AI Agent 流程"),
-        ("D-09-erd.png", "附錄｜舊版 ERD 資料表關聯"),
         ("D-09-erd-v2.png", "附錄｜ERD 資料表關聯"),
         ("D-10-main-line-flow.png", "附錄｜主線流程"),
-        ("D-10-midterm-core-flow.png", "附錄｜期中核心流程"),
-        ("D-10-report-overview.png", "附錄｜報表總覽"),
-        ("D-11-admin-forms-flow.png", "附錄｜行政表單流程"),
         ("D-13-admission-rule-update-flow.png", "附錄｜招生規則更新流程"),
         ("D-14-role-responsibility.png", "附錄｜角色責任圖"),
         ("D-15-report-overview.png", "附錄｜報表總覽（第二版）"),
         ("D-16-teacher-confirm-flow.png", "附錄｜導師確認流程"),
         ("D-17-admin-maintain-requirements.png", "附錄｜管理員維護招生要求流程"),
-        ("D-18-staff-service-record-flow.png", "附錄｜科辦上傳紀錄流程（服務、公假、嘉獎）"),
+        ("D-18-staff-service-record-flow.png", "附錄｜科辦服務電子獎狀流程"),
     ]
     for filename, title in appendix:
         diagram_slide(prs, filename, title, "原圖取自 docs/images，作為目前規格與實作的對照版本")
