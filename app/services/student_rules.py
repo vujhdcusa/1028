@@ -14,7 +14,8 @@ from app.models import StudentTarget
 from app.services.admission_service import published_programs
 from app.services.journey_service import GRADE_LABELS, academic_year_of, current_grade, grade_for
 
-MISSING_ADMISSION_YEAR = "系統還不知道你的入學學年度，沒辦法判斷你現在幾年級。請先補上入學學年度。"
+# 入學學年度由系統管理者匯入（主持人 2026-10-10 決定），學生不能自己填
+MISSING_ADMISSION_YEAR = "系統還沒有你的入學學年度，沒辦法判斷你現在幾年級。請聯絡系統管理者補上入學學年度。"
 
 
 def admission_year_of(student):

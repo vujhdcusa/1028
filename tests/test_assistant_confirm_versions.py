@@ -228,25 +228,67 @@ def test_old_year_target_does_not_use_a_slot_and_can_be_removed(app):
     assert target_count(app) == 0
 
 
-def test_missing_admission_year_blocks_and_can_be_filled_once(app):
+def add_admin(app):
+    with app.app_context():
+        admin = User(username="admin", display_name="admin", role="admin")
+        admin.set_password("pw")
+        db.session.add(admin)
+        db.session.commit()
+    return login(app, "admin")
+
+
+def test_missing_admission_year_blocks_and_student_cannot_fill_it(app):
+    """主持人 2026-10-10 決定：入學學年度由管理者匯入，學生不能自己填（審查 P0-4）。"""
     set_admission_year(app, None)
     client = login(app)
     pid = program_id(app)
 
     blocked = client.post("/student/targets", data={"program_id": pid})
     assert blocked.status_code == 403
-    assert "入學學年度" in blocked.get_data(as_text=True)
+    assert "請聯絡系統管理者" in blocked.get_data(as_text=True)
     assert target_count(app) == 0
     record = client.post("/student/portfolio", data={"title": "志工", "category": "service", "school_year": "1"})
     assert record.status_code == 400
     assert "入學學年度" in record.get_data(as_text=True)
 
-    client.post("/student/profile/admission-year", data={"admission_year": str(GRADE3_ADMISSION_YEAR)})
-    client.post("/student/profile/admission-year", data={"admission_year": "100"})
+    filled = client.post("/student/profile/admission-year", data={"admission_year": "110"})
+    assert filled.status_code in (404, 405)
     with app.app_context():
-        assert StudentProfile.query.filter_by(user_id=user_id(app, "stu")).one().admission_year == GRADE3_ADMISSION_YEAR
-    client.post("/student/targets", data={"program_id": pid})
+        assert StudentProfile.query.filter_by(user_id=user_id(app, "stu")).one().admission_year is None
+
+
+def test_admin_imports_admission_years_and_it_is_logged(app):
+    from app.models import AuditLog
+    set_admission_year(app, None)
+    admin = add_admin(app)
+    rows = "\n".join([f"111534100,{GRADE3_ADMISSION_YEAR}", f"111534200 {GRADE3_ADMISSION_YEAR - 1}",
+                      "999999999,113", "111534100,abc"])
+
+    response = admin.post("/admin/accounts/admission-years", data={"rows": rows}, follow_redirects=True)
+
+    html = response.get_data(as_text=True)
+    with app.app_context():
+        profiles = {p.student_no: p.admission_year for p in StudentProfile.query.all()}
+        logs = AuditLog.query.filter_by(action="student_profile.admission_year").all()
+    assert profiles["111534100"] == GRADE3_ADMISSION_YEAR
+    assert profiles["111534200"] == GRADE3_ADMISSION_YEAR - 1
+    assert len(logs) == 2
+    assert "999999999" in html  # 找不到的學號要列出來
+    assert "已更新 2 位" in html
+    client = login(app)
+    client.post("/student/targets", data={"program_id": program_id(app)})
     assert target_count(app) == 1
+
+
+def test_only_admin_can_import_admission_years(app):
+    set_admission_year(app, None)
+
+    for username in ("stu", "teacher"):
+        response = login(app, username).post("/admin/accounts/admission-years",
+                                             data={"rows": f"111534100,{GRADE3_ADMISSION_YEAR}"})
+        assert response.status_code == 403
+    with app.app_context():
+        assert StudentProfile.query.filter_by(user_id=user_id(app, "stu")).one().admission_year is None
 
 
 def test_record_for_a_future_grade_is_refused_and_input_kept(app):
@@ -365,7 +407,8 @@ def test_confirmed_snapshot_does_not_change_when_student_adds_credential(app):
     client = login(app)
     pid = choose_and_send(app, client)
     review_id = latest_review_row(app)["id"]
-    login(app, "teacher").post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed"})
+    login(app, "teacher").post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed",
+                                                                         "taken_at": teacher_form(app, review_id)})
     before = latest_review_row(app)["snapshot"]
 
     add_credential(app)
@@ -389,7 +432,7 @@ def test_teacher_confirm_and_withdraw_are_logged(app):
     choose_and_send(app, login(app))
     review_id = latest_review_row(app)["id"]
     teacher = login(app, "teacher")
-    teacher.post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed"})
+    teacher.post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed", "taken_at": teacher_form(app, review_id)})
 
     no_reason = teacher.post(f"/teacher/package-reviews/{review_id}/withdraw", data={"reason": " "})
     assert no_reason.status_code == 400
@@ -407,7 +450,8 @@ def test_teacher_confirm_and_withdraw_are_logged(app):
 def test_other_class_teacher_cannot_withdraw(app):
     choose_and_send(app, login(app))
     review_id = latest_review_row(app)["id"]
-    login(app, "teacher").post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed"})
+    login(app, "teacher").post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed",
+                                                                         "taken_at": teacher_form(app, review_id)})
 
     response = login(app, "stranger").post(f"/teacher/package-reviews/{review_id}/withdraw", data={"reason": "測試"})
 
@@ -661,3 +705,134 @@ def test_award_import_counts_toward_school_turns(app, monkeypatch):
     with app.app_context():
         latest = DocumentExtraction.query.order_by(DocumentExtraction.id.desc()).first()
         assert any("用完" in w for w in latest.result_json.get("warnings", []))
+
+
+# ---------- 審查修正（會議 20261009-185407 #48–#59） ----------
+
+def test_editing_submitted_record_needs_confirming_again(app):
+    """P0-1：舊流程送出（submitted）的經歷改過內容，要重新確認才會進自傳。"""
+    record_id = add_portfolio(app, title="送出過的競賽", status="submitted")
+
+    login(app).post(f"/student/portfolio/{record_id}/edit",
+                    data={"title": "送出後偷改的競賽", "category": "competition", "school_year": "3"})
+
+    with app.app_context():
+        assert db.session.get(Portfolio, record_id).status == "draft"
+    assert not any("送出後偷改的競賽" in text for text in facts_text(app))
+
+
+def teacher_form(app, review_id):
+    """導師頁上這筆送審的表單，取出頁面記住的 taken_at。"""
+    import re
+    html = login(app, "teacher").get(f"/teacher/students/{user_id(app, 'stu')}").get_data(as_text=True)
+    match = re.search(rf'action="/teacher/package-reviews/{review_id}".*?name="taken_at" value="([^"]*)"', html, re.S)
+    assert match, "導師頁的確認表單要帶 taken_at"
+    return match.group(1)
+
+
+def test_teacher_cannot_confirm_content_updated_after_page_opened(app):
+    """P0-2：導師開頁後學生又更新送審，舊頁面按確認要被擋下，請導師先看新內容。"""
+    client = login(app)
+    pid = choose_and_send(app, client)
+    review_id = latest_review_row(app)["id"]
+    seen = teacher_form(app, review_id)
+    add_credential(app)
+    client.post(f"/student/targets/{pid}/review")  # 學生更新同一筆送審
+
+    response = login(app, "teacher").post(f"/teacher/package-reviews/{review_id}",
+                                          data={"decision": "confirmed", "taken_at": seen}, follow_redirects=True)
+
+    assert "學生剛更新了送審內容" in response.get_data(as_text=True)
+    assert latest_review_row(app)["status"] == "pending"
+    fresh = teacher_form(app, review_id)
+    login(app, "teacher").post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed", "taken_at": fresh})
+    assert latest_review_row(app)["status"] == "confirmed"
+
+
+def test_teacher_cannot_decide_an_old_or_finished_review(app):
+    """P0-2：已經處理過、或已有更新送審的舊紀錄，不能再按確認。"""
+    from app.models import PackageReview
+    client = login(app)
+    pid = choose_and_send(app, client)
+    first = latest_review_row(app)["id"]
+    teacher = login(app, "teacher")
+    teacher.post(f"/teacher/package-reviews/{first}", data={"decision": "needs_revision", "comment": "請補證照",
+                                                            "taken_at": teacher_form(app, first)})
+    with app.app_context():
+        taken = db.session.get(PackageReview, first).snapshot_json["taken_at"]
+
+    again = teacher.post(f"/teacher/package-reviews/{first}", data={"decision": "confirmed", "taken_at": taken},
+                         follow_redirects=True)
+    assert "已經處理過" in again.get_data(as_text=True)
+
+    client.post(f"/student/targets/{pid}/review")  # 新的一筆送審
+    teacher.post(f"/teacher/package-reviews/{first}", data={"decision": "confirmed", "taken_at": taken})
+    with app.app_context():
+        assert db.session.get(PackageReview, first).status == "needs_revision"
+
+
+def test_withdraw_is_refused_when_a_newer_review_exists(app):
+    """撤回後不能和學生的新送審同時有兩筆等待確認。"""
+    from app.models import PackageReview
+    client = login(app)
+    pid = choose_and_send(app, client)
+    first = latest_review_row(app)["id"]
+    teacher = login(app, "teacher")
+    teacher.post(f"/teacher/package-reviews/{first}", data={"decision": "confirmed", "taken_at": teacher_form(app, first)})
+    client.post(f"/student/targets/{pid}/review")
+
+    response = teacher.post(f"/teacher/package-reviews/{first}/withdraw", data={"reason": "按錯了"})
+
+    assert response.status_code == 400
+    with app.app_context():
+        assert PackageReview.query.filter_by(status="pending").count() == 1
+        assert db.session.get(PackageReview, first).status == "confirmed"
+
+
+def test_saving_an_old_version_is_refused_and_text_is_kept(app):
+    """P0-3：導師開第 1 版後學生存了第 2 版，導師用舊頁面存檔要被擋下，打的字要留著。"""
+    student = login(app)
+    write_autobiography(app, student)
+    first = autobiography_rows(app)[0]
+    count = len(first["content"]["paragraphs"])
+    url = f"/teacher/students/{user_id(app, 'stu')}/autobiography/{first['id']}/edit"
+    save(student, first["id"], ["學生第二版"] * count)
+
+    response = save(login(app, "teacher"), None, ["導師用舊頁面改的字"] * count, url=url)
+
+    html = response.get_data(as_text=True)
+    assert response.status_code == 409
+    assert "第 2 版" in html and "導師用舊頁面改的字" in html
+    rows = autobiography_rows(app)
+    assert len(rows) == 2
+    assert rows[-1]["content"]["paragraphs"][0]["text"] == "學生第二版"
+
+
+def test_student_saving_an_old_version_is_refused(app):
+    student = login(app)
+    write_autobiography(app, student)
+    first = autobiography_rows(app)[0]
+    count = len(first["content"]["paragraphs"])
+    save(student, first["id"], ["第二版"] * count)
+
+    response = save(student, first["id"], ["舊分頁的字"] * count)
+
+    assert response.status_code == 409
+    assert "舊分頁的字" in response.get_data(as_text=True)
+    assert len(autobiography_rows(app)) == 2
+
+
+def test_quota_exceeded_does_not_roll_back_the_callers_work(app):
+    """P1：額度用完時不要把呼叫端還沒存的變更一起丟掉。"""
+    from app.services.ai_quota_service import QuotaExceeded, consume
+    with app.app_context():
+        student = User.query.filter_by(username="stu").one()
+        for _ in range(5):
+            consume(student)
+        db.session.commit()
+        db.session.add(Portfolio(student_id=student.id, title="還沒存的經歷", category="activity"))
+        db.session.flush()
+        with pytest.raises(QuotaExceeded):
+            consume(student)
+        db.session.commit()
+        assert Portfolio.query.filter_by(title="還沒存的經歷").count() == 1

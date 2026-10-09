@@ -359,7 +359,6 @@ def _render_record_form(user, portfolio=None, values=None, error=None):
         categories=EXPERIENCE_CATEGORIES,
         category_labels=CATEGORY_LABELS,
         error=error,
-        needs_admission_year=student_rules.grade_block_reason(user) is not None,
     ), (400 if error else 200)
 
 
@@ -407,8 +406,8 @@ def portfolio_edit(portfolio_id):
             return _render_record_form(user, portfolio, values=request.form, error=str(exc))
         for key, value in values.items():
             setattr(portfolio, key, value)
-        if portfolio.status != "submitted":
-            portfolio.status = _record_status()
+        # 內容改過就要重新確認（舊流程 submitted 的也一樣），未確認的不會進自傳
+        portfolio.status = _record_status()
         db.session.commit()
         return redirect(url_for("student.portfolio_list"))
     return _render_record_form(user, portfolio, values=portfolio)
@@ -503,35 +502,7 @@ def _blocked(user, reason):
     back = urlparse(request.referrer).path if request.referrer else ""
     return render_template(
         "student_blocked.html", user=user, reason=reason, back=back or url_for("student.target_list"),
-        needs_admission_year=student_rules.grade_block_reason(user) is not None,
     ), 403
-
-
-@student_bp.post("/student/profile/admission-year")
-@role_required("student")
-def admission_year_fill():
-    """學生自己補入學學年度；只能補一次，填過之後要改請找管理者。"""
-    user = get_current_user()
-    profile = user.student_profile
-    if profile and profile.admission_year is not None:
-        abort(409, description="入學學年度已經填過，要修改請聯絡系統管理者。")
-    try:
-        year = int(request.form.get("admission_year", ""))
-    except ValueError:
-        abort(400, description="請填民國學年度，例如 113")
-    from app.services.journey_service import academic_year_of
-    if not academic_year_of(date.today()) - 6 <= year <= academic_year_of(date.today()):
-        abort(400, description="入學學年度看起來不對，請填最近五年內的民國學年度，例如 113")
-    if not profile:
-        profile = StudentProfile(user_id=user.id, student_no=user.username)
-        db.session.add(profile)
-    profile.admission_year = year
-    db.session.commit()
-    next_url = request.form.get("next", "")
-    # 只接受站內路徑，避免被導到外部網站
-    if not next_url.startswith("/") or next_url.startswith("//"):
-        next_url = url_for("main.index")
-    return redirect(next_url)
 
 
 def _published_program_or_404(program_id):
@@ -654,9 +625,10 @@ def _autobiography_program(user, program_id):
     return targets[0], targets
 
 
-def _render_autobiography(user, program, targets, error=None, answers=None, status=503):
+def _render_autobiography(user, program, targets, error=None, answers=None, status=503, stale=None):
+    """stale：用舊頁面存檔被擋下時，顯示最新版，並把沒存到的文字列出來（不讓學生白打）。"""
     draft = autobiography_service.latest_draft(user, program) if program else None
-    asking = program and (not draft or request.args.get("redo") or error)
+    asking = program and (not draft or request.args.get("redo") or error) and not stale
     return render_template(
         "student_autobiography.html",
         user=user,
@@ -670,7 +642,8 @@ def _render_autobiography(user, program, targets, error=None, answers=None, stat
         version=autobiography_service.version_of(draft) if draft else None,
         school_turns=ai_quota_service.remaining(user) if ai_ready() else None,
         error=error,
-    ), (status if error else 200)
+        stale=stale,
+    ), (409 if stale else status if error else 200)
 
 
 @student_bp.get("/student/autobiography")
@@ -720,7 +693,13 @@ def autobiography_save(output_id):
     if output.student_id != user.id:
         abort(403)
     count = len(output.content_json.get("paragraphs", []))
-    autobiography_service.save_edits(output, [request.form.get(f"paragraph_{i}", "") for i in range(count)], user)
+    texts = [request.form.get(f"paragraph_{i}", "") for i in range(count)]
+    try:
+        autobiography_service.save_edits(output, texts, user)
+    except autobiography_service.StaleVersion as exc:
+        program, targets = _autobiography_program(user, output.content_json["program_id"])
+        return _render_autobiography(user, program, targets, stale={"message": str(exc), "texts": texts,
+                                                                    "paragraphs": output.content_json["paragraphs"]})
     return redirect(url_for("student.autobiography", program_id=output.content_json["program_id"], saved=1))
 
 

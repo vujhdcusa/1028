@@ -77,6 +77,13 @@
   {% if request.args.get("used_own_key") %}
   <p class="alert mb-1" role="alert"><b>記得刪除你的金鑰！</b>剛才用了你自己的 Gemini 金鑰，系統沒有保存。請現在到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a> 把它刪除或停用，以免被別人拿去用。</p>
   {% endif %}
+  {% if stale %}
+  <div class="alert mb-1" role="alert"><p>{{ stale.message }}</p>
+    <details open><summary class="small">你剛才打的字（還沒存）</summary>
+      {% for text in stale.texts %}<h3 class="h3 mt-1">{{ stale.paragraphs[loop.index0].title }}</h3><p class="version-text">{{ text }}</p>{% endfor %}
+    </details>
+  </div>
+  {% endif %}
   {% if request.args.get("saved") %}<p class="notice mb-1" role="status">已儲存成新的一版。下載備審資料時，「自傳」章節會使用最新版。</p>{% endif %}
   {% if content.editor_role == "teacher" %}<p class="notice notice--warn mb-1">這一版是導師修改的。<a href="{{ url_for('student.autobiography_versions', program_id=program.id) }}">看導師改了哪裡 →</a></p>{% endif %}
   {% if content.provider == "demo" %}

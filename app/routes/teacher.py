@@ -56,6 +56,7 @@ def student_detail(student_id):
         })
     return render_template(
         "teacher_student.html",
+        review_notices=review_snapshot_service.NOTICES,
         user=teacher,
         student=student,
         journey=journey,
@@ -105,7 +106,10 @@ def decide_review(review_id):
         abort(400, description="請選擇「確認」或「需要修改」")
     if decision == "needs_revision" and not comment:
         abort(400, description="需要修改時，請寫下給學生的建議")
-    review_snapshot_service.decide(review, teacher, decision, comment)
+    try:
+        review_snapshot_service.decide(review, teacher, decision, comment, request.form.get("taken_at", ""))
+    except review_snapshot_service.ReviewChanged as exc:
+        return redirect(url_for("teacher.student_detail", student_id=review.student_id, notice=exc.code))
     return redirect(url_for("teacher.student_detail", student_id=review.student_id))
 
 
@@ -146,12 +150,17 @@ def autobiography_edit(student_id, output_id):
     program = db.session.get(AdmissionProgram, output.content_json.get("program_id"))
     if request.method == "POST":
         count = len(output.content_json.get("paragraphs", []))
-        autobiography_service.save_edits(
-            output,
-            [request.form.get(f"paragraph_{i}", "") for i in range(count)],
-            teacher,
-            comments=[request.form.get(f"comment_{i}", "") for i in range(count)],
-        )
+        texts = [request.form.get(f"paragraph_{i}", "") for i in range(count)]
+        comments = [request.form.get(f"comment_{i}", "") for i in range(count)]
+        try:
+            autobiography_service.save_edits(output, texts, teacher, comments=comments)
+        except autobiography_service.StaleVersion as exc:
+            latest = latest_draft(student, program)
+            return render_template(
+                "teacher_autobiography_edit.html", user=teacher, student=student, program=program, output=latest,
+                version=version_of(latest), stale={"message": str(exc), "texts": texts, "comments": comments,
+                                                   "paragraphs": output.content_json["paragraphs"]},
+            ), 409
         return redirect(url_for("teacher.student_detail", student_id=student.id, saved=1))
     return render_template("teacher_autobiography_edit.html", user=teacher, student=student, program=program,
                            output=output, version=autobiography_service.version_of(output))

@@ -194,6 +194,16 @@ def latest_draft(student, program):
     return next((o for o in outputs if o.content_json.get("program_id") == program.id), None)
 
 
+class StaleVersion(RuntimeError):
+    """要存的不是最新版（這段期間別人存了新版）。訊息是給使用者看的中文。"""
+
+
+def _latest_for(student_id, program_id):
+    outputs = (LearningProfileOutput.query.filter_by(student_id=student_id, output_type=OUTPUT_TYPE)
+               .order_by(LearningProfileOutput.id.desc()).all())
+    return next((o for o in outputs if o.content_json.get("program_id") == program_id), None)
+
+
 def _next_version(student_id, program_id):
     outputs = LearningProfileOutput.query.filter_by(student_id=student_id, output_type=OUTPUT_TYPE).all()
     return 1 + max((version_of(o) for o in outputs if o.content_json.get("program_id") == program_id), default=0)
@@ -205,7 +215,13 @@ def save_edits(output, texts, editor, comments=None):
     texts：每一段的新文字（順序和原本一樣）。
     editor：按儲存的人（學生本人或導師）。
     comments：導師的段落意見；None 表示沿用上一版的意見（學生儲存時）。
+    要存的不是最新版時丟 StaleVersion，避免舊頁面蓋掉別人剛存的版本。
     """
+    latest = _latest_for(output.student_id, output.content_json.get("program_id"))
+    if latest and latest.id != output.id:
+        role = {"teacher": "導師", "student": "學生", "ai": "AI"}.get(latest.content_json.get("editor_role"), "其他人")
+        raise StaleVersion(f"你的修改還沒存：這段期間{role}已經存了第 {version_of(latest)} 版。"
+                           "下面是最新版，你剛才打的字列在最上方，請對照後再存一次。")
     content = dict(output.content_json)
     paragraphs = [dict(p) for p in content["paragraphs"]]
     for paragraph, text in zip(paragraphs, texts):

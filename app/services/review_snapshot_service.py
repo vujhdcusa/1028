@@ -74,8 +74,39 @@ def _log(actor, action, review, **detail):
                                          "status": review.status, **detail}))
 
 
-def decide(review, teacher, decision, comment):
-    """導師確認（confirmed）或請學生修改（needs_revision）。"""
+class ReviewChanged(ValueError):
+    """導師要處理的送審已經處理過、有更新的一筆，或學生剛更新了內容。訊息是給導師看的中文。"""
+
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.code = code
+
+
+# 導師頁用代碼顯示提示（不把網址裡的文字直接放進頁面）
+NOTICES = {
+    "done": "這份送審已經處理過了，請重新整理頁面。",
+    "newer": "學生已經送出新的送審，這一筆不能再變更，請處理最新的那一筆。",
+    "changed": "學生剛更新了送審內容，請先看新的內容再確認。",
+}
+
+
+def _check_latest(review):
+    newest = latest_review(review.student, review.program)
+    if newest and newest.id != review.id:
+        raise ReviewChanged("newer", NOTICES["newer"])
+
+
+def decide(review, teacher, decision, comment, seen_taken_at=None):
+    """導師確認（confirmed）或請學生修改（needs_revision）。
+
+    seen_taken_at：導師頁面上看到的快照時間。學生在導師開頁後又更新送審時會不一樣，就擋下來，
+    避免導師確認到自己沒看過的內容。
+    """
+    if review.status != "pending":
+        raise ReviewChanged("done", NOTICES["done"])
+    _check_latest(review)
+    if (review.snapshot_json or {}).get("taken_at", "") != (seen_taken_at or ""):
+        raise ReviewChanged("changed", NOTICES["changed"])
     review.status = decision
     review.comment = comment or None
     review.teacher_id = teacher.id
@@ -90,6 +121,7 @@ def withdraw(review, teacher, reason):
         raise ValueError("這份送審還沒有被確認，不需要撤回。")
     if not reason:
         raise ValueError("撤回確認時，請寫下原因。")
+    _check_latest(review)  # 學生已經送了新的一筆時，不能再把舊的改回等待中（會變成兩筆等待確認）
     review.status = "pending"
     review.teacher_id = teacher.id
     review.reviewed_at = datetime.now(timezone.utc)

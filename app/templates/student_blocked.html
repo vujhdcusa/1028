@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
-{% from "partials/admission_year.html" import admission_year_form with context %}
 {% set page_name = "student-blocked" %}
 
 {% block title %}還不能使用｜資管科智慧學習歷程系統{% endblock %}
@@ -12,7 +11,6 @@
 <div class="page narrow page--banded">
   <section class="sheet">
     <p class="notice notice--warn" role="alert">{{ reason }}</p>
-    {% if needs_admission_year %}{{ admission_year_form(back) }}{% endif %}
     <p class="mt-1"><a href="{{ back }}">回上一頁</a></p>
   </section>
 </div>

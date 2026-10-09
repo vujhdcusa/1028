@@ -15,7 +15,15 @@
       <p>你可以直接改文字，也可以在每段下面留意見。儲存後會變成新的一版，學生看得到你改了哪裡；原本的版本會保留。</p>
     </div>
   </header>
-  <form method="post" class="work-panel draft">
+  {% if stale %}
+  <section class="work-panel">
+    <p class="alert mb-1" role="alert">{{ stale.message }}</p>
+    <details open><summary class="small">你剛才打的字（還沒存）</summary>
+      {% for text in stale.texts %}<h3 class="h3 mt-1">{{ stale.paragraphs[loop.index0].title }}</h3><p class="version-text">{{ text }}</p>{% if stale.comments[loop.index0] %}<blockquote class="teacher-comment"><b>你的意見：</b>{{ stale.comments[loop.index0] }}</blockquote>{% endif %}{% endfor %}
+    </details>
+  </section>
+  {% endif %}
+  <form method="post" class="work-panel draft" action="{{ url_for('teacher.autobiography_edit', student_id=student.id, output_id=output.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% for paragraph in output.content_json.paragraphs %}
     <section class="draft__paragraph">

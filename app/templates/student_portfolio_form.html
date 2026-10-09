@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% from "partials/record_fields.html" import record_fields %}
-{% from "partials/admission_year.html" import admission_year_form with context %}
 {% from "partials/files.html" import upload_field, evidence_grid, lightbox with context %}
 {# 新增和編輯共用這一頁：portfolio 是 None 就是新增。 #}
 {% set page_name = "student-portfolio-edit" if portfolio else "student-portfolio-new" %}
@@ -16,7 +15,6 @@
 <div class="page narrow page--banded">
   <section class="sheet">
     {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
-    {% if needs_admission_year %}<div class="mb-1">{{ admission_year_form(url_for('student.portfolio_new')) }}</div>{% endif %}
     <form method="post" class="form-stack" action="{{ url_for('student.portfolio_edit', portfolio_id=portfolio.id) if portfolio else url_for('student.portfolio_list') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {{ record_fields(categories, category_labels, values) }}
