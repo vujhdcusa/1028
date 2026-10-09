@@ -66,3 +66,31 @@ def test_admission_main_line_migration_upgrades_and_downgrades(tmp_path):
         db.engine.dispose()
         tables = set(inspect(db.engine).get_table_names())
     assert "package_reviews" not in tables
+
+
+def test_portfolio_source_migration_adds_and_removes_columns(tmp_path):
+    database_path = tmp_path / "portfolio-source.db"
+    app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{database_path}", "TESTING": True})
+    runner = app.test_cli_runner()
+    with app.app_context(), db.engine.begin() as conn:
+        # 模擬正式資料庫裡早已存在、但還沒有 source 欄位的 users、portfolios 表
+        conn.exec_driver_sql("CREATE TABLE users (id INTEGER PRIMARY KEY)")
+        conn.exec_driver_sql(
+            "CREATE TABLE portfolios (id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, title VARCHAR(150) NOT NULL,"
+            " category VARCHAR(50) NOT NULL, description TEXT, course_name VARCHAR(100), school_year INTEGER,"
+            " semester INTEGER, status VARCHAR(20) NOT NULL, submitted_at DATETIME, created_at DATETIME NOT NULL,"
+            " updated_at DATETIME NOT NULL)")
+
+    assert runner.invoke(args=["db", "upgrade"]).exit_code == 0
+    with app.app_context():
+        db.engine.dispose()
+        columns = {column["name"] for column in inspect(db.engine).get_columns("portfolios")}
+    assert {"source", "source_document_id"} <= columns
+    with app.app_context():
+        assert inspect(db.engine).has_table("award_certificates")
+
+    assert runner.invoke(args=["db", "downgrade", "b7d2e9a41c35"]).exit_code == 0
+    with app.app_context():
+        db.engine.dispose()
+        columns = {column["name"] for column in inspect(db.engine).get_columns("portfolios")}
+    assert "source" not in columns

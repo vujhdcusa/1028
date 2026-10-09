@@ -3,7 +3,7 @@ from functools import wraps
 from flask import Blueprint, abort, redirect, render_template, request, session, url_for
 
 from app.extensions import db
-from app.models import PortfolioSubmission, SourceDocument, StudentTarget, SubmissionAssignment, TeacherReviewFeedback, User
+from app.models import AwardCertificate, PortfolioSubmission, SourceDocument, StudentTarget, SubmissionAssignment, TeacherReviewFeedback, User
 from app.services.gap_service import analyze_gap
 from app.services.package_service import latest_review
 from app.services.teacher_scope import advised_classes, students_for_teacher
@@ -163,6 +163,7 @@ def staff_dashboard():
         title="科辦／行政工作台",
         user=user,
         staff_pending_submissions=pending_submissions,
+        staff_pending_certificates=AwardCertificate.query.filter_by(status="pending").count(),
         staff_feedback_by_submission=feedback_by_submission(
             [item.id for item in pending_submissions]
         ),

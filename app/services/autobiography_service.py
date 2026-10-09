@@ -57,7 +57,8 @@ def build_facts(student, program):
     for record in Portfolio.query.filter_by(student_id=student.id).order_by(Portfolio.id):
         label = CATEGORY_LABELS.get(record.category)
         if label:
-            lines.append(f"{label}：{record.title}" + (f"—{record.description}" if record.description else ""))
+            source = "" if record.source == "student" else f"（來源：{record.source_label}）"
+            lines.append(f"{label}：{record.title}" + (f"—{record.description}" if record.description else "") + source)
     items = [{"id": f"F{index}", "text": text} for index, text in enumerate(lines, start=1)]
     weights = [{
         "name": item.source_item_name,

@@ -17,6 +17,8 @@
   <label class="field">年級
     <select name="school_year">
       <option value="">還不確定</option>
+      {# 舊資料或匯入時存成民國學年度（例如 114）：保留原值，不要一儲存就被清掉 #}
+      {% if current_year and current_year|int > 5 %}<option value="{{ current_year }}" selected>{{ current_year }} 學年度</option>{% endif %}
       {% for n in range(1, 6) %}<option value="{{ n }}"{% if current_year|string == n|string %} selected{% endif %}>專{{ "一二三四五"[n - 1] }}</option>{% endfor %}
     </select>
   </label>

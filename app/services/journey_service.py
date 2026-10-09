@@ -89,6 +89,7 @@ def build_journey(student, today=None):
         place(grade_for(record.school_year, admission_year), record.category, {
             "title": record.title,
             "detail": record.description or "",
+            "source": "" if record.source == "student" else record.source_label,
         })
 
     totals = {key: 0 for key in CATEGORY_KEYS}

@@ -107,7 +107,8 @@ def learning_profile_document_upload():
 @role_required("student")
 def learning_profile():
     user = get_current_user()
-    documents = SourceDocument.query.filter_by(owner_id=user.id).order_by(SourceDocument.created_at.desc()).all()
+    documents = SourceDocument.query.filter_by(owner_id=user.id).filter(
+        SourceDocument.document_type.in_(ALLOWED_DOCUMENT_TYPES)).order_by(SourceDocument.created_at.desc()).all()
     outputs = LearningProfileOutput.query.filter_by(student_id=user.id).order_by(LearningProfileOutput.created_at.desc()).all()
     courses = LearningCourseRecord.query.filter_by(student_id=user.id).order_by(
         LearningCourseRecord.school_year, LearningCourseRecord.id).all()
