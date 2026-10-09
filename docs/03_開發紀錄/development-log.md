@@ -41,6 +41,13 @@
 - 留在原地：`AI_代理協作_工作佇列.md`（`AGENTS.md` 指定位置）、`02_需求與設計/system-design-action-plan.md`（測試會檢查路徑）。
 - `04_圖表與介面/` 的 UI 設計文件沒有動，由組員整理。
 
+### 六、合併 `feat/award-records` 回 `main`
+
+- 使用者同意後，先 commit 文件整理（`00da96d`），再合併 `feat/award-records`（`27f90b8`，無衝突）。獎懲記錄 AI 逐列分類、資料來源標籤、科辦電子獎狀與驗證頁已進入 `main`。
+- 合併後 `pytest`：**180 passed**。
+- 未 commit：`scripts/puppeteer-mermaid.json`（GPT 留下）、`scripts/transcribe_project_recordings.py`（轉錄錄音用，金鑰從 `.env` 讀取），待使用者決定。
+- 尚未做：用真的獎懲記錄截圖測 AI 讀取；移除 worktree `D:\democase\ai-wt-award`；MySQL migration。
+
 ## 2026-10-08（晚）排定新想法順序、科辦表單區設計規格
 
 日期：2026-10-08
