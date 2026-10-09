@@ -1,4 +1,5 @@
 from app.models.agent_task import AgentTask
+from app.models.ai_usage import AiDailyUsage
 from app.models.audit_log import AuditLog
 from app.models.portfolio import Portfolio, PortfolioEvidence
 from app.models.certificate import AwardCertificate
@@ -41,6 +42,7 @@ from app.models.p0_workbench import (
 )
 
 __all__ = [
+    "AiDailyUsage",
     "AwardCertificate",
     "AgentTask",
     "AuditLog",

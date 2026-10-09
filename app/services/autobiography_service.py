@@ -6,9 +6,15 @@
 3. 草稿一定要學生自己看過、修改、儲存，才會放進備審 Word。
 
 草稿存在 learning_profile_outputs（output_type="autobiography_ai"），不需要新資料表。
+
+版本紀錄（規格 10.3-4、10.3-5）：AI 產生、學生儲存、導師修改，每一次都**新增一筆**，舊版不動也不能刪。
+content_json 記錄 version（第幾版）、editor_id、editor_role（ai／student／teacher）、based_on（從哪一版改的）。
 """
 
+import difflib
 from datetime import datetime, timezone
+
+from markupsafe import Markup, escape
 
 from app.extensions import db
 from app.models import CredentialRecord, LearningCourseRecord, LearningProfileOutput, Portfolio
@@ -17,6 +23,9 @@ from app.services.gemini_client import AIUnavailable, ai_ready, generate_json
 from app.services.journey_service import CATEGORY_LABELS
 
 OUTPUT_TYPE = "autobiography_ai"
+
+# 學生按過「確認」的經歷；submitted 是舊的專題送審流程，也代表學生確認過
+CONFIRMED_PORTFOLIO_STATUSES = ("confirmed", "submitted")
 
 # 問題（key, 題目, 提示）。要改題目只要改這裡。
 QUESTIONS = [
@@ -47,14 +56,20 @@ PARAGRAPH_SCHEMA = {
 
 
 def build_facts(student, program):
-    """把學生已確認的資料整理成編號事實，並附上目標校系的評分項目與加權。"""
+    """把學生已確認的資料整理成編號事實，並附上目標校系的評分項目與加權。
+
+    只收學生確認過的資料：成績與證照要 confirmation_status 是 confirmed，經歷要學生按過「確認」。
+    """
     lines = []
-    for course in LearningCourseRecord.query.filter_by(student_id=student.id).order_by(LearningCourseRecord.id):
+    for course in (LearningCourseRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed")
+                   .order_by(LearningCourseRecord.id)):
         score = f"{course.score} 分" if course.score is not None else (course.status_mark or "")
         lines.append(f"成績：{course.course_name}（{course.school_year or '?'} 年級，{score}）")
-    for credential in CredentialRecord.query.filter_by(student_id=student.id).order_by(CredentialRecord.id):
+    for credential in (CredentialRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed")
+                       .order_by(CredentialRecord.id)):
         lines.append(f"證照：{credential.credential_name}" + (f"（{credential.level}）" if credential.level else ""))
-    for record in Portfolio.query.filter_by(student_id=student.id).order_by(Portfolio.id):
+    for record in (Portfolio.query.filter_by(student_id=student.id)
+                   .filter(Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES)).order_by(Portfolio.id)):
         label = CATEGORY_LABELS.get(record.category)
         if label:
             source = "" if record.source == "student" else f"（來源：{record.source_label}）"
@@ -115,6 +130,7 @@ def generate_draft(student, program, answers, generate=None, api_key=None):
     api_key：學生自己的 Gemini 金鑰，只在這次呼叫用，**不會**寫進資料庫或任何紀錄。
     """
     facts = build_facts(student, program)
+    previous = latest_draft(student, program)
     known = {fact["id"] for fact in facts["items"]}
     answers = {key: (answers.get(key) or "").strip()[:1000] for key, _, _ in QUESTIONS}
     if generate is None and not api_key and not ai_ready():
@@ -140,6 +156,10 @@ def generate_draft(student, program, answers, generate=None, api_key=None):
             "facts": facts["items"],
             "provider": provider,
             "edited": False,
+            "version": _next_version(student.id, program.id),
+            "editor_id": student.id,
+            "editor_role": "ai",
+            "based_on": previous.id if previous else None,
         },
         source_snapshot_json={"program_id": program.id, "fact_count": len(facts["items"]),
                               "generated_at": datetime.now(timezone.utc).isoformat()},
@@ -149,19 +169,115 @@ def generate_draft(student, program, answers, generate=None, api_key=None):
     return output
 
 
+def versions(student, program):
+    """同一位學生、同一個校系的所有自傳版本（舊到新）。"""
+    outputs = (LearningProfileOutput.query.filter_by(student_id=student.id, output_type=OUTPUT_TYPE)
+               .order_by(LearningProfileOutput.id).all())
+    return [o for o in outputs if o.content_json.get("program_id") == program.id]
+
+
+def version_of(output):
+    """這一版是第幾版。新資料存在 content_json["version"]；舊資料依建立順序推算。"""
+    if output.content_json.get("version"):
+        return output.content_json["version"]
+    earlier = (LearningProfileOutput.query.filter(
+        LearningProfileOutput.student_id == output.student_id,
+        LearningProfileOutput.output_type == OUTPUT_TYPE,
+        LearningProfileOutput.id <= output.id,
+    ).all())
+    return sum(1 for o in earlier if o.content_json.get("program_id") == output.content_json.get("program_id"))
+
+
 def latest_draft(student, program):
     outputs = (LearningProfileOutput.query.filter_by(student_id=student.id, output_type=OUTPUT_TYPE)
                .order_by(LearningProfileOutput.id.desc()).all())
     return next((o for o in outputs if o.content_json.get("program_id") == program.id), None)
 
 
-def save_edits(output, texts):
-    """學生逐段修改後儲存。texts 是每一段的新文字（順序和原本一樣）。"""
+class StaleVersion(RuntimeError):
+    """要存的不是最新版（這段期間別人存了新版）。訊息是給使用者看的中文。"""
+
+
+def _latest_for(student_id, program_id):
+    outputs = (LearningProfileOutput.query.filter_by(student_id=student_id, output_type=OUTPUT_TYPE)
+               .order_by(LearningProfileOutput.id.desc()).all())
+    return next((o for o in outputs if o.content_json.get("program_id") == program_id), None)
+
+
+def _next_version(student_id, program_id):
+    outputs = LearningProfileOutput.query.filter_by(student_id=student_id, output_type=OUTPUT_TYPE).all()
+    return 1 + max((version_of(o) for o in outputs if o.content_json.get("program_id") == program_id), default=0)
+
+
+def save_edits(output, texts, editor, comments=None):
+    """逐段修改後儲存成**新的一版**，回傳新版本；舊版不動。
+
+    texts：每一段的新文字（順序和原本一樣）。
+    editor：按儲存的人（學生本人或導師）。
+    comments：導師的段落意見；None 表示沿用上一版的意見（學生儲存時）。
+    要存的不是最新版時丟 StaleVersion，避免舊頁面蓋掉別人剛存的版本。
+    """
+    latest = _latest_for(output.student_id, output.content_json.get("program_id"))
+    if latest and latest.id != output.id:
+        role = {"teacher": "導師", "student": "學生", "ai": "AI"}.get(latest.content_json.get("editor_role"), "其他人")
+        raise StaleVersion(f"你的修改還沒存：這段期間{role}已經存了第 {version_of(latest)} 版。"
+                           "下面是最新版，你剛才打的字列在最上方，請對照後再存一次。")
     content = dict(output.content_json)
     paragraphs = [dict(p) for p in content["paragraphs"]]
     for paragraph, text in zip(paragraphs, texts):
         paragraph["text"] = text.strip()
-    content["paragraphs"] = paragraphs
-    content["edited"] = True
-    output.content_json = content
+    if comments is not None:
+        for paragraph, comment in zip(paragraphs, comments):
+            comment = comment.strip()[:500]
+            if comment:
+                paragraph["teacher_comment"] = comment
+            else:
+                paragraph.pop("teacher_comment", None)
+    content.update({
+        "paragraphs": paragraphs,
+        "edited": True,
+        "version": _next_version(output.student_id, content["program_id"]),
+        "editor_id": editor.id,
+        "editor_role": editor.role,
+        "based_on": output.id,
+    })
+    new_version = LearningProfileOutput(
+        student_id=output.student_id,
+        output_type=OUTPUT_TYPE,
+        content_json=content,
+        source_snapshot_json={**(output.source_snapshot_json or {}),
+                              "saved_at": datetime.now(timezone.utc).isoformat()},
+    )
+    db.session.add(new_version)
     db.session.commit()
+    return new_version
+
+
+def _diff_html(old, new):
+    """逐字比較，刪掉的用 <del>、新增的用 <ins>。"""
+    parts = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, old, new, autojunk=False).get_opcodes():
+        if tag == "equal":
+            parts.append(escape(new[j1:j2]))
+            continue
+        if i2 > i1:
+            parts.append(Markup("<del>%s</del>") % old[i1:i2])
+        if j2 > j1:
+            parts.append(Markup("<ins>%s</ins>") % new[j1:j2])
+    return Markup("").join(parts)
+
+
+def version_diff(output, previous):
+    """這一版和上一版逐段比較。沒有上一版時，每段都當作沒變動。"""
+    old_paragraphs = previous.content_json.get("paragraphs", []) if previous else []
+    result = []
+    for index, paragraph in enumerate(output.content_json.get("paragraphs", [])):
+        old_text = old_paragraphs[index]["text"] if index < len(old_paragraphs) else ""
+        changed = previous is not None and old_text != paragraph["text"]
+        result.append({
+            "title": paragraph.get("title", ""),
+            "changed": changed,
+            "html": _diff_html(old_text, paragraph["text"]) if changed else escape(paragraph["text"]),
+            "comment": paragraph.get("teacher_comment"),
+        })
+    return result

@@ -106,7 +106,8 @@ def test_teacher_sees_own_class_and_can_confirm(app):
     student_client = login(app.test_client(), "stu")
     student_client.post(f"/student/targets/{pid}/review")
     with app.app_context():
-        review_id = PackageReview.query.one().id
+        review = PackageReview.query.one()
+        review_id, taken_at = review.id, review.snapshot_json["taken_at"]
         stu_id = User.query.filter_by(username="stu").one().id
         other_id = User.query.filter_by(username="other").one().id
 
@@ -117,7 +118,8 @@ def test_teacher_sees_own_class_and_can_confirm(app):
     assert teacher.get(f"/teacher/students/{stu_id}").status_code == 200
     assert teacher.get(f"/teacher/students/{other_id}").status_code == 403
 
-    response = teacher.post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed", "comment": ""})
+    response = teacher.post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed", "comment": "",
+                                                                         "taken_at": taken_at})
 
     assert response.status_code == 302
     with app.app_context():

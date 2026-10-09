@@ -8,6 +8,7 @@ from app.models import (
     ProjectType,
     RequirementItem,
     RequirementTemplate,
+    StudentProfile,
     StudentProjectAssignment,
     User,
 )
@@ -26,6 +27,9 @@ def portfolio_app(tmp_path):
         for user in (student, other):
             user.set_password("pw")
             db.session.add(user)
+        db.session.flush()
+        # 規格 10.5：沒有入學學年度的學生不能新增經歷
+        db.session.add(StudentProfile(user_id=student.id, student_no="111534199", admission_year=113))
         db.session.commit()
     return app
 

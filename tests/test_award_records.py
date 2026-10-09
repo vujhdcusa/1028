@@ -199,7 +199,8 @@ def test_autobiography_facts_mention_school_source(tmp_path):
         from app.models import User
         from app.services.autobiography_service import build_facts
         student = User.query.filter_by(username="stu").one()
-        db.session.add(Portfolio(student_id=student.id, title="協助國中社團", category="service", source="award_record"))
+        db.session.add(Portfolio(student_id=student.id, title="協助國中社團", category="service", source="award_record",
+                                 status="confirmed"))
         db.session.commit()
 
         class Program:

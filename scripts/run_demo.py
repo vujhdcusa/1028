@@ -24,14 +24,12 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.services.admission_service import import_seed_programs  # noqa: E402
-from app.services.gap_service import analyze_gap  # noqa: E402
-from app.services import certificate_service  # noqa: E402
+from app.services import certificate_service, review_snapshot_service  # noqa: E402
 from app.models import (  # noqa: E402
     AdmissionProgram,
     AwardCertificate,
     ClassAdvisor,
     CredentialRecord,
-    PackageReview,
     StudentTarget,
     LearningCourseRecord,
     Portfolio,
@@ -66,15 +64,16 @@ def seed():
                                     issuing_organization="勞動部", issue_date=date(2025, 5, 20)))
     db.session.add(CredentialRecord(student_id=student.id, credential_name="網頁設計乙級", level="乙級",
                                     issuing_organization="勞動部", issue_date=date(2025, 11, 2)))
+    # 最後一筆還沒確認：展示「確認過的經歷才會被 AI 寫進自傳」
     records = [
-        ("activity", 1, 1, "資管科迎新宿營", "擔任小隊輔，帶領新生認識校園。"),
-        ("service", 2, 1, "資訊週志工", "協助活動報到與場地引導。"),
-        ("leadership", 2, 2, "班級學藝股長", "負責班級公告與學習資料整理。"),
-        ("activity", 3, 1, "校園黑客松", "三人一組，兩天內完成活動報名網站。"),
+        ("activity", 1, 1, "資管科迎新宿營", "擔任小隊輔，帶領新生認識校園。", "confirmed"),
+        ("service", 2, 1, "資訊週志工", "協助活動報到與場地引導。", "confirmed"),
+        ("leadership", 2, 2, "班級學藝股長", "負責班級公告與學習資料整理。", "confirmed"),
+        ("activity", 3, 1, "校園黑客松", "三人一組，兩天內完成活動報名網站。", "draft"),
     ]
-    for category, year, semester, title, description in records:
-        db.session.add(Portfolio(student_id=student.id, category=category, school_year=year,
-                                 semester=semester, title=title, description=description))
+    for category, year, semester, title, description, status in records:
+        db.session.add(Portfolio(student_id=student.id, category=category, school_year=year, semester=semester,
+                                 title=title, description=description, status=status))
     db.session.commit()
 
     # 主線後半：校系資料、導師班級，以及一位已送導師確認的同學
@@ -90,11 +89,11 @@ def seed():
     db.session.add(CredentialRecord(student_id=classmate.id, credential_name="電腦軟體應用丙級", level="丙級",
                                     issuing_organization="勞動部", issue_date=date(2025, 4, 12)))
     db.session.add(Portfolio(student_id=classmate.id, category="competition", school_year=2, semester=2,
-                             title="全國商業類技藝競賽 佳作", description="電腦軟體應用組。"))
+                             title="全國商業類技藝競賽 佳作", description="電腦軟體應用組。", status="confirmed"))
     # 從學校獎懲記錄匯入的科上派服務，已申請電子獎狀，等科辦核准
     service_record = Portfolio(student_id=classmate.id, category="service", school_year=2, semester=1,
                                title="1141學期協助資管科麗山國中社團活動共1次", description="2025/12/30 嘉獎1次",
-                               source="award_record")
+                               source="award_record", status="confirmed")
     db.session.add(service_record)
     db.session.flush()
     db.session.add(AwardCertificate(student_id=classmate.id, portfolio=service_record, status="pending",
@@ -103,9 +102,8 @@ def seed():
     program = AdmissionProgram.query.filter_by(program_code="208003").one()
     db.session.add(StudentTarget(student_id=classmate.id, rule_version_id=program.id))
     db.session.flush()
-    db.session.add(PackageReview(student_id=classmate.id, rule_version_id=program.id, status="pending",
-                                 readiness_percent=analyze_gap(classmate, program)["readiness"]))
     db.session.commit()
+    review_snapshot_service.request_review(classmate, program)  # 送審時存快照
 
 
 def main():

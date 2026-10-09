@@ -1,10 +1,13 @@
-from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
+from datetime import date
+
+from flask import Blueprint, abort, current_app, redirect, render_template, request, session, url_for
 
 from app.extensions import db
 from app.security import validate_upload_filename
 from app.models import (
     AdmissionProgram,
     AgentTask,
+    AuditLog,
     PublicSource,
     PublicSourceChange,
     PublicSourceSnapshot,
@@ -21,6 +24,7 @@ from app.services import admission_agent_service as agent
 from app.services.admission_service import import_seed_programs
 from app.services.gemini_client import ai_ready
 from app.services.gap_service import ALL_LABELS
+from app.services.journey_service import academic_year_of
 from app.routes.main import get_current_user, role_required
 
 
@@ -88,7 +92,41 @@ def accounts():
         "admin_accounts.html",
         user=get_current_user(),
         accounts=User.query.order_by(User.role.asc(), User.username.asc()).all(),
+        admission_import=session.pop("admission_import", None),
     )
+
+
+@admin_bp.post("/admin/accounts/admission-years")
+@role_required("admin")
+def import_admission_years():
+    """管理者匯入入學學年度：每行「學號,入學學年度」（逗號或空白分隔）。學生不能自己填（主持人 2026-10-10）。"""
+    actor = get_current_user()
+    current = academic_year_of(date.today())
+    updated, problems = 0, []
+    for number, line in enumerate(request.form.get("rows", "").splitlines(), start=1):
+        parts = line.replace(",", " ").replace("，", " ").split()
+        if not parts:
+            continue
+        if len(parts) != 2 or not parts[1].isdigit():
+            problems.append(f"第 {number} 行看不懂：{line.strip()[:40]}")
+            continue
+        student_no, year = parts[0], int(parts[1])
+        profile = StudentProfile.query.filter_by(student_no=student_no).first()
+        if not profile:
+            problems.append(f"第 {number} 行找不到學號 {student_no[:20]}")
+            continue
+        if not current - 7 <= year <= current:
+            problems.append(f"第 {number} 行入學學年度 {year} 不在最近 8 個學年度內")
+            continue
+        if profile.admission_year != year:
+            db.session.add(AuditLog(user_id=actor.id, action="student_profile.admission_year",
+                                    target_type="student_profile", target_id=profile.id,
+                                    detail_json={"from": profile.admission_year, "to": year}))
+            profile.admission_year = year
+            updated += 1
+    db.session.commit()
+    session["admission_import"] = {"updated": updated, "problems": problems[:50]}
+    return redirect(url_for("admin.accounts"))
 
 
 @admin_bp.post("/admin/accounts/<int:user_id>/toggle-active")

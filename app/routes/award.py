@@ -10,7 +10,7 @@ from app.extensions import db
 from app.models import DocumentExtraction, Portfolio, SourceDocument
 from app.routes.main import get_current_user, role_required
 from app.security import validate_upload_filename
-from app.services import award_record_service
+from app.services import ai_quota_service, award_record_service
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, grade_for
 
 award_bp = Blueprint("award", __name__)
@@ -25,6 +25,21 @@ def _owned_award_document_or_404(document_id):
     if document.owner_id != get_current_user().id:
         abort(403)
     return document
+
+
+def _read_rows(user, stored_path, safe_name):
+    """請 AI 逐列讀出；學校金鑰每人每天有次數限制，AI 沒讀出來就退回次數。"""
+    if not award_record_service.gemini_client.ai_ready():
+        return award_record_service.extract_rows(stored_path, safe_name)
+    try:
+        ai_quota_service.consume(user)
+    except ai_quota_service.QuotaExceeded:
+        return [], [f"今天學校 AI 的 {current_app.config.get('SCHOOL_AI_DAILY_LIMIT', 5)} 次已經用完了，"
+                    "明天會恢復；現在可以對照上方的原始檔，自己填寫下面的表格。"]
+    rows, warnings = award_record_service.extract_rows(stored_path, safe_name)
+    if not rows:
+        ai_quota_service.refund(user)
+    return rows, warnings
 
 
 @award_bp.get("/student/award-records")
@@ -56,7 +71,7 @@ def award_upload():
     stored_path = folder / f"{uuid4().hex}_{safe_name}"
     stored_path.write_bytes(file_bytes)
     try:
-        rows, warnings = award_record_service.extract_rows(stored_path, safe_name)
+        rows, warnings = _read_rows(user, stored_path, safe_name)
         document = SourceDocument(owner_id=user.id, document_type=DOCUMENT_TYPE, display_name=safe_name,
                                   file_path=str(stored_path), sha256=sha256(file_bytes).hexdigest(), status="extracted")
         db.session.add(document)
@@ -124,6 +139,7 @@ def award_confirm(document_id):
             school_year=year,
             semester=int(row["semester"]) if row["semester"].strip() in ("1", "2") else None,
             source="award_record", source_document_id=document.id,
+            status="confirmed",  # 學生在上一頁已逐列勾選確認
         ))
         added += 1
     document.status = "confirmed"

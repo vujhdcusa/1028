@@ -31,7 +31,7 @@ def app(tmp_path):
         db.session.flush()
         stu = User.query.filter_by(username="stu").one()
         db.session.add(StudentProfile(user_id=stu.id, student_no="111534100", class_name="資管科三甲", admission_year=113))
-        db.session.add(Portfolio(student_id=stu.id, title="校園黑客松", category="competition", school_year=3,
+        db.session.add(Portfolio(student_id=stu.id, title="校園黑客松", category="competition", school_year=3, status="confirmed",
                                  description="三人一組完成報名網站"))
         db.session.commit()
     yield app

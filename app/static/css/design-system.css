@@ -116,6 +116,7 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .form-stack { display: grid; gap: 1rem; }
 .alert { padding: .8rem 1rem; border-left: 4px solid var(--danger); background: var(--danger-soft); font-size: .95rem; }
 .notice { padding: .8rem 1rem; border-left: 4px solid var(--ok); background: var(--ok-soft); font-size: .95rem; }
+.notice--warn { border-left-color: var(--warn); background: var(--warn-soft); }
 
 /* 選項卡片（例如上傳時選「成績單／證照」） */
 .choice-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .75rem; }
@@ -550,6 +551,8 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .list-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .record-group__head a { text-decoration: none; font-weight: 700; color: var(--accent); }
 .record-group__head h2 .small { font-family: var(--font-sans); font-weight: 400; }
+.record-card-slot { display: grid; gap: .4rem; align-content: start; }
+.record-card-slot > .record-card { height: 100%; }
 .record-card--link { text-decoration: none; color: var(--ink); }
 .record-card--link:hover { box-shadow: 3px 3px 0 var(--ink); }
 .page--banded { padding-top: 1.5rem; }
@@ -700,3 +703,16 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 @media (max-width: 720px) {
   .award-table input[name="reason"] { min-width: 12rem; }
 }
+
+/* 送審快照與版本差異（導師頁、自傳版本頁） */
+.snapshot-box { padding: .8rem 1rem; border: 1px dashed var(--line); background: var(--paper-deep, var(--sheet)); }
+.diff-list { list-style: none; margin: .3rem 0 0; padding: 0; display: grid; gap: .25rem; font-size: .92rem; }
+.diff-list__add { padding: .25rem .6rem; border-left: 4px solid var(--ok); background: var(--ok-soft); }
+.diff-list__remove { padding: .25rem .6rem; border-left: 4px solid var(--danger); background: var(--danger-soft); text-decoration: line-through; }
+.version-text { white-space: pre-wrap; line-height: 1.8; }
+.page ins { text-decoration: none; background: var(--ok-soft); color: var(--ok); }
+.page del { background: var(--danger-soft); color: var(--danger); }
+.version-list { display: grid; gap: .4rem; padding-left: 1.2rem; }
+.version-list li[aria-current] a { font-weight: 700; }
+.version-list li span { display: block; }
+.teacher-comment { margin: .4rem 0 0; padding: .5rem .8rem; border-left: 4px solid var(--warn); background: var(--warn-soft); font-size: .9rem; }

@@ -37,6 +37,10 @@ class Config:
     # 招生資料 Agent 只擷取科系名稱含這些字的校系（逗號分隔）
     AGENT_PROGRAM_KEYWORDS = [k.strip() for k in os.getenv("AGENT_PROGRAM_KEYWORDS", "資訊管理,資管,資訊應用,資訊工程").split(",") if k.strip()]
     AGENT_SOURCE_FOLDER = os.getenv("AGENT_SOURCE_FOLDER", "instance/agent-sources")
+    # 資管科小助手（規格第 10 節）：目標校系同時最多幾所、學校金鑰每人每天幾次、幾年級起可以送審
+    TARGET_LIMIT = int(os.getenv("TARGET_LIMIT", "5"))
+    SCHOOL_AI_DAILY_LIMIT = int(os.getenv("SCHOOL_AI_DAILY_LIMIT", "5"))
+    MIN_REVIEW_GRADE = int(os.getenv("MIN_REVIEW_GRADE", "2"))
     DOCUMENT_ANALYSIS_PROVIDER = os.getenv("DOCUMENT_ANALYSIS_PROVIDER", "fake")
     CSRF_ENABLED = os.getenv("CSRF_ENABLED", "true").lower() == "true"
     ALLOWED_UPLOAD_EXTENSIONS = {
