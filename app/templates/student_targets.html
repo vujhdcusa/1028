@@ -9,7 +9,24 @@
 {% block content %}
 {{ page_band("目標校系") }}
 <div class="page page--banded">
-  <p class="muted mb-1">每張卡片顯示：用你現在的資料申請這裡，準備度是多少。</p>
+  <p class="muted mb-1">每張卡片顯示：用你現在的資料申請這裡，準備度是多少。先選最想上的 {{ slots.limit }} 所。</p>
+  <p class="mb-1"><span class="tag {{ 'tag--warn' if slots.used >= slots.limit else 'tag--info' }}">已選 {{ slots.used }}／{{ slots.limit }}</span></p>
+  {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
+
+  {% if slots.old %}
+  <section class="sheet mb-1" aria-labelledby="old-targets">
+    <div class="sheet__head"><h2 id="old-targets">舊學年度的目標</h2></div>
+    <p class="small muted mb-1">新的簡章已經公布，這些是舊學年度的校系，不占名額。之前的送審紀錄會保留。</p>
+    <ul class="plain-list">
+      {% for target in slots.old %}
+      <li class="record-card__actions">
+        <span>{{ target.program.school_name }} {{ target.program.department_name }}（{{ target.program.admission_year }} 學年度）</span>
+        <form method="post" action="{{ url_for('student.target_remove', program_id=target.rule_version_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--quiet" type="submit">刪除</button></form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
 
   {% if programs %}
   <div class="program-cards">

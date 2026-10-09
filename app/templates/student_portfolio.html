@@ -19,6 +19,8 @@
     </div>
   </div>
   {% if request.args.get("imported") is not none %}<p class="notice mb-1" role="status">已從獎懲記錄匯入 {{ request.args.get("imported") }} 筆（已經匯入過的不會重複）。</p>{% endif %}
+  {% if request.args.get("confirmed") %}<p class="notice mb-1" role="status">已確認，這筆經歷之後可以被自傳小幫手引用。</p>{% endif %}
+  {% if unconfirmed_count %}<p class="notice notice--warn mb-1">有 {{ unconfirmed_count }} 筆經歷還沒確認。<b>確認過的經歷才會被 AI 寫進自傳、送給導師確認。</b></p>{% endif %}
   {% if request.args.get("added") %}<p class="notice mb-1" role="status">已新增一筆{{ category_labels.get(request.args.get("added"), "") }}。</p>{% endif %}
 
   {% for key in categories %}
@@ -31,8 +33,10 @@
     {% if records %}
     <div class="record-cards">
       {% for record in records %}
+      <div class="record-card-slot">
       <a class="record-card record-card--link" href="{{ url_for('student.portfolio_edit', portfolio_id=record.id) }}">
         <div class="record-card__meta">
+          {% if record.status == "draft" %}<span class="tag tag--warn">未確認</span>{% endif %}
           {% if record.school_year %}<span class="tag tag--info">{% if record.school_year <= 5 %}專{{ "一二三四五"[record.school_year - 1] }}{% else %}{{ record.school_year }} 學年度{% endif %}</span>{% else %}<span class="tag tag--warn">未填年級</span>{% endif %}
           {% if record.semester %}<span class="tag">{{ semester_labels.get(record.semester) }}</span>{% endif %}
           {% if record.evidence_items %}<span class="tag">佐證 {{ record.evidence_items|length }}</span>{% endif %}
@@ -44,6 +48,13 @@
         <h3>{{ record.title }}</h3>
         {% if record.description %}<p>{{ record.description }}</p>{% endif %}
       </a>
+      {% if record.status == "draft" %}
+      <form method="post" action="{{ url_for('student.portfolio_confirm', portfolio_id=record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button button--small" type="submit">確認內容正確</button>
+      </form>
+      {% endif %}
+      </div>
       {% endfor %}
     </div>
     {% else %}

@@ -2,6 +2,7 @@ from pathlib import Path
 from hashlib import sha256
 import json
 from datetime import date, datetime, timezone
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from flask import Blueprint, abort, current_app, redirect, render_template, request, send_file, url_for
@@ -17,6 +18,7 @@ from app.models import (
     Portfolio,
     PortfolioEvidence,
     SourceDocument,
+    StudentProfile,
     StudentTarget,
 )
 from app.routes.main import get_current_user, role_required
@@ -30,7 +32,7 @@ from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
-from app.services import autobiography_service
+from app.services import autobiography_service, student_rules
 from app.services.gemini_client import AIUnavailable
 
 
@@ -264,10 +266,13 @@ def learning_profile_document_confirm(document_id):
                 score = None
             credits = item.get("credits")
             credits = int(credits) if credits not in (None, "") else None
+            course_year = int(item["school_year"]) if item.get("school_year") else None
+            if student_rules.grade_block_reason(user) is None:
+                student_rules.check_record_year(user, course_year)
             db.session.add(LearningCourseRecord(
                 student_id=user.id,
                 source_document_id=document.id,
-                school_year=int(item["school_year"]) if item.get("school_year") else None,
+                school_year=course_year,
                 semester=str(item.get("semester") or "").strip() or None,
                 course_name=course_name,
                 normalized_course_name=normalized_name,
@@ -310,7 +315,7 @@ def learning_profile_document_confirm(document_id):
     return redirect(url_for("student.learning_profile"))
 
 
-def _record_form_values():
+def _record_form_values(user):
     """讀取並檢查活動／競賽／服務學習／幹部經歷的表單；有錯時丟出 ValueError。"""
     title = request.form.get("title", "").strip()
     category = request.form.get("category", "").strip()
@@ -329,6 +334,7 @@ def _record_form_values():
         raise ValueError("年級請填 1～5，或民國學年度（例如 113）")
     if semester not in (None, 1, 2):
         raise ValueError("學期只能是上學期或下學期")
+    student_rules.check_record_year(user, school_year)
     return {
         "title": title,
         "category": category,
@@ -336,6 +342,11 @@ def _record_form_values():
         "semester": semester,
         "description": request.form.get("description", "").strip(),
     }
+
+
+def _record_status():
+    """表單按「儲存並確認」是 confirmed；只按「儲存」是 draft（內容改過要重新確認）。"""
+    return "confirmed" if request.form.get("confirm") else "draft"
 
 
 def _render_record_form(user, portfolio=None, values=None, error=None):
@@ -348,6 +359,7 @@ def _render_record_form(user, portfolio=None, values=None, error=None):
         categories=EXPERIENCE_CATEGORIES,
         category_labels=CATEGORY_LABELS,
         error=error,
+        needs_admission_year=student_rules.grade_block_reason(user) is not None,
     ), (400 if error else 200)
 
 
@@ -358,10 +370,10 @@ def portfolio_list():
     user = get_current_user()
     if request.method == "POST":
         try:
-            values = _record_form_values()
+            values = _record_form_values(user)
         except ValueError as exc:
             return _render_record_form(user, values=request.form, error=str(exc))
-        db.session.add(Portfolio(student_id=user.id, **values))
+        db.session.add(Portfolio(student_id=user.id, status=_record_status(), **values))
         db.session.commit()
         return redirect(url_for("student.portfolio_list", added=values["category"]))
     records = Portfolio.query.filter_by(student_id=user.id).order_by(Portfolio.created_at.desc()).all()
@@ -370,6 +382,7 @@ def portfolio_list():
         user=user,
         grouped={key: [r for r in records if r.category == key] for key in EXPERIENCE_CATEGORIES},
         legacy=[r for r in records if r.category not in EXPERIENCE_CATEGORIES],
+        unconfirmed_count=sum(1 for r in records if r.status == "draft"),
         categories=EXPERIENCE_CATEGORIES,
         category_labels=CATEGORY_LABELS,
     )
@@ -389,14 +402,27 @@ def portfolio_edit(portfolio_id):
     portfolio = owned_portfolio(portfolio_id, user)
     if request.method == "POST":
         try:
-            values = _record_form_values()
+            values = _record_form_values(user)
         except ValueError as exc:
             return _render_record_form(user, portfolio, values=request.form, error=str(exc))
         for key, value in values.items():
             setattr(portfolio, key, value)
+        if portfolio.status != "submitted":
+            portfolio.status = _record_status()
         db.session.commit()
         return redirect(url_for("student.portfolio_list"))
     return _render_record_form(user, portfolio, values=portfolio)
+
+
+@student_bp.post("/student/portfolio/<int:portfolio_id>/confirm")
+@role_required("student")
+def portfolio_confirm(portfolio_id):
+    """學生確認這筆經歷內容正確；確認過的經歷才會被 AI 寫進自傳。"""
+    portfolio = owned_portfolio(portfolio_id, get_current_user())
+    if portfolio.status == "draft":
+        portfolio.status = "confirmed"
+        db.session.commit()
+    return redirect(url_for("student.portfolio_list", confirmed=1))
 
 
 @student_bp.post("/student/portfolio/<int:portfolio_id>/submit")
@@ -472,6 +498,42 @@ def evidence_delete(evidence_id):
 
 # ---------- 主線後半：目標校系、缺件比對、請導師確認、產出備審資料 ----------
 
+def _blocked(user, reason):
+    """不能使用某個功能時的說明頁（年級還沒到、或還不知道入學學年度）。"""
+    back = urlparse(request.referrer).path if request.referrer else ""
+    return render_template(
+        "student_blocked.html", user=user, reason=reason, back=back or url_for("student.target_list"),
+        needs_admission_year=student_rules.grade_block_reason(user) is not None,
+    ), 403
+
+
+@student_bp.post("/student/profile/admission-year")
+@role_required("student")
+def admission_year_fill():
+    """學生自己補入學學年度；只能補一次，填過之後要改請找管理者。"""
+    user = get_current_user()
+    profile = user.student_profile
+    if profile and profile.admission_year is not None:
+        abort(409, description="入學學年度已經填過，要修改請聯絡系統管理者。")
+    try:
+        year = int(request.form.get("admission_year", ""))
+    except ValueError:
+        abort(400, description="請填民國學年度，例如 113")
+    from app.services.journey_service import academic_year_of
+    if not academic_year_of(date.today()) - 6 <= year <= academic_year_of(date.today()):
+        abort(400, description="入學學年度看起來不對，請填最近五年內的民國學年度，例如 113")
+    if not profile:
+        profile = StudentProfile(user_id=user.id, student_no=user.username)
+        db.session.add(profile)
+    profile.admission_year = year
+    db.session.commit()
+    next_url = request.form.get("next", "")
+    # 只接受站內路徑，避免被導到外部網站
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        next_url = url_for("main.index")
+    return redirect(next_url)
+
+
 def _published_program_or_404(program_id):
     program = db.session.get(AdmissionProgram, program_id)
     if not program or program.status != "published":
@@ -491,15 +553,24 @@ def _selected_target_or_404(user, program_id):
 @role_required("student")
 def target_list():
     user = get_current_user()
+    error = None
     if request.method == "POST":
         try:
             program = _published_program_or_404(int(request.form.get("program_id", "")))
         except ValueError:
             abort(400)
+        reason = student_rules.grade_block_reason(user)
+        if reason:
+            return _blocked(user, reason)
         if not StudentTarget.query.filter_by(student_id=user.id, rule_version_id=program.id).first():
-            db.session.add(StudentTarget(student_id=user.id, rule_version_id=program.id))
-            db.session.commit()
-        return redirect(url_for("student.target_gap", program_id=program.id))
+            slots = student_rules.target_slots(user)
+            if slots["used"] >= slots["limit"]:
+                error = f"目標校系同時最多 {slots['limit']} 所，請先取消一所再加入新的。"
+            else:
+                db.session.add(StudentTarget(student_id=user.id, rule_version_id=program.id))
+                db.session.commit()
+        if not error:
+            return redirect(url_for("student.target_gap", program_id=program.id))
     journey = build_journey(user)
     selected = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id).all()}
     programs = published_programs()
@@ -508,8 +579,10 @@ def target_list():
         user=user,
         programs=programs,
         selected=selected,
+        slots=student_rules.target_slots(user),
         gaps={p.id: analyze_gap(user, p, journey) for p in programs},
-    )
+        error=error,
+    ), (400 if error else 200)
 
 
 @student_bp.post("/student/targets/<int:program_id>/remove")
@@ -546,6 +619,9 @@ def target_gap(program_id):
 def target_request_review(program_id):
     user = get_current_user()
     program = _selected_target_or_404(user, program_id)
+    reason = student_rules.review_block_reason(user)
+    if reason:
+        return _blocked(user, reason)
     review = latest_review(user, program)
     if not review or review.status != "pending":
         db.session.add(PackageReview(
@@ -618,6 +694,9 @@ def autobiography_generate():
     program, targets = _autobiography_program(user, request.form.get("program_id", type=int))
     if not program:
         return redirect(url_for("student.target_list"))
+    reason = student_rules.review_block_reason(user)
+    if reason:
+        return _blocked(user, reason)
     answers = {key: request.form.get(key, "") for key, _, _ in autobiography_service.QUESTIONS}
     # 學生自己的金鑰：只放在這個函式的變數裡用一次，不存資料庫、不放 session、不放網址
     own_key = request.form.get("own_api_key", "").strip() or None

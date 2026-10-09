@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% from "partials/record_fields.html" import record_fields %}
+{% from "partials/admission_year.html" import admission_year_form with context %}
 {% from "partials/files.html" import upload_field, evidence_grid, lightbox with context %}
 {# 新增和編輯共用這一頁：portfolio 是 None 就是新增。 #}
 {% set page_name = "student-portfolio-edit" if portfolio else "student-portfolio-new" %}
@@ -15,11 +16,14 @@
 <div class="page narrow page--banded">
   <section class="sheet">
     {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
+    {% if needs_admission_year %}<div class="mb-1">{{ admission_year_form(url_for('student.portfolio_new')) }}</div>{% endif %}
     <form method="post" class="form-stack" action="{{ url_for('student.portfolio_edit', portfolio_id=portfolio.id) if portfolio else url_for('student.portfolio_list') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {{ record_fields(categories, category_labels, values) }}
+      <p class="small muted">確認過的經歷才會被 AI 寫進自傳；之後再修改，要重新確認。</p>
       <div class="record-card__actions">
-        <button class="button" type="submit">{{ "儲存" if portfolio else "新增" }}</button>
+        <button class="button" type="submit" name="confirm" value="1">儲存並確認內容正確</button>
+        <button class="button button--line" type="submit">先存成草稿</button>
         <a class="button button--line" href="{{ url_for('student.portfolio_list') }}">取消</a>
       </div>
     </form>

@@ -116,6 +116,7 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .form-stack { display: grid; gap: 1rem; }
 .alert { padding: .8rem 1rem; border-left: 4px solid var(--danger); background: var(--danger-soft); font-size: .95rem; }
 .notice { padding: .8rem 1rem; border-left: 4px solid var(--ok); background: var(--ok-soft); font-size: .95rem; }
+.notice--warn { border-left-color: var(--warn); background: var(--warn-soft); }
 
 /* 選項卡片（例如上傳時選「成績單／證照」） */
 .choice-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .75rem; }
@@ -550,6 +551,8 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .list-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .record-group__head a { text-decoration: none; font-weight: 700; color: var(--accent); }
 .record-group__head h2 .small { font-family: var(--font-sans); font-weight: 400; }
+.record-card-slot { display: grid; gap: .4rem; align-content: start; }
+.record-card-slot > .record-card { height: 100%; }
 .record-card--link { text-decoration: none; color: var(--ink); }
 .record-card--link:hover { box-shadow: 3px 3px 0 var(--ink); }
 .page--banded { padding-top: 1.5rem; }

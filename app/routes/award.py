@@ -124,6 +124,7 @@ def award_confirm(document_id):
             school_year=year,
             semester=int(row["semester"]) if row["semester"].strip() in ("1", "2") else None,
             source="award_record", source_document_id=document.id,
+            status="confirmed",  # 學生在上一頁已逐列勾選確認
         ))
         added += 1
     document.status = "confirmed"

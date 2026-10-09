@@ -1,0 +1,12 @@
+{# 學生還沒有入學學年度時，讓他自己補一次（填過之後要改請找管理者）。 #}
+{% macro admission_year_form(next_url) %}
+<form method="post" action="{{ url_for('student.admission_year_fill') }}" class="form-stack mt-1">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="next" value="{{ next_url }}">
+  <label>入學學年度（民國，例如 113）
+    <input name="admission_year" inputmode="numeric" pattern="[0-9]{3}" required>
+  </label>
+  <p class="small muted">填過之後不能自己修改，要改請聯絡系統管理者。</p>
+  <div><button class="button button--small" type="submit">儲存入學學年度</button></div>
+</form>
+{% endmacro %}

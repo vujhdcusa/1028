@@ -18,6 +18,9 @@ from app.services.journey_service import CATEGORY_LABELS
 
 OUTPUT_TYPE = "autobiography_ai"
 
+# 學生按過「確認」的經歷；submitted 是舊的專題送審流程，也代表學生確認過
+CONFIRMED_PORTFOLIO_STATUSES = ("confirmed", "submitted")
+
 # 問題（key, 題目, 提示）。要改題目只要改這裡。
 QUESTIONS = [
     ("motivation", "為什麼想繼續讀資管，或特別想讀這個系？", "例如：哪一門課、哪一次經驗讓你確定方向"),
@@ -47,14 +50,20 @@ PARAGRAPH_SCHEMA = {
 
 
 def build_facts(student, program):
-    """把學生已確認的資料整理成編號事實，並附上目標校系的評分項目與加權。"""
+    """把學生已確認的資料整理成編號事實，並附上目標校系的評分項目與加權。
+
+    只收學生確認過的資料：成績與證照要 confirmation_status 是 confirmed，經歷要學生按過「確認」。
+    """
     lines = []
-    for course in LearningCourseRecord.query.filter_by(student_id=student.id).order_by(LearningCourseRecord.id):
+    for course in (LearningCourseRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed")
+                   .order_by(LearningCourseRecord.id)):
         score = f"{course.score} 分" if course.score is not None else (course.status_mark or "")
         lines.append(f"成績：{course.course_name}（{course.school_year or '?'} 年級，{score}）")
-    for credential in CredentialRecord.query.filter_by(student_id=student.id).order_by(CredentialRecord.id):
+    for credential in (CredentialRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed")
+                       .order_by(CredentialRecord.id)):
         lines.append(f"證照：{credential.credential_name}" + (f"（{credential.level}）" if credential.level else ""))
-    for record in Portfolio.query.filter_by(student_id=student.id).order_by(Portfolio.id):
+    for record in (Portfolio.query.filter_by(student_id=student.id)
+                   .filter(Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES)).order_by(Portfolio.id)):
         label = CATEGORY_LABELS.get(record.category)
         if label:
             source = "" if record.source == "student" else f"（來源：{record.source_label}）"
