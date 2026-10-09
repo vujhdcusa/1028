@@ -4,7 +4,7 @@
 
 日期：2026-10-09
 開發者：Claude Code
-範圍：`D:\democasei-meeting-room`（本機 commit，未推 GitHub）
+範圍：`D:\democase\ai-meeting-room`（本機 commit，未推 GitHub）
 
 - 「＋」選單新增「📁 上傳資料夾」，也可以把資料夾直接拖進輸入框；上傳後保留資料夾結構，AI 從快照的 `_uploads/資料夾/...` 讀得到。
 - 自動略過 `node_modules`、`.git`、`.venv`、`__pycache__` 和放密碼的 `.env`，並跳出提示說略過了幾個。
