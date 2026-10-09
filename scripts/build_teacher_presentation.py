@@ -8,7 +8,7 @@ from pptx.util import Inches, Pt
 
 ROOT = Path(__file__).resolve().parents[1]
 IMG = ROOT / "docs" / "images"
-OUT = ROOT / "docs" / "AI_指導老師討論簡報_2026-10-07.pptx"
+OUT = ROOT / "docs" / "08_簡報" / "AI_指導老師討論簡報_2026-10-07.pptx"
 
 NAVY = RGBColor(20, 46, 78)
 BLUE = RGBColor(45, 115, 171)
