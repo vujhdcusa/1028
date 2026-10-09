@@ -19,6 +19,7 @@
     </div>
   </header>
 
+  {% if request.args.get("saved") %}<p class="notice mb-1" role="status">自傳已存成新的一版，學生看得到你改了哪裡。</p>{% endif %}
   <div class="work-metrics work-metrics--four">
     {% for key in category_keys %}
     <article class="work-metric"><span>{{ category_labels[key] }}</span><strong>{{ journey.totals[key] }}</strong><small>筆</small></article>
@@ -71,8 +72,10 @@
     {% if target.autobiography %}
     {% set auto = target.autobiography.content_json %}
     <details class="source-doc mt-1">
-      <summary>自傳（{{ "學生已修改儲存" if auto.edited else "AI 草稿，學生尚未修改" }}{{ "，示範草稿" if auto.provider == "demo" else "" }}）</summary>
-      {% for paragraph in auto.paragraphs %}<h3 class="h3 mt-1">{{ paragraph.title }}</h3><p>{{ paragraph.text }}</p>{% endfor %}
+      {% set editor_text = {"teacher": "你修改過", "student": "學生已修改儲存", "ai": "AI 草稿，學生尚未修改"} %}
+      <summary>自傳第 {{ target.current_version }} 版（{{ editor_text.get(auto.editor_role) or ("學生已修改儲存" if auto.edited else "AI 草稿，學生尚未修改") }}{{ "，示範草稿" if auto.provider == "demo" else "" }}）</summary>
+      {% for paragraph in auto.paragraphs %}<h3 class="h3 mt-1">{{ paragraph.title }}</h3><p>{{ paragraph.text }}</p>{% if paragraph.teacher_comment %}<blockquote class="teacher-comment"><b>你的意見：</b>{{ paragraph.teacher_comment }}</blockquote>{% endif %}{% endfor %}
+      <p class="mt-1"><a class="button button--small button--line" href="{{ url_for('teacher.autobiography_edit', student_id=student.id, output_id=target.autobiography.id) }}">直接修改文字、留意見</a></p>
     </details>
     {% else %}
     <p class="small muted mt-1">學生還沒有寫自傳。</p>

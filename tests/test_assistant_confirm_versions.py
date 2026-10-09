@@ -442,3 +442,222 @@ def test_review_snapshot_migration_upgrades_and_downgrades(tmp_path):
         columns = {c["name"] for c in inspect(db.engine).get_columns("package_reviews")}
         assert "snapshot_json" not in columns
         assert not inspect(db.engine).has_table("ai_daily_usage")
+
+
+# ---------- Task 4：自傳版本紀錄、導師直接改文字與段落意見 ----------
+
+ANSWERS = {"motivation": "想把需求變成系統。", "proud": "黑客松負責後端。", "challenge": "", "future": "想學資料分析。"}
+
+
+def write_autobiography(app, client):
+    pid = program_id(app)
+    client.post("/student/targets", data={"program_id": pid})
+    client.post("/student/autobiography/generate", data={"program_id": pid, **ANSWERS})
+    return pid
+
+
+def autobiography_rows(app):
+    from app.models import LearningProfileOutput
+    with app.app_context():
+        return [{"id": o.id, "content": o.content_json}
+                for o in LearningProfileOutput.query.filter_by(output_type="autobiography_ai").order_by(LearningProfileOutput.id)]
+
+
+def save(client, output_id, texts, url=None, comments=None):
+    data = {f"paragraph_{i}": text for i, text in enumerate(texts)}
+    data.update({f"comment_{i}": text for i, text in enumerate(comments or [])})
+    return client.post(url or f"/student/autobiography/{output_id}/save", data=data)
+
+
+def test_each_save_is_a_new_version_and_old_ones_stay(app):
+    client = login(app)
+    write_autobiography(app, client)
+    first = autobiography_rows(app)[0]
+    count = len(first["content"]["paragraphs"])
+
+    save(client, first["id"], ["第二版"] * count)
+    second = autobiography_rows(app)[-1]
+    save(client, second["id"], ["第三版"] * count)
+
+    rows = autobiography_rows(app)
+    assert len(rows) == 3
+    assert rows[0]["content"] == first["content"]
+    assert [row["content"]["version"] for row in rows] == [1, 2, 3]
+    assert rows[-1]["content"]["editor_role"] == "student"
+    assert rows[-1]["content"]["based_on"] == second["id"]
+    assert rows[-1]["content"]["paragraphs"][0]["text"] == "第三版"
+
+
+def test_regenerating_is_also_a_new_version(app):
+    client = login(app)
+    pid = write_autobiography(app, client)
+
+    client.post("/student/autobiography/generate", data={"program_id": pid, **ANSWERS})
+
+    rows = autobiography_rows(app)
+    assert len(rows) == 2
+    assert rows[-1]["content"]["version"] == 2
+    assert rows[-1]["content"]["editor_role"] == "ai"
+
+
+def test_teacher_edits_text_and_leaves_comments(app):
+    student = login(app)
+    write_autobiography(app, student)
+    first = autobiography_rows(app)[0]
+    count = len(first["content"]["paragraphs"])
+    url = f"/teacher/students/{user_id(app, 'stu')}/autobiography/{first['id']}/edit"
+
+    page = login(app, "teacher").get(url)
+    response = save(login(app, "teacher"), None, ["老師改過的第一段"] + [p["text"] for p in first["content"]["paragraphs"][1:]],
+                    url=url, comments=["這段可以多寫你負責的部分"] + [""] * (count - 1))
+
+    assert page.status_code == 200
+    assert response.status_code == 302
+    latest = autobiography_rows(app)[-1]["content"]
+    assert latest["version"] == 2
+    assert latest["editor_role"] == "teacher"
+    assert latest["paragraphs"][0]["text"] == "老師改過的第一段"
+    assert latest["paragraphs"][0]["teacher_comment"] == "這段可以多寫你負責的部分"
+
+    versions_html = student.get(f"/student/autobiography/versions?program_id={program_id(app)}").get_data(as_text=True)
+    assert "導師" in versions_html and "teacher" in versions_html
+    assert "<ins>" in versions_html
+    autobiography_html = student.get(f"/student/autobiography?program_id={program_id(app)}").get_data(as_text=True)
+    assert "這段可以多寫你負責的部分" in autobiography_html
+
+
+def test_other_class_teacher_cannot_edit_autobiography(app):
+    write_autobiography(app, login(app))
+    first = autobiography_rows(app)[0]
+    url = f"/teacher/students/{user_id(app, 'stu')}/autobiography/{first['id']}/edit"
+
+    assert login(app, "stranger").get(url).status_code == 403
+    assert save(login(app, "stranger"), None, ["偷改"], url=url).status_code == 403
+    assert len(autobiography_rows(app)) == 1
+
+
+def test_teacher_page_shows_reviewed_and_current_version(app):
+    client = login(app)
+    pid = write_autobiography(app, client)
+    client.post(f"/student/targets/{pid}/review")
+    first = autobiography_rows(app)[0]
+    save(client, first["id"], ["送審後又改"] * len(first["content"]["paragraphs"]))
+
+    html = login(app, "teacher").get(f"/teacher/students/{user_id(app, 'stu')}").get_data(as_text=True)
+
+    assert "自傳依據第 1 版" in html
+    assert "目前第 2 版" in html
+
+
+# ---------- Task 5：學校金鑰每人每天 5 次 ----------
+
+FAKE_PARAGRAPHS = {"paragraphs": [{"title": "學習動機", "text": "我想讀資管。", "sources": []}]}
+
+
+def enable_school_ai(app, monkeypatch, result=FAKE_PARAGRAPHS):
+    from app.services import autobiography_service
+    calls = []
+
+    def fake_generate_json(prompt, schema, api_key=None, **kwargs):
+        calls.append(api_key)
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    app.config.update(AI_ENABLED=True, AI_PROVIDER="gemini", AI_API_KEY="school-key-for-test")
+    monkeypatch.setattr(autobiography_service, "generate_json", fake_generate_json)
+    return calls
+
+
+def generate(client, pid, **extra):
+    return client.post("/student/autobiography/generate", data={"program_id": pid, **ANSWERS, **extra})
+
+
+def test_school_key_is_limited_to_five_a_day(app, monkeypatch):
+    calls = enable_school_ai(app, monkeypatch)
+    client = login(app)
+    pid = program_id(app)
+    client.post("/student/targets", data={"program_id": pid})
+
+    for _ in range(5):
+        assert generate(client, pid).status_code == 302
+    sixth = generate(client, pid)
+
+    assert sixth.status_code == 429
+    assert "5 次" in sixth.get_data(as_text=True)
+    assert "自己的 Gemini 金鑰" in sixth.get_data(as_text=True)
+    assert len(calls) == 5
+    assert len(autobiography_rows(app)) == 5
+
+    own = generate(client, pid, own_api_key="my-own-key")
+    assert own.status_code == 302
+    assert calls[-1] == "my-own-key"
+    assert len(autobiography_rows(app)) == 6
+
+
+def test_failed_ai_call_does_not_use_a_turn(app, monkeypatch):
+    from app.services.gemini_client import AIUnavailable
+    from app.services.ai_quota_service import remaining
+    enable_school_ai(app, monkeypatch, result=AIUnavailable("連不到 Gemini"))
+    client = login(app)
+    pid = program_id(app)
+    client.post("/student/targets", data={"program_id": pid})
+
+    response = generate(client, pid)
+
+    assert response.status_code == 503
+    with app.app_context():
+        assert remaining(User.query.filter_by(username="stu").one()) == 5
+
+
+def test_page_shows_remaining_school_turns(app, monkeypatch):
+    enable_school_ai(app, monkeypatch)
+    client = login(app)
+    pid = program_id(app)
+    client.post("/student/targets", data={"program_id": pid})
+    generate(client, pid)
+
+    html = client.get(f"/student/autobiography?program_id={pid}&redo=1").get_data(as_text=True)
+
+    assert "今天學校 AI 還能用 4 次" in html
+
+
+def test_demo_mode_does_not_count(app):
+    from app.services.ai_quota_service import remaining
+    client = login(app)
+    pid = program_id(app)
+    client.post("/student/targets", data={"program_id": pid})
+
+    generate(client, pid)
+
+    with app.app_context():
+        assert remaining(User.query.filter_by(username="stu").one()) == 5
+
+
+def test_award_import_counts_toward_school_turns(app, monkeypatch):
+    import io
+    from app.services import gemini_client
+    from app.services.ai_quota_service import consume, remaining
+    calls = []
+    app.config.update(AI_ENABLED=True, AI_PROVIDER="gemini", AI_API_KEY="school-key-for-test")
+    monkeypatch.setattr(gemini_client, "generate_json", lambda *a, **k: calls.append(1) or {"rows": []})
+    client = login(app)
+
+    def upload():
+        return client.post("/student/award-records", data={"file": (io.BytesIO(b"%PDF-1.4 fake"), "award.pdf")},
+                           content_type="multipart/form-data")
+
+    upload()  # AI 沒讀出任何列：退回次數
+    with app.app_context():
+        student = User.query.filter_by(username="stu").one()
+        assert remaining(student) == 5
+        for _ in range(5):
+            consume(student)
+        db.session.commit()
+    upload()
+
+    assert len(calls) == 1
+    from app.models import DocumentExtraction
+    with app.app_context():
+        latest = DocumentExtraction.query.order_by(DocumentExtraction.id.desc()).first()
+        assert any("用完" in w for w in latest.result_json.get("warnings", []))

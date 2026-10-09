@@ -19,6 +19,7 @@ from app.models import (
     SourceDocument,
     StudentProfile,
     StudentTarget,
+    User,
 )
 from app.routes.main import get_current_user, role_required
 from app.services.portfolio_service import owned_portfolio, create_submission_snapshot
@@ -31,8 +32,8 @@ from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
-from app.services import autobiography_service, review_snapshot_service, student_rules
-from app.services.gemini_client import AIUnavailable
+from app.services import ai_quota_service, autobiography_service, review_snapshot_service, student_rules
+from app.services.gemini_client import AIUnavailable, ai_ready
 
 
 student_bp = Blueprint("student", __name__)
@@ -653,7 +654,7 @@ def _autobiography_program(user, program_id):
     return targets[0], targets
 
 
-def _render_autobiography(user, program, targets, error=None, answers=None):
+def _render_autobiography(user, program, targets, error=None, answers=None, status=503):
     draft = autobiography_service.latest_draft(user, program) if program else None
     asking = program and (not draft or request.args.get("redo") or error)
     return render_template(
@@ -666,8 +667,10 @@ def _render_autobiography(user, program, targets, error=None, answers=None):
         questions=autobiography_service.QUESTIONS,
         answers=answers or (draft.content_json.get("answers", {}) if draft else {}),
         facts=autobiography_service.build_facts(user, program) if program else None,
+        version=autobiography_service.version_of(draft) if draft else None,
+        school_turns=ai_quota_service.remaining(user) if ai_ready() else None,
         error=error,
-    ), (503 if error else 200)
+    ), (status if error else 200)
 
 
 @student_bp.get("/student/autobiography")
@@ -692,8 +695,14 @@ def autobiography_generate():
     # 學生自己的金鑰：只放在這個函式的變數裡用一次，不存資料庫、不放 session、不放網址
     own_key = request.form.get("own_api_key", "").strip() or None
     try:
+        # 學校金鑰每人每天有次數限制；先扣，AI 失敗時 rollback 就會退回
+        if not own_key and ai_ready():
+            ai_quota_service.consume(user)
         autobiography_service.generate_draft(user, program, answers, api_key=own_key)
+    except ai_quota_service.QuotaExceeded as exc:
+        return _render_autobiography(user, program, targets, error=str(exc), answers=answers, status=429)
     except AIUnavailable as exc:
+        db.session.rollback()
         return _render_autobiography(user, program, targets, error=str(exc), answers=answers)
     finally:
         own_key = None
@@ -711,5 +720,40 @@ def autobiography_save(output_id):
     if output.student_id != user.id:
         abort(403)
     count = len(output.content_json.get("paragraphs", []))
-    autobiography_service.save_edits(output, [request.form.get(f"paragraph_{i}", "") for i in range(count)])
+    autobiography_service.save_edits(output, [request.form.get(f"paragraph_{i}", "") for i in range(count)], user)
     return redirect(url_for("student.autobiography", program_id=output.content_json["program_id"], saved=1))
+
+
+@student_bp.get("/student/autobiography/versions")
+@role_required("student")
+def autobiography_versions():
+    """自傳的所有版本：誰在什麼時候改的、和上一版差在哪裡。不能刪除。"""
+    user = get_current_user()
+    program, targets = _autobiography_program(user, request.args.get("program_id", type=int))
+    if not program:
+        return redirect(url_for("student.target_list"))
+    return render_template("autobiography_versions.html", user=user, program=program,
+                           **_version_view(user, program, request.args.get("v", type=int)))
+
+
+def _version_view(student, program, selected_id):
+    """版本頁共用的資料（學生和導師都會用）。"""
+    versions = list(reversed(autobiography_service.versions(student, program)))
+    if not versions:
+        return {"versions": [], "selected": None, "diff": [], "editors": {}}
+    selected = next((v for v in versions if v.id == selected_id), versions[0])
+    by_id = {v.id: v for v in versions}
+    previous = by_id.get(selected.content_json.get("based_on"))
+    if previous is None:
+        older = [v for v in versions if v.id < selected.id]
+        previous = older[0] if older else None
+    editor_ids = {v.content_json.get("editor_id") for v in versions} - {None}
+    editors = {u.id: u for u in User.query.filter(User.id.in_(editor_ids)).all()} if editor_ids else {}
+    return {
+        "versions": versions,
+        "selected": selected,
+        "previous": previous,
+        "diff": autobiography_service.version_diff(selected, previous),
+        "editors": editors,
+        "version_of": autobiography_service.version_of,
+    }

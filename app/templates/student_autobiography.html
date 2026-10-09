@@ -49,6 +49,7 @@
         </label>
         <p class="small muted">系統<b>只在這一次產生草稿時使用</b>，不會儲存、不會寫進紀錄，也不會傳給 Google 以外的地方。用完後請到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a> 刪除這把金鑰。</p>
       </details>
+      {% if school_turns is not none %}<p class="small muted">今天學校 AI 還能用 {{ school_turns }} 次（每人每天 {{ config.SCHOOL_AI_DAILY_LIMIT }} 次）；用自己的金鑰不限次數。</p>{% endif %}
       <div class="ask__nav">
         <button class="button button--line" type="button" data-step-prev>← 上一題</button>
         <button class="button button--line" type="button" data-step-next>下一題 →</button>
@@ -76,7 +77,8 @@
   {% if request.args.get("used_own_key") %}
   <p class="alert mb-1" role="alert"><b>記得刪除你的金鑰！</b>剛才用了你自己的 Gemini 金鑰，系統沒有保存。請現在到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a> 把它刪除或停用，以免被別人拿去用。</p>
   {% endif %}
-  {% if request.args.get("saved") %}<p class="notice mb-1" role="status">已儲存。下載備審資料時，「自傳」章節會使用這個版本。</p>{% endif %}
+  {% if request.args.get("saved") %}<p class="notice mb-1" role="status">已儲存成新的一版。下載備審資料時，「自傳」章節會使用最新版。</p>{% endif %}
+  {% if content.editor_role == "teacher" %}<p class="notice notice--warn mb-1">這一版是導師修改的。<a href="{{ url_for('student.autobiography_versions', program_id=program.id) }}">看導師改了哪裡 →</a></p>{% endif %}
   {% if content.provider == "demo" %}
   <p class="alert alert--soft mb-1">這是示範草稿：系統尚未接上 AI（Gemini 金鑰還沒設定），所以只把你的回答和資料排好。接上 AI 後按「重新回答問題」就會產生真正的草稿。</p>
   {% endif %}
@@ -84,8 +86,9 @@
   <form method="post" action="{{ url_for('student.autobiography_save', output_id=draft.id) }}" class="draft">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="list-head">
-      <p class="muted">AI 草稿只是起點，請改成你自己的話。導師確認備審資料時會看到這份自傳。<span class="mono" data-char-total></span></p>
+      <p class="muted">第 {{ version }} 版。AI 草稿只是起點，請改成你自己的話；每次儲存都會留下一版。<span class="mono" data-char-total></span></p>
       <div class="record-card__actions">
+        <a class="button button--line" href="{{ url_for('student.autobiography_versions', program_id=program.id) }}">版本紀錄</a>
         <a class="button button--line" href="{{ url_for('student.autobiography', program_id=program.id, redo=1) }}">重新回答問題</a>
         <button class="button" type="submit">儲存</button>
       </div>
@@ -94,6 +97,7 @@
     <section class="draft__paragraph">
       <h2 class="h3">{{ paragraph.title }}</h2>
       <textarea name="paragraph_{{ loop.index0 }}" rows="6" data-autosize data-char aria-label="{{ paragraph.title }}">{{ paragraph.text }}</textarea>
+      {% if paragraph.teacher_comment %}<blockquote class="teacher-comment"><b>導師意見：</b>{{ paragraph.teacher_comment }}</blockquote>{% endif %}
       {% if paragraph.sources %}
       <p class="draft__sources small">依據：{% for s in paragraph.sources %}<span class="tag" title="{{ fact_text.get(s, '') }}">{{ fact_text.get(s, s)|truncate(24, True, "…") }}</span>{% endfor %}</p>
       {% endif %}

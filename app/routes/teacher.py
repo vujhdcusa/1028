@@ -3,12 +3,21 @@
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 
 from app.extensions import db
-from app.models import PackageReview, Portfolio, PortfolioEvidence, SourceDocument, StudentTarget, User
+from app.models import (
+    AdmissionProgram,
+    LearningProfileOutput,
+    PackageReview,
+    Portfolio,
+    PortfolioEvidence,
+    SourceDocument,
+    StudentTarget,
+    User,
+)
 from app.routes.main import get_current_user, role_required
 from app.services.gap_service import ALL_LABELS, analyze_gap
 from app.services.journey_service import CATEGORY_KEYS, CATEGORY_LABELS, build_journey
 from app.services.package_service import latest_review
-from app.services import review_snapshot_service
+from app.services import autobiography_service, review_snapshot_service
 from app.services.autobiography_service import latest_draft, version_of
 from app.services.file_preview import inline_file
 from app.services.teacher_scope import can_view_student
@@ -120,3 +129,29 @@ def withdraw_review(review_id):
     except ValueError as exc:
         abort(400, description=str(exc))
     return redirect(url_for("teacher.student_detail", student_id=review.student_id))
+
+
+@teacher_bp.get("/teacher/students/<int:student_id>/autobiography/<int:output_id>/edit")
+@teacher_bp.post("/teacher/students/<int:student_id>/autobiography/<int:output_id>/edit")
+@role_required("teacher")
+def autobiography_edit(student_id, output_id):
+    """導師直接修改學生自傳、留段落意見；每次儲存都是新的一版，學生看得到改了哪裡。"""
+    teacher = get_current_user()
+    student = db.session.get(User, student_id)
+    if not student or not can_view_student(teacher, student):
+        abort(403)
+    output = db.session.get(LearningProfileOutput, output_id)
+    if not output or output.output_type != autobiography_service.OUTPUT_TYPE or output.student_id != student.id:
+        abort(404)
+    program = db.session.get(AdmissionProgram, output.content_json.get("program_id"))
+    if request.method == "POST":
+        count = len(output.content_json.get("paragraphs", []))
+        autobiography_service.save_edits(
+            output,
+            [request.form.get(f"paragraph_{i}", "") for i in range(count)],
+            teacher,
+            comments=[request.form.get(f"comment_{i}", "") for i in range(count)],
+        )
+        return redirect(url_for("teacher.student_detail", student_id=student.id, saved=1))
+    return render_template("teacher_autobiography_edit.html", user=teacher, student=student, program=program,
+                           output=output, version=autobiography_service.version_of(output))
