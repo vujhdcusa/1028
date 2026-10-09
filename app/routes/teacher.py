@@ -1,7 +1,5 @@
 """導師：查看本班學生資料，確認備審內容或留下修改建議。"""
 
-from datetime import datetime, timezone
-
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 
 from app.extensions import db
@@ -10,7 +8,8 @@ from app.routes.main import get_current_user, role_required
 from app.services.gap_service import ALL_LABELS, analyze_gap
 from app.services.journey_service import CATEGORY_KEYS, CATEGORY_LABELS, build_journey
 from app.services.package_service import latest_review
-from app.services.autobiography_service import latest_draft
+from app.services import review_snapshot_service
+from app.services.autobiography_service import latest_draft, version_of
 from app.services.file_preview import inline_file
 from app.services.teacher_scope import can_view_student
 
@@ -25,13 +24,26 @@ def student_detail(student_id):
     if not student or not can_view_student(teacher, student):
         abort(403)
     journey = build_journey(student)
+    programs = [t.program for t in StudentTarget.query.filter_by(student_id=student.id).order_by(StudentTarget.selected_at)]
+    chosen = {program.id for program in programs}
+    # 學生取消的目標：送審紀錄與快照保留，導師仍看得到（規格 10.4）
+    cancelled = [r.program for r in PackageReview.query.filter_by(student_id=student.id).order_by(PackageReview.id)
+                 if r.rule_version_id not in chosen]
     targets = []
-    for target in StudentTarget.query.filter_by(student_id=student.id).order_by(StudentTarget.selected_at).all():
+    for program in programs + list(dict.fromkeys(cancelled)):
+        review = latest_review(student, program)
+        previous = review_snapshot_service.previous_confirmed(review) if review else None
+        draft = latest_draft(student, program)
         targets.append({
-            "program": target.program,
-            "gap": analyze_gap(student, target.program, journey),
-            "review": latest_review(student, target.program),
-            "autobiography": latest_draft(student, target.program),
+            "program": program,
+            "cancelled": program.id not in chosen,
+            "gap": analyze_gap(student, program, journey),
+            "review": review,
+            "previous": previous,
+            "diff": (review_snapshot_service.snapshot_diff(review.snapshot_json, previous.snapshot_json)
+                     if review and previous and review.id != previous.id else None),
+            "autobiography": draft,
+            "current_version": version_of(draft) if draft else None,
         })
     return render_template(
         "teacher_student.html",
@@ -77,21 +89,34 @@ def document_view(document_id):
 @teacher_bp.post("/teacher/package-reviews/<int:review_id>")
 @role_required("teacher")
 def decide_review(review_id):
-    teacher = get_current_user()
-    review = db.session.get(PackageReview, review_id)
-    if not review:
-        abort(404)
-    if not can_view_student(teacher, review.student):
-        abort(403)
+    teacher, review = _reviewable_or_abort(review_id)
     decision = request.form.get("decision", "")
     comment = request.form.get("comment", "").strip()
     if decision not in {"confirmed", "needs_revision"}:
         abort(400, description="請選擇「確認」或「需要修改」")
     if decision == "needs_revision" and not comment:
         abort(400, description="需要修改時，請寫下給學生的建議")
-    review.status = decision
-    review.comment = comment or None
-    review.teacher_id = teacher.id
-    review.reviewed_at = datetime.now(timezone.utc)
-    db.session.commit()
+    review_snapshot_service.decide(review, teacher, decision, comment)
+    return redirect(url_for("teacher.student_detail", student_id=review.student_id))
+
+
+def _reviewable_or_abort(review_id):
+    teacher = get_current_user()
+    review = db.session.get(PackageReview, review_id)
+    if not review:
+        abort(404)
+    if not can_view_student(teacher, review.student):
+        abort(403)
+    return teacher, review
+
+
+@teacher_bp.post("/teacher/package-reviews/<int:review_id>/withdraw")
+@role_required("teacher")
+def withdraw_review(review_id):
+    """導師按錯時撤回確認；要寫原因，原本的確認紀錄保留。"""
+    teacher, review = _reviewable_or_abort(review_id)
+    try:
+        review_snapshot_service.withdraw(review, teacher, request.form.get("reason", "").strip())
+    except ValueError as exc:
+        abort(400, description=str(exc))
     return redirect(url_for("teacher.student_detail", student_id=review.student_id))

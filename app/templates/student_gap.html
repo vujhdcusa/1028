@@ -95,13 +95,20 @@
         </div>
         {% if review and review.status == "needs_revision" %}<blockquote><b>{{ review.teacher.display_name if review.teacher else "導師" }}：</b>{{ review.comment }}</blockquote>{% endif %}
         {% if review and review.status == "confirmed" %}<p class="small">{{ review.teacher.display_name if review.teacher else "導師" }} 已確認內容合理，可以產出備審資料。</p>{% endif %}
+        {% if request.args.get("sent") %}<p class="notice mb-1" role="status">已送出。導師看到的是現在這一份內容，之後再改要重新送出。</p>{% endif %}
+        {% if review and review.snapshot_json and review.snapshot_json.autobiography %}<p class="small muted mb-1">送出的自傳是第 {{ review.snapshot_json.autobiography.version }} 版。</p>{% endif %}
         {% if not review or review.status != "pending" %}
         <form method="post" action="{{ url_for('student.target_request_review', program_id=program.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="button button--line" type="submit">{{ "修改後再請導師確認" if review else "請導師確認內容" }}</button>
+          <button class="button button--line" type="submit">{{ "有新資料，送出新的一版請導師確認" if review else "請導師確認內容" }}</button>
         </form>
+        {% if review and review.status == "confirmed" %}<p class="small muted mt-1">例如送審後才考到新證照：確認證照後再送一次，導師之前確認的版本會保留。</p>{% endif %}
         {% else %}
         <p class="small muted">已於 {{ review.requested_at.strftime("%Y-%m-%d") }} 送出，導師確認後這裡會更新。</p>
+        <form method="post" action="{{ url_for('student.target_request_review', program_id=program.id) }}" class="mt-1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="button button--small button--quiet" type="submit">資料有改，更新送出的內容</button>
+        </form>
         {% endif %}
       </section>
 

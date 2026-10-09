@@ -30,9 +30,29 @@
   <section class="work-panel">
     <div class="work-panel__head">
       <div><h2>{{ target.program.school_name }} {{ target.program.department_name }}</h2>
-        <p>志願代碼 {{ target.program.program_code }} · 準備度 {{ gap.readiness if gap.readiness is not none else "—" }}%</p></div>
-      {% if target.review %}{% set label, cls = review_text[target.review.status] %}<span class="tag {{ cls }}">{{ label }}</span>{% else %}<span class="tag">學生尚未送出</span>{% endif %}
+        <p>志願代碼 {{ target.program.program_code }} · {{ target.program.admission_year }} 學年度 · 準備度 {{ gap.readiness if gap.readiness is not none else "—" }}%</p></div>
+      <div class="record-card__actions">
+        {% if target.cancelled %}<span class="tag tag--danger">學生已取消這個目標</span>{% endif %}
+        {% if target.review %}{% set label, cls = review_text[target.review.status] %}<span class="tag {{ cls }}">{{ label }}</span>{% else %}<span class="tag">學生尚未送出</span>{% endif %}
+      </div>
     </div>
+    {% set snap = target.review.snapshot_json if target.review else none %}
+    {% if snap %}
+    <div class="snapshot-box mt-1">
+      <p class="small"><b>送審內容</b>：{{ target.review.requested_at.strftime("%Y-%m-%d %H:%M") }} 送出時的資料{% if snap.autobiography %}，自傳依據第 {{ snap.autobiography.version }} 版{% if target.current_version and target.current_version != snap.autobiography.version %}（目前第 {{ target.current_version }} 版）{% endif %}{% else %}，當時還沒有自傳{% endif %}。學生之後再改，這份內容不會變。</p>
+      {% if target.diff %}
+      <p class="small mt-1"><b>和你 {{ target.previous.reviewed_at.strftime("%Y-%m-%d") if target.previous.reviewed_at else "" }} 確認的版本相比：</b></p>
+      <ul class="diff-list">
+        {% for text in target.diff.added %}<li class="diff-list__add">新增：{{ text }}</li>{% endfor %}
+        {% for text in target.diff.removed %}<li class="diff-list__remove">移除：{{ text }}</li>{% endfor %}
+        {% if not target.diff.added and not target.diff.removed %}<li>資料沒有變動（可能只改了自傳文字）。</li>{% endif %}
+      </ul>
+      {% endif %}
+      <details class="source-doc mt-1"><summary>送審當下的資料（{{ snap.facts|length }} 筆）</summary>
+        <ul class="rule-item-list">{% for fact in snap.facts %}<li><span>{{ fact.text }}</span></li>{% else %}<li>沒有已確認的資料。</li>{% endfor %}</ul>
+      </details>
+    </div>
+    {% endif %}
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr><th>評分項目</th><th>加權</th><th>情形</th><th>已有</th><th>缺少</th></tr></thead>
@@ -67,8 +87,17 @@
       <label class="field">給學生的建議<textarea name="comment" placeholder="例如：競賽成果請補上獎狀照片；自傳可以多寫專題中負責的部分。"></textarea></label>
       <div><button class="button" type="submit">送出</button></div>
     </form>
-    {% elif target.review and target.review.comment %}
-    <p class="small mt-1"><b>你的建議：</b>{{ target.review.comment }}</p>
+    {% elif target.review %}
+    {% if target.review.comment %}<p class="small mt-1"><b>你的建議：</b>{{ target.review.comment }}</p>{% endif %}
+    {% if target.review.status == "confirmed" %}
+    <details class="mt-1"><summary class="small">按錯了？撤回確認</summary>
+      <form class="form-stack mt-1" method="post" action="{{ url_for('teacher.withdraw_review', review_id=target.review.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="field">撤回原因（會留下紀錄）<textarea name="reason" required placeholder="例如：按錯了，自傳還沒看完。"></textarea></label>
+        <div><button class="button button--line" type="submit">撤回確認</button></div>
+      </form>
+    </details>
+    {% endif %}
     {% endif %}
   </section>
   {% else %}

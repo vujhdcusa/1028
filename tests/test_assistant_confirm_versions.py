@@ -305,3 +305,140 @@ def test_first_year_student_can_look_but_not_send_or_write(app):
     with app.app_context():
         assert PackageReview.query.count() == 0
         assert LearningProfileOutput.query.count() == 0
+
+
+# ---------- Task 3：送審快照、導師確認與撤回 ----------
+
+def choose_and_send(app, client, pid=None):
+    pid = pid or program_id(app)
+    client.post("/student/targets", data={"program_id": pid})
+    client.post(f"/student/targets/{pid}/review")
+    return pid
+
+
+def latest_review_row(app):
+    from app.models import PackageReview
+    with app.app_context():
+        review = PackageReview.query.order_by(PackageReview.id.desc()).first()
+        return {"id": review.id, "status": review.status, "snapshot": review.snapshot_json}
+
+
+def add_credential(app, name="勞動部網頁設計乙級"):
+    with app.app_context():
+        db.session.add(CredentialRecord(student_id=user_id(app, "stu"), credential_name=name, level="乙級"))
+        db.session.commit()
+
+
+def test_request_review_saves_a_snapshot(app):
+    add_portfolio(app, title="確認過的競賽", status="confirmed")
+    add_portfolio(app, title="還在寫的草稿", status="draft")
+
+    choose_and_send(app, login(app))
+
+    snapshot = latest_review_row(app)["snapshot"]
+    texts = " ".join(fact["text"] for fact in snapshot["facts"])
+    assert "確認過的競賽" in texts
+    assert "還在寫的草稿" not in texts
+    assert snapshot["program"]["id"] == program_id(app)
+    assert "readiness" in snapshot
+    assert snapshot["autobiography"] is None
+
+
+def test_resending_while_pending_updates_the_same_snapshot(app):
+    client = login(app)
+    choose_and_send(app, client)
+    first = latest_review_row(app)
+    add_credential(app)
+
+    client.post(f"/student/targets/{program_id(app)}/review")
+
+    second = latest_review_row(app)
+    from app.models import PackageReview
+    with app.app_context():
+        assert PackageReview.query.count() == 1
+    assert second["id"] == first["id"]
+    assert any("網頁設計乙級" in fact["text"] for fact in second["snapshot"]["facts"])
+
+
+def test_confirmed_snapshot_does_not_change_when_student_adds_credential(app):
+    from app.services.review_snapshot_service import confirmed_facts
+    client = login(app)
+    pid = choose_and_send(app, client)
+    review_id = latest_review_row(app)["id"]
+    login(app, "teacher").post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed"})
+    before = latest_review_row(app)["snapshot"]
+
+    add_credential(app)
+    client.post(f"/student/targets/{pid}/review")
+
+    from app.models import PackageReview
+    with app.app_context():
+        confirmed = db.session.get(PackageReview, review_id)
+        assert confirmed.snapshot_json == before
+        assert confirmed.status == "confirmed"
+        student = User.query.filter_by(username="stu").one()
+        program = db.session.get(AdmissionProgram, pid)
+        assert not any("網頁設計乙級" in fact["text"] for fact in confirmed_facts(student, program))
+        assert PackageReview.query.count() == 2
+    teacher_html = login(app, "teacher").get(f"/teacher/students/{user_id(app, 'stu')}").get_data(as_text=True)
+    assert "新增" in teacher_html and "勞動部網頁設計乙級" in teacher_html
+
+
+def test_teacher_confirm_and_withdraw_are_logged(app):
+    from app.models import AuditLog
+    choose_and_send(app, login(app))
+    review_id = latest_review_row(app)["id"]
+    teacher = login(app, "teacher")
+    teacher.post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed"})
+
+    no_reason = teacher.post(f"/teacher/package-reviews/{review_id}/withdraw", data={"reason": " "})
+    assert no_reason.status_code == 400
+    teacher.post(f"/teacher/package-reviews/{review_id}/withdraw", data={"reason": "按錯了，自傳還沒看完"})
+
+    assert latest_review_row(app)["status"] == "pending"
+    with app.app_context():
+        actions = [log.action for log in AuditLog.query.order_by(AuditLog.id).all()]
+        withdraw = AuditLog.query.filter_by(action="package_review.withdraw").one()
+    assert actions == ["package_review.confirm", "package_review.withdraw"]
+    assert withdraw.detail_json["reason"] == "按錯了，自傳還沒看完"
+    assert withdraw.target_id == review_id
+
+
+def test_other_class_teacher_cannot_withdraw(app):
+    choose_and_send(app, login(app))
+    review_id = latest_review_row(app)["id"]
+    login(app, "teacher").post(f"/teacher/package-reviews/{review_id}", data={"decision": "confirmed"})
+
+    response = login(app, "stranger").post(f"/teacher/package-reviews/{review_id}/withdraw", data={"reason": "測試"})
+
+    assert response.status_code == 403
+    assert latest_review_row(app)["status"] == "confirmed"
+
+
+def test_teacher_still_sees_review_after_student_cancels_target(app):
+    client = login(app)
+    pid = choose_and_send(app, client)
+    client.post(f"/student/targets/{pid}/remove")
+
+    html = login(app, "teacher").get(f"/teacher/students/{user_id(app, 'stu')}").get_data(as_text=True)
+
+    assert "國立臺北商業大學" in html
+    assert "學生已取消這個目標" in html
+
+
+def test_review_snapshot_migration_upgrades_and_downgrades(tmp_path):
+    from sqlalchemy import inspect
+    app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{tmp_path / 'm.db'}", "TESTING": True})
+    runner = app.test_cli_runner()
+
+    assert runner.invoke(args=["db", "upgrade"]).exit_code == 0
+    with app.app_context():
+        columns = {c["name"] for c in inspect(db.engine).get_columns("package_reviews")}
+        assert "snapshot_json" in columns
+        assert inspect(db.engine).has_table("ai_daily_usage")
+    assert runner.invoke(args=["db", "downgrade", "d5b9a2c7e104"]).exit_code == 0
+    with app.app_context():
+        db.engine.dispose()
+        columns = {c["name"] for c in inspect(db.engine).get_columns("package_reviews")}
+        assert "snapshot_json" not in columns
+        assert not inspect(db.engine).has_table("ai_daily_usage")

@@ -100,6 +100,7 @@ class PackageReview(db.Model):
     """學生針對某個目標校系，請導師確認備審資料內容。
 
     status：pending（等待導師）／confirmed（導師已確認）／needs_revision（需要修改）
+    確認、請學生修改、撤回確認都會寫進 audit_logs（services/review_snapshot_service.py）。
     """
 
     __tablename__ = "package_reviews"
@@ -111,6 +112,8 @@ class PackageReview(db.Model):
     status = db.Column(db.String(20), nullable=False, default="pending", index=True)
     comment = db.Column(db.Text, nullable=True)
     readiness_percent = db.Column(db.Integer, nullable=True)
+    # 學生送審當下的內容（事實清單、自傳版本、完成度）；導師確認的就是這一份，之後學生再改也不會變
+    snapshot_json = db.Column(db.JSON, nullable=True)
     requested_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
     reviewed_at = db.Column(db.DateTime, nullable=True)
 

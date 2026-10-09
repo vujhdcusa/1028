@@ -14,7 +14,6 @@ from app.models import (
     DocumentExtraction,
     LearningCourseRecord,
     LearningProfileOutput,
-    PackageReview,
     Portfolio,
     PortfolioEvidence,
     SourceDocument,
@@ -32,7 +31,7 @@ from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
-from app.services import autobiography_service, student_rules
+from app.services import autobiography_service, review_snapshot_service, student_rules
 from app.services.gemini_client import AIUnavailable
 
 
@@ -622,16 +621,8 @@ def target_request_review(program_id):
     reason = student_rules.review_block_reason(user)
     if reason:
         return _blocked(user, reason)
-    review = latest_review(user, program)
-    if not review or review.status != "pending":
-        db.session.add(PackageReview(
-            student_id=user.id,
-            rule_version_id=program.id,
-            status="pending",
-            readiness_percent=analyze_gap(user, program)["readiness"],
-        ))
-        db.session.commit()
-    return redirect(url_for("student.target_gap", program_id=program.id))
+    review_snapshot_service.request_review(user, program)
+    return redirect(url_for("student.target_gap", program_id=program.id, sent=1))
 
 
 @student_bp.get("/student/targets/<int:program_id>/package.docx")

@@ -158,6 +158,25 @@ def generate_draft(student, program, answers, generate=None, api_key=None):
     return output
 
 
+def versions(student, program):
+    """同一位學生、同一個校系的所有自傳版本（舊到新）。"""
+    outputs = (LearningProfileOutput.query.filter_by(student_id=student.id, output_type=OUTPUT_TYPE)
+               .order_by(LearningProfileOutput.id).all())
+    return [o for o in outputs if o.content_json.get("program_id") == program.id]
+
+
+def version_of(output):
+    """這一版是第幾版。新資料存在 content_json["version"]；舊資料依建立順序推算。"""
+    if output.content_json.get("version"):
+        return output.content_json["version"]
+    earlier = (LearningProfileOutput.query.filter(
+        LearningProfileOutput.student_id == output.student_id,
+        LearningProfileOutput.output_type == OUTPUT_TYPE,
+        LearningProfileOutput.id <= output.id,
+    ).all())
+    return sum(1 for o in earlier if o.content_json.get("program_id") == output.content_json.get("program_id"))
+
+
 def latest_draft(student, program):
     outputs = (LearningProfileOutput.query.filter_by(student_id=student.id, output_type=OUTPUT_TYPE)
                .order_by(LearningProfileOutput.id.desc()).all())
