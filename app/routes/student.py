@@ -551,6 +551,7 @@ def target_list():
         programs=programs,
         selected=selected,
         slots=student_rules.target_slots(user),
+        cancelled_programs=_cancelled_autobiography_programs(user),
         gaps={p.id: analyze_gap(user, p, journey) for p in programs},
         error=error,
     ), (400 if error else 200)
@@ -708,11 +709,24 @@ def autobiography_save(output_id):
 def autobiography_versions():
     """自傳的所有版本：誰在什麼時候改的、和上一版差在哪裡。不能刪除。"""
     user = get_current_user()
-    program, targets = _autobiography_program(user, request.args.get("program_id", type=int))
+    program_id = request.args.get("program_id", type=int)
+    # 取消目標後仍可以看那個校系的自傳紀錄（唯讀，主持人 2026-10-10）
+    program = next((p for p in _cancelled_autobiography_programs(user) if p.id == program_id), None)
+    cancelled = program is not None
+    if not program:
+        program, targets = _autobiography_program(user, program_id)
     if not program:
         return redirect(url_for("student.target_list"))
-    return render_template("autobiography_versions.html", user=user, program=program,
+    return render_template("autobiography_versions.html", user=user, program=program, cancelled=cancelled,
                            **_version_view(user, program, request.args.get("v", type=int)))
+
+
+def _cancelled_autobiography_programs(user):
+    """學生取消了目標、但留有自傳版本的校系。"""
+    chosen = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id)}
+    outputs = LearningProfileOutput.query.filter_by(student_id=user.id, output_type=autobiography_service.OUTPUT_TYPE)
+    ids = {o.content_json.get("program_id") for o in outputs} - chosen - {None}
+    return AdmissionProgram.query.filter(AdmissionProgram.id.in_(ids)).all() if ids else []
 
 
 def _version_view(student, program, selected_id):

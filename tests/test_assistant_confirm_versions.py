@@ -836,3 +836,20 @@ def test_quota_exceeded_does_not_roll_back_the_callers_work(app):
             consume(student)
         db.session.commit()
         assert Portfolio.query.filter_by(title="還沒存的經歷").count() == 1
+
+
+def test_student_still_sees_versions_after_cancelling_target(app):
+    """主持人 2026-10-10：取消目標校系後，學生仍看得到那個校系的自傳版本紀錄（唯讀）。"""
+    client = login(app)
+    pid = write_autobiography(app, client)
+    client.post(f"/student/targets/{pid}/remove")
+
+    versions = client.get(f"/student/autobiography/versions?program_id={pid}")
+    targets = client.get("/student/targets").get_data(as_text=True)
+    other = login(app, "other").get(f"/student/autobiography/versions?program_id={pid}")
+
+    assert versions.status_code == 200
+    assert "第 1 版" in versions.get_data(as_text=True)
+    assert "已取消" in versions.get_data(as_text=True)
+    assert f"/student/autobiography/versions?program_id={pid}" in targets
+    assert other.status_code in (302, 404) or "第 1 版" not in other.get_data(as_text=True)

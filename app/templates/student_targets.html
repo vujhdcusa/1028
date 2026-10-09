@@ -57,6 +57,16 @@
   {% else %}
   <p class="paper-empty">目前還沒有公開的校系資料，請等系統管理者匯入。</p>
   {% endif %}
+  {% if cancelled_programs %}
+  <section class="sheet mt-1" aria-labelledby="cancelled-title">
+    <div class="sheet__head"><h2 id="cancelled-title">已取消的目標（自傳紀錄保留）</h2></div>
+    <ul class="plain-list">
+      {% for program in cancelled_programs %}
+      <li><a href="{{ url_for('student.autobiography_versions', program_id=program.id) }}">{{ program.school_name }} {{ program.department_name }}（{{ program.admission_year }} 學年度）：看自傳版本紀錄 →</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
   <p class="muted small mt-1">校系資料整理自當年度二技技優甄審簡章；正式規定以簡章與各校系分則為準。準備度只依你已確認的資料計算，不代表錄取機率。</p>
 </div>
 {% endblock %}
