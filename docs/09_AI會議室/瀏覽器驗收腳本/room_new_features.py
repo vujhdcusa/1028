@@ -101,9 +101,10 @@ upload("計畫.txt", "第二版內容")
 docs = ROOM / "project_documents"
 check("同名文件再上傳時，舊版要保留（不做刪除）", "第一版內容" in "".join(x.read_text(encoding="utf-8", errors="ignore") for x in docs.glob("*")),
       f"資料夾內：{[x.name for x in docs.glob('*')]}")
-log_before = (docs / "history.jsonl").read_text(encoding="utf-8")
+audit = ROOM / "project_documents_history.jsonl"
+log_before = audit.read_text(encoding="utf-8")
 upload("history.jsonl", "這不是紀錄")
-log_after = (docs / "history.jsonl").read_text(encoding="utf-8")
+log_after = audit.read_text(encoding="utf-8")
 check("上傳名為 history.jsonl 的檔案不能蓋掉操作紀錄", log_before in log_after, log_after[:60])
 check("不在名單上的學號不能上傳", "HTTP" in api("/api/project-documents", {"member": "999", "files": []}))
 
