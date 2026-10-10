@@ -80,6 +80,7 @@ def seed():
     import_seed_programs()
     # 展示用：再補上 PDF 裡所有國立校系，讓「選很多校系」的畫面有足夠的資料
     import_seed_programs(PROJECT_ROOT / "app" / "content" / "admission_demo_national_116.csv")
+    import_seed_programs(PROJECT_ROOT / "app" / "content" / "admission_demo_dayapply_115.csv")
     db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name="資管科三甲", school_year=115))
     classmate = User(username="111534107", display_name="林小美", role="student")
     classmate.set_password(DEMO_PASSWORD)

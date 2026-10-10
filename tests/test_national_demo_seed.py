@@ -34,3 +34,21 @@ def test_demo_seed_imports_on_top_of_main_seed():
         assert extra >= 30
         assert AdmissionProgram.query.count() == main + extra
         assert {p.school_name for p in AdmissionProgram.query.all()} >= {"國立臺北商業大學", "國立虎尾科技大學", "國立高雄科技大學"}
+
+
+DAY_APPLY = Path(__file__).resolve().parents[1] / "app" / "content" / "admission_demo_dayapply_115.csv"
+
+
+def test_day_apply_seed_imports_and_sums_to_100():
+    totals = defaultdict(int)
+    for row in csv.DictReader(open(DAY_APPLY, encoding="utf-8-sig")):
+        assert row["招生類別"] == "日間部申請入學"
+        assert "統測" in row["資料來源"]
+        totals[row["志願代碼"]] += int(row["加權百分比"])
+    assert set(totals.values()) == {100}
+
+    app = create_app({"SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:", "TESTING": True})
+    with app.app_context():
+        db.create_all()
+        assert import_seed_programs(DAY_APPLY) == len(totals)
+        assert AdmissionProgram.query.filter_by(school_name="國立雲林科技大學").one().department_name == "資訊管理系"
