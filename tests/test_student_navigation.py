@@ -55,8 +55,8 @@ def test_next_step_only_on_home(tmp_path):
     client = records_app(tmp_path).test_client()
     login(client)
 
-    assert "next-card" in client.get("/student/dashboard").get_data(as_text=True)
-    assert "next-card" not in client.get("/student/portfolio").get_data(as_text=True)
+    assert "data-guide-card" in client.get("/student/dashboard").get_data(as_text=True)
+    assert "data-guide-card" not in client.get("/student/portfolio").get_data(as_text=True)
     assert "next-line" not in client.get("/student/portfolio").get_data(as_text=True)
 
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "partials/nav.html" import masthead, footer, page_band, next_card with context %}
+{% from "partials/nav.html" import masthead, footer, page_band, next_card, guide_deck with context %}
 {% set page_name = "student-dashboard" %}
 {% set slot_colors = {"grades": "var(--year-1)", "credential": "var(--year-2)", "activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
 {% set view_links = {"grades": url_for("student.learning_profile"), "credential": url_for("student.learning_profile")} %}
@@ -13,7 +13,7 @@
 {% set grade_note = ('目前 專' ~ '一二三四五'[journey.current_grade - 1]) if journey.current_grade else '' %}
 {{ page_band("我的五年", note=grade_note ~ (' · ' ~ user.student_profile.class_name if user.student_profile and user.student_profile.class_name else '')) }}
 <div class="page page--banded">
-  {{ next_card() }}
+  {{ guide_deck(guide) }}
 
   {# 六類資料：空格（虛線）代表還沒有資料 #}
   <section aria-labelledby="slots-title">

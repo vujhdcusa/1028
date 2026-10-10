@@ -92,6 +92,27 @@
 {% endif %}
 {% endmacro %}
 
+{# 引導卡片：最多 3 張，每張一兩句話、一個按鈕。「稍後再說」隔一天再出現。 #}
+{% macro guide_deck(cards) %}
+{% if cards %}
+<section class="guide" data-guide aria-label="下一步">
+  {% for card in cards %}
+  <article class="guide-card guide-card--{{ card.level }}" data-guide-card="{{ card.id }}" style="--i: {{ loop.index0 }};">
+    <p class="guide-card__text">{{ card.text }}</p>
+    <div class="guide-card__actions">
+      <a class="button button--small" href="{{ card.href }}">{{ card.button }} →</a>
+      <form method="post" action="{{ url_for('main.guide_snooze') }}" data-guide-snooze>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="card" value="{{ card.id }}">
+        <button class="guide-card__later" type="submit">稍後再說</button>
+      </form>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+{% endmacro %}
+
 {% macro footer() %}
 <footer class="footer">
   <div class="footer__inner">

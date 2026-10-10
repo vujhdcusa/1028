@@ -12,10 +12,10 @@
   <div data-motion="reveal">
     <p class="kicker"><b>No.01</b> · 康寧大學資訊管理科 · 五專五年學習歷程</p>
     <h1 class="cover__title"><span>五年，</span><span>會留下<em>很多</em></span><span>東西。</span></h1>
-    <p class="cover__lead">課堂作品、成績單、證照、比賽、幹部與服務學習，散在電腦、雲端和抽屜裡。這個系統幫你一年一年收好，選好想去的二技校系，就知道備審資料還缺什麼。</p>
+    <p class="cover__lead">五年的成果，散在各處。這裡幫你收好。</p>
     <div class="cover__actions">
-      <a class="button" href="{{ url_for('main.login') }}">開始整理我的五年 →</a>
-      <a class="button button--line" href="#route">先看五年路徑</a>
+      <a class="button" href="{{ url_for('main.login') }}">開始 →</a>
+      <a class="button button--line" href="#route">看五年怎麼走</a>
     </div>
   </div>
 
@@ -50,8 +50,8 @@
   <div class="chapter__inner">
     <p class="chapter__num"><strong>02</strong>收好</p>
     <div>
-      <h2>留下，不等於整理。</h2>
-      <p class="chapter__lead">系統把學習資料分成六類，每一筆都記下是專幾、哪個學期。資料一層一層疊起來，就是你的五年。</p>
+      <h2>留下，也要整理。</h2>
+      <p class="chapter__lead">六類資料，一層一層疊成你的五年。</p>
       <div class="stack-demo">
         {% set layers = [("成績與學分", "#c9d4f6"), ("證照", "#c4e3dd"), ("活動", "#f3dfb3"), ("競賽", "#f2c9bd"), ("服務學習", "#c4e3dd"), ("幹部經歷", "#d8cdf1")] %}
         <div class="stack" aria-hidden="true">
@@ -61,9 +61,9 @@
           {% endfor %}
         </div>
         <ol class="legend plain-list">
-          <li><span class="mono">01</span><span><b>成績與學分</b>　自己從學校系統下載成績單後上傳，系統不會登入學校系統。</span></li>
-          <li><span class="mono">02</span><span><b>證照</b>　上傳證書，確認名稱、級別與取得日期。</span></li>
-          <li><span class="mono">03–06</span><span><b>活動、競賽、服務學習、幹部經歷</b>　自己新增，附上照片或證明。</span></li>
+          <li><span class="mono">01</span><span><b>成績</b>　上傳成績單。</span></li>
+          <li><span class="mono">02</span><span><b>證照</b>　上傳證書。</span></li>
+          <li><span class="mono">03–06</span><span><b>活動、競賽、服務、幹部</b>　自己新增。</span></li>
         </ol>
       </div>
     </div>
@@ -75,8 +75,8 @@
   <div class="chapter__inner">
     <p class="chapter__num"><strong>03</strong>五年路徑</p>
     <div>
-      <h2>專一到專五，每一年都有東西可以留下。</h2>
-      <p class="chapter__lead">這是資管科五專生的五年規劃。你不用每一項都做到，但知道每個階段可以留下什麼，五年後就不會兩手空空。</p>
+      <h2>專一到專五，一路走。</h2>
+      <p class="chapter__lead">每一年，都有東西可以留下。</p>
       <div class="route">
         <svg class="route__line" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
           <path vector-effect="non-scaling-stroke" d="M70 30 C70 170 930 120 930 260 S70 380 70 520 S930 640 930 780 S70 880 70 990"/>
@@ -103,8 +103,8 @@
   <div class="chapter__inner">
     <p class="chapter__num"><strong>04</strong>下一站</p>
     <div>
-      <h2>五年不是終點，是選擇下一站的地方。</h2>
-      <p class="chapter__lead">升學、實習或就業，都從同一份整理好的資料出發。</p>
+      <h2>五年後，去哪裡？</h2>
+      <p class="chapter__lead">升學、實習、就業，都從這份資料出發。</p>
       <div class="tickets">
         {% for item in next_stops %}
         <article class="ticket" data-motion="reveal">
@@ -122,8 +122,8 @@
   <div class="chapter__inner">
     <p class="chapter__num"><strong>05</strong>校系資料</p>
     <div>
-      <h2>二技校系的備審要求，每年自動更新。</h2>
-      <p class="chapter__lead">各校系要什麼資料、每項佔幾 %，每年都可能改。系統的 Agent 會在新年度簡章公告時抓取並整理，由管理者核對後才更新給學生使用。</p>
+      <h2>備審要求，不用自己查。</h2>
+      <p class="chapter__lead">各校要什麼，每年自動更新。</p>
       <div class="agent-board">
         <ol class="agent-steps plain-list">
           <li><span class="mono">STEP 1</span><b>偵測新年度簡章</b></li>
@@ -154,7 +154,7 @@
         </div>
         {% endif %}
       </div>
-      <p class="muted small mt-1">資料整理自 115 學年度二技技優甄審簡章；正式規定以當年度簡章與各校系分則為準。</p>
+      <p class="muted small mt-1">範例來自 115 學年度簡章，以當年度公告為準。</p>
     </div>
   </div>
 </section>

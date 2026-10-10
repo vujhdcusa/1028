@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from functools import wraps
 
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, session, url_for
@@ -7,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions import db
 from app.models import AwardCertificate, PortfolioSubmission, SourceDocument, StudentTarget, SubmissionAssignment, TeacherReviewFeedback, User
 from app.services.gap_service import analyze_gap
+from app.services.guide_service import CARD_IDS, guide_cards
 from app.services.package_service import latest_review
 from app.services.teacher_scope import advised_classes, students_for_teacher
 from app.content.five_year_plan import FIVE_YEAR_PLAN, NEXT_STOPS
@@ -125,7 +127,23 @@ def student_dashboard():
         category_labels=CATEGORY_LABELS,
         experience_categories=EXPERIENCE_CATEGORIES,
         source_documents=SourceDocument.query.filter_by(owner_id=user.id).all(),
+        guide=guide_cards(user, session.get("guide_snooze")),
     )
+
+
+@main_bp.post("/student/guide/snooze")
+@role_required("student")
+def guide_snooze():
+    """引導卡片「稍後再說」：記在工作階段裡，隔一天再出現。"""
+    card = request.form.get("card", "")
+    if card not in CARD_IDS:
+        abort(400)
+    snoozed = dict(session.get("guide_snooze") or {})
+    snoozed[card] = datetime.now(timezone.utc).isoformat()
+    session["guide_snooze"] = snoozed
+    if request.headers.get("X-Requested-With") == "fetch":
+        return "", 204
+    return redirect(url_for("main.student_dashboard"))
 
 
 @main_bp.get("/teacher/dashboard")

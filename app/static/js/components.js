@@ -342,3 +342,25 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
     chip.addEventListener("click", () => { setOpen(true); submit(chip.textContent); });
   });
 });
+
+
+// 引導卡片「稍後再說」：不換頁，卡片淡出後移除
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-guide-snooze]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const card = form.closest("[data-guide-card]");
+      try {
+        const response = await fetch(form.action, {
+          method: "POST", body: new FormData(form), credentials: "same-origin",
+          headers: { "X-Requested-With": "fetch" },
+        });
+        if (!response.ok) throw new Error(String(response.status));
+        card.classList.add("is-leaving");
+        setTimeout(() => card.remove(), 300);
+      } catch (error) {
+        form.submit();
+      }
+    });
+  });
+});

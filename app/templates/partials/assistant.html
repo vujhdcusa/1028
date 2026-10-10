@@ -1,8 +1,8 @@
 {# 資管科小助手：每一頁右下角的聊天視窗（學生、導師）。
    對話只存在瀏覽器這個分頁裡，關掉就清掉；伺服器不保存問題與回答。 #}
 {% set suggestions = {
-  "student": ["畢業門檻要幾張證照？我還差幾張？", "我申請的校系還缺什麼？先補哪個最划算？", "幫我檢查自傳有沒有寫到沒有依據的經歷", "二技網路報名是什麼時候？"],
-  "teacher": ["本班有哪些學生還沒選目標校系？", "誰在等我確認備審資料？", "幫我檢查某位學生的自傳一致性", "專題成果報告書要繳交什麼？"],
+  "student": ["我還差幾張證照？", "目標校系還缺什麼？", "檢查我的自傳", "二技什麼時候報名？"],
+  "teacher": ["誰還沒選目標校系？", "誰在等我確認？", "檢查學生的自傳", "專題報告要交什麼？"],
 }[user.role] %}
 <div class="assistant" data-assistant data-endpoint="{{ url_for('assistant.assistant_ask') }}">
   <button class="assistant__toggle" type="button" data-assistant-toggle aria-expanded="false" aria-controls="assistant-panel">
@@ -10,12 +10,12 @@
   </button>
   <section class="assistant__panel" id="assistant-panel" hidden aria-label="資管科小助手">
     <header class="assistant__head">
-      <div><b>資管科小助手</b><small>會查{{ "你的資料" if user.role == "student" else "本班資料" }}和科上規定再回答</small></div>
+      <div><b>資管科小助手</b><small>問操作、規定、進度</small></div>
       <button class="assistant__close" type="button" data-assistant-toggle aria-label="關閉">×</button>
     </header>
     <div class="assistant__log" data-assistant-log aria-live="polite">
       <div class="assistant__msg assistant__msg--bot">
-        <p>嗨 {{ user.display_name }}，我可以幫你查科上規定、{{ "你的準備進度、缺件和自傳" if user.role == "student" else "本班學生的進度、缺件和自傳" }}。可以從下面挑一個問題開始：</p>
+        <p>嗨 {{ user.display_name }}，想問什麼？點一個就好。</p>
         <div class="assistant__chips">
           {% for text in suggestions %}<button type="button" class="assistant__chip" data-assistant-suggest>{{ text }}</button>{% endfor %}
         </div>
@@ -27,6 +27,6 @@
       <textarea id="assistant-input" name="message" rows="1" maxlength="1500" placeholder="輸入問題，Enter 送出" required></textarea>
       <button class="button button--small" type="submit">送出</button>
     </form>
-    <p class="assistant__note">回答由 AI 依系統資料與科上文件整理，僅供參考；正式規定以科辦公告為準。</p>
+    <p class="assistant__note">AI 回答僅供參考，以科辦公告為準。</p>
   </section>
 </div>

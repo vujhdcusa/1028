@@ -547,6 +547,19 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .next-card__text { display: flex; flex-direction: column; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
 .next-card__text .muted { font-size: .8rem; font-weight: 400; }
 
+/* 引導卡片：一兩句話一張，像翻故事書；一次最多 3 張，由左到右依序出現 */
+.guide { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
+.guide-card { display: flex; flex-direction: column; justify-content: space-between; gap: 1.25rem; min-height: 9rem; padding: 1.25rem 1.4rem; background: var(--sheet); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--accent); animation: guide-in .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * .12s); transition: transform .3s, opacity .3s; }
+.guide-card--todo { box-shadow: 4px 4px 0 var(--year-4); }
+.guide-card.is-leaving { opacity: 0; transform: translateY(-10px) scale(.96); }
+.guide-card__text { margin: 0; font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.5; font-weight: 700; }
+.guide-card__actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.guide-card__actions form { margin: 0; }
+.guide-card__later { background: none; border: 0; padding: .25rem; color: var(--muted); font: inherit; font-size: .85rem; cursor: pointer; text-decoration: underline; }
+.guide-card__later:hover { color: var(--ink); }
+@keyframes guide-in { from { opacity: 0; transform: translateY(14px) rotate(-1deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .guide-card { animation: none; transition: none; } }
+
 /* 清單頁上方：左邊一句說明，右邊「＋新增」按鈕 */
 .list-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .record-group__head a { text-decoration: none; font-weight: 700; color: var(--accent); }
