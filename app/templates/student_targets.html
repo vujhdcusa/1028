@@ -10,20 +10,28 @@
 {{ page_band("目標校系") }}
 <div class="page page--banded">
   {% if slots.limit and slots.used > slots.limit %}
-  <p class="alert mb-1" role="alert">五年級做備審，目標校系最多 {{ slots.limit }} 所。你現在有 {{ slots.used }} 所，請先取消 {{ slots.used - slots.limit }} 所，再送導師確認。已寫好的自傳不會刪除。</p>
+  <div class="mb-1">
+    <p class="alert" role="alert">五年級準備備審資料時，目標校系最多 {{ slots.limit }} 所。你目前有 {{ slots.used }} 所，請先取消 {{ slots.used - slots.limit }} 所；已寫好的自傳仍會保留。</p>
+    <div class="record-card__actions"><a class="button button--small" href="#target-programs">查看已選目標校系</a></div>
+  </div>
   {% endif %}
   {% if slots.limit %}
   <p class="muted mb-1" data-tour="五年級最多選 5 所，換學校自傳要重寫。" data-tour-order="0">先選最想上的 {{ slots.limit }} 所，看準備度。換掉學校，寫好的自傳要重寫。</p>
   <p class="mb-1"><span class="tag {{ 'tag--warn' if slots.used >= slots.limit else 'tag--info' }}">已選 {{ slots.used }}／{{ slots.limit }}</span></p>
   {% else %}
-  <p class="muted mb-1" data-tour="想去哪裡都可以選，隨時可以換。" data-tour-order="0">想去哪裡都可以選，隨時可以換。五年級做備審時只能留 5 所。</p>
+  <p class="muted mb-1" data-tour="想去哪裡都可以選，隨時可以換。" data-tour-order="0">目標校系隨時可以更換。五年級準備備審資料時最多保留 5 所。</p>
   {% endif %}
   {% if focus %}{% include "partials/focus.html" %}{% endif %}
-  {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
+  {% if error %}
+  <div class="mb-1">
+    <p class="alert" role="alert">{{ error }}</p>
+    <div class="record-card__actions"><a class="button button--small" href="#target-programs">查看已選目標校系</a></div>
+  </div>
+  {% endif %}
 
   {% if slots.old %}
   <section class="sheet mb-1" aria-labelledby="old-targets">
-    <div class="sheet__head"><h2 id="old-targets">舊學年度的目標</h2></div>
+    <div class="sheet__head"><h2 id="old-targets">舊學年度的目標校系</h2></div>
     <p class="small muted mb-1">新的簡章已經公布，這些是舊學年度的校系，不占名額。之前的送審紀錄會保留。</p>
     <ul class="plain-list">
       {% for target in slots.old %}
@@ -37,7 +45,7 @@
   {% endif %}
 
   {% if programs %}
-  <div class="program-cards" data-tour="每張卡片是一個校系，按「設為目標」加入。" data-tour-order="2">
+  <div class="program-cards" id="target-programs" data-tour="每張卡片是一個校系，按「設為目標校系」加入。" data-tour-order="2">
     {% for program in programs %}
     {% set gap = gaps[program.id] %}
     {% set chosen = program.id in selected %}
@@ -55,20 +63,23 @@
       {% if chosen %}
       <div class="record-card__actions">
         <a class="button button--small" href="{{ url_for('student.target_gap', program_id=program.id) }}">看還缺什麼 →</a>
-        <form method="post" action="{{ url_for('student.target_remove', program_id=program.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--quiet" type="submit">取消目標</button></form>
+        <form method="post" action="{{ url_for('student.target_remove', program_id=program.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--quiet" type="submit">取消目標校系</button></form>
       </div>
       {% else %}
-      <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="program_id" value="{{ program.id }}"><button class="button button--small button--line" type="submit">設為目標</button></form>
+      <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="program_id" value="{{ program.id }}"><button class="button button--small button--line" type="submit">設為目標校系</button></form>
       {% endif %}
     </article>
     {% endfor %}
   </div>
   {% else %}
-  <p class="paper-empty">目前還沒有公開的校系資料，請等系統管理者匯入。</p>
+  <div class="paper-empty">
+    <p>目前還沒有公開的目標校系資料。你可以先整理自己的資料。</p>
+    <div class="record-card__actions"><a class="button button--small" href="{{ url_for('main.student_dashboard') }}">先整理我的資料</a></div>
+  </div>
   {% endif %}
   {% if cancelled_programs %}
   <section class="sheet mt-1" aria-labelledby="cancelled-title">
-    <div class="sheet__head"><h2 id="cancelled-title">已取消的目標（自傳紀錄保留）</h2></div>
+    <div class="sheet__head"><h2 id="cancelled-title">已取消的目標校系（自傳紀錄保留）</h2></div>
     <ul class="plain-list">
       {% for program in cancelled_programs %}
       <li><a href="{{ url_for('student.autobiography_versions', program_id=program.id) }}">{{ program.school_name }} {{ program.department_name }}（{{ program.admission_year }} 學年度）：看自傳版本紀錄 →</a></li>

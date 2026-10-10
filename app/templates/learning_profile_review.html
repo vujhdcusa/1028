@@ -4,12 +4,12 @@
 {% set page_name = "learning-profile-review" %}
 {% set is_transcript = document.document_type == "transcript" %}
 
-{% block title %}確認資料｜資管科智慧學習歷程系統{% endblock %}
+{% block title %}確認上傳內容｜資管科智慧學習歷程系統{% endblock %}
 
 {% block navigation %}{{ masthead(user, "成績與證照") }}{% endblock %}
 
 {% block content %}
-{{ page_band("確認資料", [("成績與證照", url_for('student.learning_profile'))], note=document.display_name) }}
+{{ page_band("確認上傳內容", [("成績與證照", url_for('student.learning_profile'))], note=document.display_name) }}
 <div class="page page--banded">
   <p class="muted mb-1">對照你的文件逐筆檢查；辨識不出來的欄位會留空，不會自己猜。</p>
 
@@ -25,11 +25,21 @@
     {% elif document.preview_kind == "pdf" %}
     <a class="button button--small button--line" href="{{ source_url }}" target="_blank" rel="noopener">在新分頁開啟 PDF</a>
     {% else %}
-    <p class="muted small">這種檔案無法預覽。</p>
+    <p class="muted small">這種檔案無法預覽，請改用 PDF、PNG 或 JPG。</p>
+    <div class="record-card__actions">
+      <a class="button button--small button--line" href="{{ url_for('student.learning_profile_upload_page') }}">重新上傳文件</a>
+    </div>
     {% endif %}
   </details>
 
-  {% if document.status == "analysis_failed" %}<p class="alert mb-1">這份文件無法自動辨識，請手動輸入內容。</p>{% endif %}
+  {% if document.status == "analysis_failed" %}
+  <div class="mb-1">
+    <p class="alert">這份文件無法自動辨識，請手動輸入內容。</p>
+    <div class="record-card__actions">
+      <a class="button button--small" href="#{{ 'course-table-title' if is_transcript else 'credential-table-title' }}">開始手動輸入</a>
+    </div>
+  </div>
+  {% endif %}
   {% for warning in warnings %}<p class="notice mb-1">{{ warning }}</p>{% endfor %}
 
   <form method="post" action="{{ url_for('student.learning_profile_document_confirm', document_id=document.id) }}" class="form-stack">
@@ -48,7 +58,7 @@
                data-fields='["school_year", "semester", "course_name", "credits", "score", "status_mark"]'
                data-initial='{{ courses|tojson }}'>
           <thead><tr><th>年級／學年度</th><th>學期</th><th>課程名稱</th><th>學分</th><th>分數</th><th>註記</th><th><span class="visually-hidden">刪除</span></th></tr></thead>
-          <tbody><tr class="empty-row"><td colspan="7">還沒有資料，按「新增一門課」開始輸入。</td></tr></tbody>
+          <tbody><tr class="empty-row"><td colspan="7">還沒有課程，按「新增一門課」開始輸入。</td></tr></tbody>
           <template>
             <tr data-row>
               <td><input data-field="school_year" inputmode="numeric" aria-label="年級或學年度"></td>
@@ -74,7 +84,7 @@
                data-fields='["credential_name", "level", "issuing_organization", "issue_date"]'
                data-initial='{{ credentials|tojson }}'>
           <thead><tr><th>證照名稱</th><th>級別</th><th>發證單位</th><th>取得日期</th><th><span class="visually-hidden">刪除</span></th></tr></thead>
-          <tbody><tr class="empty-row"><td colspan="5">還沒有資料，按「新增一張證照」開始輸入。</td></tr></tbody>
+          <tbody><tr class="empty-row"><td colspan="5">還沒有證照，按「新增一張證照」開始輸入。</td></tr></tbody>
           <template>
             <tr data-row>
               <td><input data-field="credential_name" aria-label="證照名稱"></td>
