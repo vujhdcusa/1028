@@ -36,7 +36,7 @@
 
 ### SPEC-01｜更新本機規格書（10-10 定案）→ 大改雲端正式版（**目前工作**）
 
-- 狀態：**進行中（GPT／Codex 接手）**（2026-10-10：三份歷屆報告已逐份讀完，本機補圖來源與雲端副本九章重整已完成，待收尾驗證與圖片處理）
+- 狀態：**待使用者確認**（2026-10-10：三份歷屆報告已逐份讀完，本機補圖來源與雲端副本九章重整已完成；圖片輸出與公開分享仍待決定）
 - 認領：GPT／Codex（接手時先改成「進行中」）
 - 範圍：`docs/01_正式規格/` 規格書、`docs/04_圖表與介面/diagrams.md`、`docs/images/`；雲端只更新副本 <https://docs.google.com/document/d/1hi7GI-x_Ion__nDu4TTOUb8N2uVOqW3Q-Ia_7VGveqw/edit>，原始正式版不動。
 - GPT 實際做過：逐份讀完三份歷屆報告；新增 D-23～D-30 八份 Mermaid 圖稿；更新本機規格書與圖表索引；將雲端副本保留封面並依招生平台九章格式重寫內文。雲端更新已由 Docs API 驗證 revision 與章節標題。
@@ -344,6 +344,6 @@
 - **角色**：GPT／Codex
 - **已完成**：依序讀取 114 升學競賽、115 專題日與招生平台三份報告；在 `docs/images/` 新增 D-23～D-30 八份圖稿（功能架構、甘特圖、登入、資料上傳、目標推薦、送審、證明、資料來源維護）；同步更新本機規格書與 `docs/04_圖表與介面/diagrams.md`。
 - **雲端副本**：保留封面，僅改寫 GPT 副本 <https://docs.google.com/document/d/1hi7GI-x_Ion__nDu4TTOUb8N2uVOqW3Q-Ia_7VGveqw/edit> 內文為九章格式；原始正式版未修改。更新後 revision 已由 Docs API 讀回驗證，章節與圖示佔位文字存在。
-- **驗證結果**：三份報告逐份讀取完成；本機文件內容與圖表索引可讀；`git diff --check` 待收尾執行。Mermaid CLI 版本可用，但 Puppeteer 無法在目前 Windows 環境啟動瀏覽器，D-23～D-30 尚未輸出 PNG／SVG。
+- **驗證結果**：三份報告逐份讀取完成；本機文件內容與圖表索引可讀；`git diff --check` 通過。Mermaid CLI 版本可用，但 Puppeteer 無法在目前 Windows 環境啟動瀏覽器，D-23～D-30 尚未輸出 PNG／SVG。
 - **修改檔案**：`docs/01_正式規格/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`、`docs/04_圖表與介面/diagrams.md`、`docs/images/D-23-function-architecture.mmd`～`D-30-admin-source-flow.mmd`、本工作佇列與 `docs/03_開發紀錄/development-log.md`。
 - **待確認／下一步**：是否要將圖檔上傳到可公開網址並替換雲端副本的「此處插入圖 N」；待使用者確認後再做圖片處理。未推送 Git，未改原始正式版。
