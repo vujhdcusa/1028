@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
+{% from "partials/status.html" import status_chip %}
 {% set page_name = "student-portfolio" %}
 {% set slot_colors = {"activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
 {% set semester_labels = {1: "上學期", 2: "下學期"} %}
@@ -36,7 +37,7 @@
       <div class="record-card-slot">
       <a class="record-card record-card--link" href="{{ url_for('student.portfolio_edit', portfolio_id=record.id) }}">
         <div class="record-card__meta">
-          {% if record.status == "draft" %}<span class="tag tag--warn">未確認</span>{% endif %}
+          {{ status_chip(record_state(record)) }}
           {% if record.school_year %}<span class="tag tag--info">{% if record.school_year <= 5 %}專{{ "一二三四五"[record.school_year - 1] }}{% else %}{{ record.school_year }} 學年度{% endif %}</span>{% else %}<span class="tag tag--warn">未填年級</span>{% endif %}
           {% if record.semester %}<span class="tag">{{ semester_labels.get(record.semester) }}</span>{% endif %}
           {% if record.evidence_items %}<span class="tag">佐證 {{ record.evidence_items|length }}</span>{% endif %}
@@ -69,7 +70,7 @@
     <p class="muted mb-1">這些是舊版系統建立的資料。點進去選一個新類別，就會放進「我的五年」。</p>
     <div class="record-cards">
       {% for record in legacy %}
-      <a class="record-card record-card--link" href="{{ url_for('student.portfolio_edit', portfolio_id=record.id) }}"><span class="tag tag--warn">{{ record.category }}</span><h3>{{ record.title }}</h3></a>
+      <a class="record-card record-card--link" href="{{ url_for('student.portfolio_edit', portfolio_id=record.id) }}"><div class="record-card__meta">{{ status_chip(record_state(record)) }}<span class="tag tag--warn">{{ record.category }}</span></div><h3>{{ record.title }}</h3></a>
       {% endfor %}
     </div>
   </section>

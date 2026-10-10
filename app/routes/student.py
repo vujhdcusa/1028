@@ -33,6 +33,7 @@ from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
+from app.services.record_status import learning_profile_state, portfolio_state
 from app.services import ai_quota_service, autobiography_service, review_snapshot_service, student_rules
 from app.services.gemini_client import AIUnavailable, ai_ready
 
@@ -123,6 +124,7 @@ def learning_profile():
         outputs=outputs,
         courses=courses,
         credentials=credentials,
+        record_state=learning_profile_state,
     )
 
 
@@ -385,6 +387,7 @@ def portfolio_list():
         unconfirmed_count=sum(1 for r in records if r.status == "draft"),
         categories=EXPERIENCE_CATEGORIES,
         category_labels=CATEGORY_LABELS,
+        record_state=portfolio_state,
     )
 
 

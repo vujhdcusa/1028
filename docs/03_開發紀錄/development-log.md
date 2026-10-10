@@ -1,5 +1,14 @@
 # 開發日誌
 
+## 2026-10-10（續 36）學習歷程狀態標籤統一
+
+日期：2026-10-10
+開發者：GPT／Codex
+
+- 新增 `app/services/record_status.py`，集中判斷「已確認／待補來源／草稿」：活動與經歷依確認狀態、資料來源與佐證判斷；成績、證照與來源文件依本人確認或來源文件確認判斷。
+- 新增共用 Jinja macro `partials/status.html`，兩頁都使用相同的圖示與短文字；已確認為綠色 `✓`、待補來源為黃色 `!`、草稿為灰色虛線 `—`，不只用顏色表達狀態。
+- `learning_profile.html` 的來源文件、課程、證照，以及 `student_portfolio.html` 的新舊活動紀錄均套用共用狀態標籤。經使用者同意，`app/routes/student.py` 僅增加狀態 helper 的匯入與兩個模板參數。
+- 測試驅動：先新增 `tests/test_record_status.py` 並確認 5 項因功能缺少而失敗，再完成實作；同步把既有「未確認」頁面測試改為新規格的「草稿」。完整測試結果：`287 passed, 1 warning in 274.99s`；警告為既有 pytest 設定 `cache_dir` 未被辨識。
 ## 2026-10-10（續 36）夜間開發：Canva 整理、四位 AI 腦力激盪、手冊與導覽、分工給 GPT
 
 日期：2026-10-10 深夜

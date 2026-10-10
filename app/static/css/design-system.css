@@ -992,3 +992,10 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .route-list__stop a { grid-template-columns: 2.6rem auto 1fr auto; }
   .route-list__here, .route-list__word { white-space: nowrap; }
 }
+
+/* 學習歷程共用狀態標籤 */
+.status-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .65rem; border: 1.5px solid currentColor; border-radius: 999px; font-size: .85rem; font-weight: 700; line-height: 1.35; white-space: nowrap; }
+.status-chip__icon { display: inline-grid; place-items: center; min-width: 1em; font-weight: 900; }
+.status-chip--confirmed { color: #246b45; background: #e4f3e9; }
+.status-chip--pending-source { color: #785900; background: #fff0b8; }
+.status-chip--draft { color: #656970; background: transparent; border-style: dashed; }
