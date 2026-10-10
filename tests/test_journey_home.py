@@ -101,3 +101,14 @@ def test_return_scene_shows_once_per_login(app):
 
     assert "data-return" in client.get("/student/dashboard").get_data(as_text=True)
     assert "data-return" not in client.get("/student/dashboard").get_data(as_text=True)
+
+
+def test_home_has_walker_and_four_places(app):
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    page = client.get("/student/dashboard").get_data(as_text=True)
+
+    assert "data-walker" in page
+    assert page.count("data-place=") == 4
+    for href in ("/student/learning-profile", "/student/portfolio", "/student/targets"):
+        assert f'href="{href}"' in page

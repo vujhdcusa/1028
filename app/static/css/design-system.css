@@ -865,3 +865,28 @@ body[data-page="student-welcome"] .assistant { display: none; }
 }
 /* 「好久不見」播放時，路線動畫先暫停，關掉後才開始 */
 .journey-home.is-waiting, .journey-home.is-waiting * { animation-play-state: paused !important; }
+
+/* 路邊的地方（四個主要功能）與小人物 */
+.place { cursor: pointer; }
+.place__branch { stroke: var(--line); stroke-width: 3; stroke-dasharray: 3 5; }
+.place__top { fill: var(--sheet); stroke: var(--ink); stroke-width: 2; transition: fill .2s; }
+.place__side { fill: var(--c); stroke: var(--ink); stroke-width: 2; }
+.place__icon * { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; }
+.place__label { fill: var(--ink); font: 700 19px var(--font-sans); }
+.place__top, .place__side, .place__label { transform-box: view-box; animation: place-rise .5s cubic-bezier(.2,.9,.3,1.2) both; animation-delay: calc(.4s + var(--p) * .12s); }
+/* 圖示本身用 transform 定位，所以只做淡入，不能用 transform 動畫 */
+.place__icon { animation: fade-in .4s ease-out both; animation-delay: calc(.7s + var(--p) * .12s); }
+@keyframes fade-in { from { opacity: 0; } }
+.place:hover .place__top, .place:focus-visible .place__top, .place.is-target .place__top { fill: var(--c); }
+.place:hover .place__icon *, .place.is-target .place__icon * { stroke: #fff; }
+.jwalker { pointer-events: none; }
+.jwalker__body { fill: var(--ink); stroke: var(--ink); }
+.jwalker__leg, .jwalker__arm { stroke-width: 4; stroke-linecap: round; transform-box: fill-box; transform-origin: top center; }
+.jwalker.is-walking .jwalker__leg--a, .jwalker.is-walking .jwalker__arm:last-child { animation: swing .32s ease-in-out infinite alternate; }
+.jwalker.is-walking .jwalker__leg--b, .jwalker.is-walking .jwalker__arm:nth-last-child(2) { animation: swing .32s ease-in-out infinite alternate-reverse; }
+.jwalker.is-walking .jwalker__body { animation: bob .32s ease-in-out infinite alternate; }
+.jwalker__bubble { font: 700 16px var(--font-sans); fill: var(--accent); }
+@keyframes place-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes swing { from { transform: rotate(-22deg); } to { transform: rotate(22deg); } }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .jwalker, .place * { transition: none !important; animation: none !important; } }

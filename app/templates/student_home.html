@@ -7,6 +7,14 @@
 {# 五個節點的位置（viewBox 0 0 1000 200），路線依序穿過 #}
 {% set stop_xy = [(100, 140), (300, 60), (500, 140), (700, 60), (900, 140)] %}
 {% set route_d = "M100 140 C200 140 200 60 300 60 S400 140 500 140 S600 60 700 60 S800 140 900 140" %}
+{# 路邊的四個地方＝四個主要功能。點了小人物走過去再進入。 #}
+{% set review_href = url_for('student.target_gap', program_id=student_progress.program.id) if student_progress is defined and student_progress.program else url_for('student.target_list') %}
+{% set places = [
+  ("grades", "成績與證照", url_for("student.learning_profile"), 190, 278, "var(--year-1)"),
+  ("records", "活動與經歷", url_for("student.portfolio_list"), 410, 288, "var(--year-3)"),
+  ("targets", "目標校系", url_for("student.target_list"), 630, 278, "var(--year-4)"),
+  ("review", "備審資料", review_href, 850, 288, "var(--year-5)"),
+] %}
 
 {% block title %}我的五年｜資管科智慧學習歷程系統{% endblock %}
 
@@ -26,7 +34,21 @@
   {# 五年路線：畫到「你在這裡」 #}
   <section class="route-map" aria-labelledby="route-title">
     <h1 id="route-title" class="route-map__title">{{ home.grade_label }}，你在這裡。</h1>
-    <svg class="route-map__svg" viewBox="0 0 1000 210" role="img" aria-label="專一到專五的路線，目前在{{ home.grade_label }}">
+    <svg class="route-map__svg" viewBox="0 0 1000 360" role="img" aria-label="專一到專五的路線，目前在{{ home.grade_label }}">
+      {% for key, label, href, cx, cy, color in places %}
+      <a href="{{ href }}" class="place" data-place="{{ key }}" data-x="{{ cx }}" data-y="{{ cy - 6 }}" style="--c: {{ color }}; --p: {{ loop.index0 }};">
+        <line class="place__branch" x1="{{ cx }}" y1="{{ cy - 30 }}" x2="{{ cx }}" y2="{{ 150 if loop.index0 % 2 == 0 else 120 }}"/>
+        <polygon class="place__side" points="{{ cx - 70 }},{{ cy }} {{ cx }},{{ cy + 28 }} {{ cx + 70 }},{{ cy }} {{ cx + 70 }},{{ cy + 14 }} {{ cx }},{{ cy + 42 }} {{ cx - 70 }},{{ cy + 14 }}"/>
+        <polygon class="place__top" points="{{ cx - 70 }},{{ cy }} {{ cx }},{{ cy - 28 }} {{ cx + 70 }},{{ cy }} {{ cx }},{{ cy + 28 }}"/>
+        <g class="place__icon" transform="translate({{ cx }} {{ cy - 4 }})">
+          {% if key == "grades" %}<rect x="-14" y="-12" width="28" height="20" rx="2"/><circle cx="8" cy="6" r="6"/>
+          {% elif key == "records" %}<line x1="-8" y1="12" x2="-8" y2="-16"/><path d="M-8 -16 L12 -10 L-8 -4 Z"/>
+          {% elif key == "targets" %}<path d="M-16 -4 L0 -16 L16 -4 Z"/><rect x="-12" y="-4" width="24" height="16"/>
+          {% else %}<path d="M-15 -10 H-4 L0 -6 H15 V12 H-15 Z"/>{% endif %}
+        </g>
+        <text class="place__label" x="{{ cx }}" y="{{ cy + 66 }}" text-anchor="middle">{{ label }}</text>
+      </a>
+      {% endfor %}
       <path class="route-map__ghost" d="{{ route_d }}" pathLength="100"/>
       <path class="route-map__walked" d="{{ route_d }}" pathLength="100" style="--walked: {{ 100 - (home.grade - 1) * 25 }};"/>
       {% for stop in home.stops %}
@@ -46,6 +68,17 @@
         <title>{{ stop.label }}：{{ stop.count }} 筆</title>
       </a>
       {% endfor %}
+      {# 代表學生的小人物：一開始在專一，走到今年（components.js） #}
+      <g class="jwalker" data-walker data-grade="{{ home.grade }}" transform="translate(100 140)" aria-hidden="true">
+        <g class="jwalker__body">
+          <circle cx="0" cy="-44" r="8"/>
+          <path d="M-7 -34 H7 V-14 H-7 Z"/>
+          <line class="jwalker__leg jwalker__leg--a" x1="-3" y1="-14" x2="-3" y2="0"/>
+          <line class="jwalker__leg jwalker__leg--b" x1="3" y1="-14" x2="3" y2="0"/>
+          <line class="jwalker__arm" x1="-7" y1="-32" x2="-11" y2="-20"/>
+          <line class="jwalker__arm" x1="7" y1="-32" x2="11" y2="-20"/>
+        </g>
+      </g>
     </svg>
   </section>
 

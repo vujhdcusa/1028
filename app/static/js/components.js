@@ -423,3 +423,71 @@ document.querySelectorAll("[data-return]").forEach((root) => {
   root.addEventListener("click", close);
   setTimeout(close, 4500);
 });
+
+// 小人物：沿著路線從專一走到今年；點路邊的地方，走過去再進入
+document.querySelectorAll("[data-walker]").forEach((walker) => {
+  const svg = walker.ownerSVGElement;
+  const route = svg.querySelector(".route-map__walked");
+  const home = walker.closest("[data-journey-home]");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const grade = Number(walker.dataset.grade) || 1;
+  const stops = [100, 300, 500, 700, 900];
+  const total = route.getTotalLength();
+  // 路線上 x 最接近某個值的位置（二分搜尋）
+  const lengthAtX = (x) => {
+    let lo = 0, hi = total;
+    for (let i = 0; i < 30; i += 1) { const mid = (lo + hi) / 2; if (route.getPointAtLength(mid).x < x) lo = mid; else hi = mid; }
+    return lo;
+  };
+  const place = (point) => walker.setAttribute("transform", `translate(${point.x} ${point.y - 24})`);
+  let current = { x: 100, y: 140 };
+  place(current);
+
+  const end = lengthAtX(stops[grade - 1]);
+  let seen = false;
+  try { seen = sessionStorage.getItem("journey-walked") === "1"; } catch (e) { /* 讀不到就當沒看過 */ }
+  const finish = () => { walker.classList.remove("is-walking"); current = route.getPointAtLength(end); place(current); };
+  const walk = () => {
+    if (reduce || seen || grade === 1) { finish(); return; }
+    walker.classList.add("is-walking");
+    const start = performance.now();
+    const duration = 900 + (grade - 1) * 450;
+    const step = (time) => {
+      const t = Math.min(1, (time - start) / duration);
+      const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      current = route.getPointAtLength(end * eased);
+      place(current);
+      if (t < 1) requestAnimationFrame(step); else finish();
+    };
+    requestAnimationFrame(step);
+    try { sessionStorage.setItem("journey-walked", "1"); } catch (e) { /* 存不了也沒關係 */ }
+  };
+  // 「好久不見」播放中就等它關掉再走
+  if (home && home.classList.contains("is-waiting")) {
+    const watch = new MutationObserver(() => { if (!home.classList.contains("is-waiting")) { watch.disconnect(); setTimeout(walk, 300); } });
+    watch.observe(home, { attributes: true, attributeFilter: ["class"] });
+  } else {
+    setTimeout(walk, 300);
+  }
+
+  svg.querySelectorAll("[data-place]").forEach((spot) => {
+    spot.addEventListener("click", (event) => {
+      if (reduce || event.metaKey || event.ctrlKey || event.shiftKey) return;
+      event.preventDefault();
+      spot.classList.add("is-target");
+      walker.classList.add("is-walking");
+      // 從現在的位置走到小島上（直線補間），到了再換頁
+      const from = { ...current };
+      const to = { x: Number(spot.dataset.x), y: Number(spot.dataset.y) };
+      const start = performance.now();
+      const step = (time) => {
+        const t = Math.min(1, (time - start) / 650);
+        const e = 1 - Math.pow(1 - t, 2);
+        current = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
+        place(current);
+        if (t < 1) requestAnimationFrame(step); else setTimeout(() => { window.location.href = spot.getAttribute("href"); }, 150);
+      };
+      requestAnimationFrame(step);
+    });
+  });
+});
