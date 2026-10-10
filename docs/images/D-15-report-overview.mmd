@@ -8,7 +8,7 @@ flowchart LR
 
     Notice[二技公告<br/>管理員核對後發布]:::system --> Recommend
     Recommend[AI 推薦校系]:::ai --> Target[學生選擇目標校系]:::student
-    Target --> Upload[上傳六類資料<br/>含獎懲記錄、電子證書]:::student
+    Target --> Upload[上傳六類資料<br/>成績、獎懲、缺曠可貼上匯入]:::student
     Upload --> Check[AI 辨識並註記修改建議<br/>證照初判]:::ai
     Check --> Confirm[學生確認並補齊資料]:::student
     Confirm -.科上派的服務.-> Staff[科辦核准<br/>電子獎狀]:::staff

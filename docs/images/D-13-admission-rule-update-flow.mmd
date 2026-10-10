@@ -33,7 +33,7 @@ flowchart TD
     Approve -- 否 --> Reject[駁回並記錄原因]:::alert
     Approve -- 是 --> Publish[(正式版本 status=published)]:::store
     Publish --> Student[學生選校系與缺件比對<br/>只讀取正式版本]:::student
-    Publish --> Announce[發布二技公告給學生、老師、科辦<br/>（見圖 17）]:::system
+    Publish --> Announce[發布二技公告給學生、老師、科辦<br/>（見圖 12）]:::system
     Reject --> Log[寫入操作紀錄]:::system
     Publish --> Log
     Rule[AI 不得直接發布；舊年度資料保留不覆蓋；<br/>每次擷取的文字與雜湊都保留]:::note -.- Approve

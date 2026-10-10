@@ -39,3 +39,19 @@ flowchart TD
     P8 --> D1
     P8 --> D8[(D8 公告與已讀紀錄)]:::store
     D8 --> Notice[學生、老師、科辦看到公告]:::system
+    Student --> P9[9.0 貼上匯入成績、獎懲、缺曠]:::system
+    P9 --> D4
+    P9 --> D9[(D9 缺曠合計<br/>只有學生與班導可讀)]:::store
+    D9 -. 學生勾選並確認後才放 .-> P5
+    D9 -.- NoAI[缺曠資料不送給 AI]:::pending
+    D4 --> P10[10.0 畢業學分檢查]:::system
+    D10[(D10 課程規則與修業科目表)]:::store --> P10
+    P10 --> Credit[已取得與還差的學分<br/>（僅供參考）]:::alert
+    Admin --> P11[11.0 資料來源維護與資料分類]:::system
+    P11 <-. 檢查來源、擷取文字、擬分類 .-> AI
+    P11 --> D11[(D11 資料來源與檢查紀錄)]:::store
+    P11 --> D12[(D12 分類後的學校資訊)]:::store
+    D12 --> Browse[學生依分類瀏覽；<br/>引導卡片與小助手引用]:::student
+    Staff --> P12[12.0 表單下載區]:::system
+    P12 --> D13[(D13 表單與版本)]:::store
+    D13 --> FormDL[學生、老師依開放對象下載]:::student

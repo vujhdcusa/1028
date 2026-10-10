@@ -30,8 +30,8 @@
 <text x="685.0" y="385.0" font-size="15" text-anchor="middle" fill="#4B5563">（寄送備審日期；處理還沒核准的申請）</text>
 <path d="M282,389.0 L436,449.0" stroke="#374151" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
 <rect x="440" y="414" width="490" height="70" rx="35.0" fill="#FFFFFF" stroke="#374151" stroke-width="2.5"/>
-<text x="685.0" y="445.0" font-size="20" font-weight="bold" text-anchor="middle" fill="#111827">個人資料</text>
-<text x="685.0" y="471.0" font-size="15" text-anchor="middle" fill="#4B5563">（查看個人資料、修改密碼）</text>
+<text x="685.0" y="445.0" font-size="20" font-weight="bold" text-anchor="middle" fill="#111827">表單下載區</text>
+<text x="685.0" y="471.0" font-size="15" text-anchor="middle" fill="#4B5563">（分類、上架、改版（舊版保留）、下架；收件暫停）</text>
 <path d="M282,389.0 L436,535.0" stroke="#374151" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
 <rect x="440" y="500" width="490" height="70" rx="35.0" fill="#FFFFFF" stroke="#374151" stroke-width="2.5"/>
 <text x="685.0" y="542.0" font-size="20" font-weight="bold" text-anchor="middle" fill="#111827">登出</text>
