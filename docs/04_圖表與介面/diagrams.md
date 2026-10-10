@@ -23,8 +23,8 @@
 | 參考 | 使用者案例總覽（所有角色合併；規格書改用圖 1～3） | `images/D-01-use-case-v2.mmd`／`.png`／`.svg` |
 | 圖 4 | 登入與角色導頁流程圖 | `images/D-02-login-role-routing.mmd`／`.png`／`.svg` |
 | 圖 5 | 學生主線流程圖 | `images/D-10-main-line-flow.mmd`／`.png`／`.svg` |
-| 圖 6 | 行政表單數位化與申請追蹤流程圖（後續擴充） | `images/D-11-admin-forms-flow.mmd`／`.png`／`.svg` |
-| 圖 7 | 專題共同審查流程圖（後續擴充） | `images/D-03-group-project-review-flow.mmd`／`.png`／`.svg` |
+| 圖 6 | 科辦表單下載區流程圖（2026-10-10 取代舊的「行政表單數位化」） | `images/D-20-form-download-flow.mmd`／`.png`／`.svg` |
+| ~~圖 7~~ | 專題共同審查流程圖：**2026-10-10 移除**（科辦不審、專題模板先隱藏），圖檔已搬到 `99_封存_歷史與待確認/03_舊版流程圖與圖片/`；圖號在更新規格書時統一重排 | — |
 | 圖 8 | 招生資料更新流程圖 | `images/D-13-admission-rule-update-flow.mmd`／`.png`／`.svg` |
 | 圖 9 | 導師確認流程圖 | `images/D-16-teacher-confirm-flow.mmd`／`.png`／`.svg` |
 | 圖 10 | 系統管理者維護校系備審要求流程圖 | `images/D-17-admin-maintain-requirements.mmd`／`.png`／`.svg` |
@@ -76,7 +76,8 @@
 | 上傳後 | AI 在學生確認畫面旁註記可能的問題與修改建議，學生本人確認（照 10-07 指導老師錄音） | 圖 1、圖 5、圖 11、圖 13、圖 15 |
 | 導師確認 | 只能確認送審的那一版；確認畫面同時顯示送審版與最新版；老師（導師、專任、指導老師）可加段落註解，學生可回覆 | 圖 2、圖 5、圖 9、圖 13、圖 14 |
 | 二技公告 | AI 代理查資管相關科系、只存文字（每個來源只留最新一份簡章檔）；管理員核對後公告給學生、老師（四、五年級學生）、科辦 | 圖 3、圖 8、圖 12、圖 13、圖 14、圖 17 |
-| 科辦 | 電子獎狀加 TA 證明、社團證明；拿掉「登錄送件審查結果」；批次上傳公假、嘉獎不做 | 圖 1-1、圖 11、圖 16 |
+| 科辦 | 電子獎狀加 TA 證明、社團證明；拿掉「登錄送件審查結果」；批次上傳公假、嘉獎不做；表單下載區要有完整流程圖（使用者：功能簡單也要畫） | 圖 1-1、圖 6、圖 11、圖 16 |
+| 移除的圖 | 圖 6 舊版（行政表單數位化與收件）、圖 7（專題共同審查）和定案衝突，搬到封存 | 圖 6、圖 7 |
 | 管理員 | 新增二技公告核對發布、操作紀錄查詢；專題類型與需求模板先隱藏 | 圖 3、圖 11 |
 
 ## 參考：使用者案例總覽（所有角色合併；規格書改用圖 1～3）
@@ -219,60 +220,60 @@ flowchart TD
     Output --> Print([學生下載列印])
 ```
 
-## 圖 6：行政表單數位化與申請追蹤流程圖（後續擴充）
+## 圖 6：科辦表單下載區流程圖
 
-主線完成前不實作；保留供日後評估。
+依 `docs/02_需求與設計/AI_設計規格_科辦表單區_下載與收件_2026-10-08.md` 第十一點第 1 步（下載區）。收件（繳回系統、退件）2026-10-09 暫停，不在本版。舊的「行政表單數位化與申請追蹤流程圖」與圖 7「專題共同審查流程圖」和 10-10 的決定衝突，已搬到 `99_封存_歷史與待確認/03_舊版流程圖與圖片/`（`D-11-admin-forms-flow`、`D-03-group-project-review-flow`）。
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
 flowchart TD
     classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-    classDef admin fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
+    classDef staff fill:#FEF3C7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef system fill:#E0F2FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef store fill:#F3F4F6,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef ai fill:#FFEDD5,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef pending fill:#FFFFFF,stroke:#9CA3AF,color:#6B7280,stroke-width:1px,stroke-dasharray:5 3;
 
-    Start([教師登入]) --> Publish[上傳已核准空白表單<br/>設定年度、版本、對象、截止日與附件]:::teacher
-    Publish --> Download[學生下載指定版本並離線填寫]:::student
-    Download --> Submit[回傳填妥表單與佐證]:::student
-    Submit --> RuleCheck[系統檢查格式、版本與必備附件]:::system
-    RuleCheck --> TeacherView[教師初檢]:::teacher
-    RuleCheck -. 選用：缺件／空白提示 .-> AI[AI 候選提示，不直接定案]:::ai
-    AI -.-> TeacherView
-    TeacherView --> NeedFix{需要補件？}
-    NeedFix -- 是 --> StudentFix[學生補件；保留舊版本]:::student
-    StudentFix --> RuleCheck
-    NeedFix -- 否 --> StaffResult[科辦登錄正式行政狀態]:::pending
-    StaffResult --> End([學生查看結果])
-```
+    subgraph StaffSide[科辦：上架與維護]
+        SLogin([科辦登入]):::staff --> Manage[進入「表單管理」]:::staff
+        Manage --> Category[分類管理<br/>新增、改名、排序、停用]:::staff
+        Category -.- CatRule[已有項目的分類不能刪除，只能停用]:::pending
+        Manage --> NewItem[新增項目<br/>名稱、說明、分類<br/>開放對象：學生、老師，或兩者]:::staff
+        NewItem --> UploadFile[上傳檔案<br/>PDF、Word、Excel、ODT]:::staff
+        UploadFile --> FileOK{副檔名、檔案類型、<br/>大小（10MB 內）正確？}
+        FileOK -- 否 --> FileErr[顯示錯誤原因，請重新上傳]:::alert
+        FileErr --> UploadFile
+        FileOK -- 是 --> Publish[發布為第 1 版，項目上架]:::staff
+        Manage --> Revise[已上架的項目要改內容<br/>上傳新版本]:::staff
+        Revise --> FileOK2{檔案檢查通過？}
+        FileOK2 -- 否 --> FileErr
+        FileOK2 -- 是 --> NewVersion[新增版本號<br/>舊版本保留、不能覆寫]:::system
+        Manage --> Unlist[下架項目<br/>（可重新上架）]:::staff
+    end
 
-## 圖 7：專題共同審查流程圖（後續擴充）
+    Publish --> Store[(表單項目與各版本檔案<br/>記錄上傳者、時間、檔案雜湊)]:::store
+    NewVersion --> Store
+    Unlist --> Store
+    Publish --> Log[寫入操作紀錄<br/>上架、改版、下架]:::system
+    NewVersion --> Log
+    Unlist --> Log
 
-狀態值與 [專題成果評量範本](../01_正式規格/專題成果評量範本-第一版.md) 及目前程式一致。
+    subgraph UserSide[學生、老師：下載]
+        ULogin([學生或老師登入]):::student --> List[進入「表單下載」<br/>依分類收合，標題顯示項目數量<br/>可用關鍵字搜尋]:::system
+        List --> Filter[只列出開放給自己角色、<br/>而且上架中的項目<br/>顯示名稱、說明、版本日期]:::system
+        Filter --> Pick[選擇要下載的項目]:::student
+        Pick --> Allowed{有權限下載？<br/>（開放給此角色且上架中）}
+        Allowed -- 否 --> Deny[拒絕存取（403）<br/>直接輸入網址也一樣]:::alert
+        Allowed -- 是 --> Download[下載最新版本]:::system
+        Download --> Offline[學生或老師自行填寫<br/>依科上原本的方式繳交]:::student
+    end
 
-```mermaid
-%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
-flowchart TD
-    classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-    classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-    classDef staff fill:#EDE9FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-    classDef system fill:#E0F2FE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-    classDef alert fill:#FEE2E2,stroke:#9CA3AF,color:#111827,stroke-width:1px;
-
-    Start([專五專題開始（後續擴充）]) --> Team[學生建立小組與個人分工]:::student
-    Team --> Submit[學生繳交成果與佐證<br/>狀態：submitted]:::student
-    Submit --> Discuss[教師共同討論<br/>不在系統內個別評分]:::teacher
-    Discuss --> Record[科主任或科助登錄共同結論]:::staff
-    Record --> Result{共同結論}
-    Result -- approved 核可 --> Link[連結至每位組員的學習歷程]:::system
-    Result -- needs_revision 需要補正 --> NewVersion[建立新版本<br/>版本號加 1，保留前一版]:::system
-    NewVersion --> Submit
-    Result -- rejected 退件 --> Reject[記錄退件原因]:::alert
-    Link --> End([完成])
-    Reject --> End
+    Store --> Filter
+    Ask[資管科小助手（限定範圍的提問）<br/>問「公假單在哪下載？」<br/>只回覆提問者有權限的下載連結]:::ai -.-> Pick
+    Offline -.- NoCollect[繳回系統、收件、退件：<br/>2026-10-09 暫停，不在本版]:::pending
+    Unlist -.- UnlistRule[下架後清單不顯示，網址也打不開；<br/>舊版本檔案仍保留，科辦在後台查得到]:::pending
 ```
 
 ## 圖 8：招生資料更新流程圖

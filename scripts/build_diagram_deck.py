@@ -14,7 +14,7 @@ from build_teacher_presentation import IMG, ROOT, WHITE, add_text, base_slide, d
 
 OUT = ROOT / "docs" / "08_簡報" / "AI_流程圖彙整_2026-10-10.pptx"
 
-# 依 docs/04_圖表與介面/diagrams.md 的規格書圖號；圖 6、圖 7 等使用者決定後再處理
+# 依 docs/04_圖表與介面/diagrams.md 的規格書圖號；圖 7（專題共同審查）2026-10-10 已移除
 DIAGRAMS = [
     ("D-01-use-case-student.png", "圖 1｜學生使用案例圖"),
     ("D-01-use-case-teacher.png", "圖 2｜老師使用案例圖（導師、專任教師、指導老師）"),
@@ -22,6 +22,7 @@ DIAGRAMS = [
     ("D-01-use-case-staff.png", "圖 1-1｜科辦／科助使用案例圖"),
     ("D-02-login-role-routing.png", "圖 4｜登入與角色導頁流程圖"),
     ("D-10-main-line-flow.png", "圖 5｜學生主線流程圖"),
+    ("D-20-form-download-flow.png", "圖 6｜科辦表單下載區流程圖"),
     ("D-13-admission-rule-update-flow.png", "圖 8｜招生資料更新流程圖"),
     ("D-16-teacher-confirm-flow.png", "圖 9｜導師確認流程圖"),
     ("D-17-admin-maintain-requirements.png", "圖 10｜系統管理者維護校系備審要求流程圖"),
