@@ -1175,3 +1175,6 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .download-checklist__item { grid-template-columns: auto 1fr; }
   .download-checklist__item a { grid-column: 2; }
 }
+
+/* Claude 審查修正：時間軸與檢查清單不要重複的編號、圓點 */
+.review-timeline, .download-checklist { list-style: none; padding-left: 0; }
