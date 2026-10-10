@@ -15,7 +15,7 @@ flowchart TD
     Student[學生]:::student --> P1
     P1 --> D2[(D2 學生目標校系)]:::store
     Student --> P2[2.0 上傳與確認學習資料]:::system
-    P2 <-. 辨識、真偽判斷與可疑處提示 .-> AI[AI 輔助服務]:::ai
+    P2 <-. 辨識、證照初判與修改建議註記 .-> AI[AI 輔助服務]:::ai
     P1 <-. 推薦校系 .-> AI
     P2 --> D3[(D3 原始檔與辨識結果)]:::store
     P2 --> D4[(D4 成績、證照、活動等學習紀錄)]:::store
@@ -23,9 +23,9 @@ flowchart TD
     D4 --> P3
     D1 -.-> P3
     P3 --> Gap[缺件清單回饋給學生]:::alert
-    D4 --> P4[4.0 導師確認]:::system
-    Teacher[導師]:::teacher --> P4
-    P4 --> D5[(D5 導師確認紀錄)]:::store
+    D4 --> P4[4.0 老師確認與段落註解]:::system
+    Teacher[老師]:::teacher --> P4
+    P4 --> D5[(D5 確認紀錄與段落註解)]:::store
     D5 --> P5[5.0 產出備審資料]:::system
     D4 --> P5
     P5 --> D6[(D6 備審資料檔)]:::store
@@ -34,3 +34,8 @@ flowchart TD
     Staff[科辦]:::admin --> P7
     P7 --> D7[(D7 電子獎狀)]:::store
     D7 --> P5
+    Admin --> P8[8.0 招生資料更新與二技公告]:::system
+    P8 <-. 擷取招生資料 .-> AI
+    P8 --> D1
+    P8 --> D8[(D8 公告與已讀紀錄)]:::store
+    D8 --> Notice[學生、老師、科辦看到公告]:::system

@@ -11,15 +11,15 @@ flowchart TD
     subgraph Stage1[第一階段：手動建立]
         Manual[系統管理者依簡章或整理資料<br/>輸入校系與加權項目]:::admin
     end
-    subgraph Stage23[第二、三階段：Agent 每年更新（亮點）]
-        Source[管理者設定官方來源<br/>技專校院招生委員會、各校分則]:::admin
+    subgraph Stage23[第二、三階段：AI 代理每年更新（亮點）]
+        Source[管理者設定官方來源<br/>技專校院招生委員會、各校簡章連結<br/>先做資管相關科系]:::admin
         Schedule[排程：每年簡章公告期間定期檢查]:::system
-        Detect[Agent 抓取來源並比對內容雜湊]:::ai
+        Detect[AI 代理抓取來源並比對內容雜湊<br/>每個來源只留最新一份簡章檔]:::ai
         Changed{來源有更新？}
         Notify[通知管理者：新年度簡章已公告]:::system
-        Extract[Agent 擷取校系、招生類別、<br/>原始項目名稱與加權百分比]:::ai
+        Extract[AI 代理擷取文字：校系、資格、要交的文件、時程、<br/>項目名稱與加權、申請連結、學校特色（附來源）]:::ai
         Validate{格式檢查：<br/>各校系加權合計 100%？}
-        Fail[擷取失敗：保留原始檔，<br/>改由管理者手動輸入]:::alert
+        Fail[擷取失敗：改由管理者手動輸入]:::alert
         Source --> Schedule --> Detect --> Changed
         Changed -- 否 --> Schedule
         Changed -- 是 --> Notify --> Extract --> Validate
@@ -28,11 +28,12 @@ flowchart TD
     Manual --> Candidate[(候選版本 status=candidate<br/>校系與年度、校系備審要求)]:::store
     Validate -- 是 --> Candidate
     Fail --> Manual
-    Candidate --> Diff[管理者比對新舊差異<br/>並確認對應的資料類別]:::admin
+    Candidate --> Diff[管理者對照官方連結核對<br/>比對新舊差異並確認對應的資料類別]:::admin
     Diff --> Approve{核准？}
     Approve -- 否 --> Reject[駁回並記錄原因]:::alert
     Approve -- 是 --> Publish[(正式版本 status=published)]:::store
     Publish --> Student[學生選校系與缺件比對<br/>只讀取正式版本]:::student
+    Publish --> Announce[發布二技公告給學生、老師、科辦<br/>（見圖 17）]:::system
     Reject --> Log[寫入操作紀錄]:::system
     Publish --> Log
-    Rule[AI 不得直接發布；舊年度資料保留不覆蓋]:::note -.- Approve
+    Rule[AI 不得直接發布；舊年度資料保留不覆蓋；<br/>每次擷取的文字與雜湊都保留]:::note -.- Approve
