@@ -19,6 +19,7 @@
         {% for label, href in links.get(user.role, []) %}
         <a href="{{ href }}"{% if label == active %} aria-current="page"{% endif %}>{{ label }}</a>
         {% endfor %}
+        <button type="button" class="masthead__help" data-tour-start hidden>導覽</button>
         <a class="masthead__help" href="{{ url_for('main.help_page') }}">❓ 怎麼操作</a>
         <span class="masthead__user">{{ user.display_name }}</span>
         <form method="post" action="{{ url_for('main.logout') }}">

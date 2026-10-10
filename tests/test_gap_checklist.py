@@ -136,3 +136,22 @@ def test_gap_page_shows_all_four_checks_complete(gap_app):
     assert html.count("✓ 已完成") == 4
     assert "! 還沒" not in html
     assert "下載 Word" in html
+
+
+def test_untouched_ai_draft_does_not_count_as_written(gap_app):
+    """AI 剛產生、學生沒改過的草稿，不算「自傳已改成自己的話」（會議 20261011-002400 #8）。"""
+    student_id, program_id = _ids(gap_app)
+    with gap_app.app_context():
+        db.session.add(LearningProfileOutput(
+            student_id=student_id,
+            output_type="autobiography_ai",
+            content_json={"program_id": program_id, "version": 1, "edited": False, "paragraphs": []},
+            source_snapshot_json={},
+        ))
+        db.session.commit()
+
+    html = _login(gap_app).get(f"/student/targets/{program_id}").get_data(as_text=True)
+    item = html.split("自傳已改成自己的話", 1)[0].rsplit("download-checklist__item", 1)[1]
+    assert "! 還沒" in item
+    # 「還沒」的項目要帶到這個校系的自傳頁
+    assert f"/student/autobiography?program_id={program_id}" in html

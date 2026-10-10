@@ -46,7 +46,7 @@ def review_paragraphs(paragraphs, facts, answers):
             icon = "⚠"
         elif not evidence:
             issue = "這段沒有資料佐證，請補上具體經驗"
-            suggestion = "補一段你負責的部分與學到什麼"
+            suggestion = QUESTION_SUGGESTIONS.get(question_key, "補一段具體的經驗與學到什麼")
             icon = "⚠"
         else:
             issue = "暫未發現資料疑點"

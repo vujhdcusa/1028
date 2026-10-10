@@ -57,8 +57,9 @@ def download_checklist(student, program, gap, review, autobiography):
             "href": "#board-title",
         },
         {
-            "label": "自傳已寫",
-            "complete": autobiography is not None,
+            "label": "自傳已改成自己的話",
+            # AI 剛產生的草稿（edited=False）不算；學生自己存過一版才算（會議 20261011-002400 #8）
+            "complete": bool(autobiography and (autobiography.content_json or {}).get("edited")),
             "endpoint": "student.autobiography",
             "params": {"program_id": program.id},
         },

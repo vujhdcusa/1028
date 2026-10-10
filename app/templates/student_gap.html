@@ -95,7 +95,7 @@
           {% if review %}{% set label, cls = review_text[review.status] %}<span class="tag {{ cls }}">{{ label }}</span>{% else %}<span class="tag">尚未送出</span>{% endif %}
         </div>
         {% if review_timeline %}
-        <ol class="review-timeline" data-review-timeline aria-label="送審版本時間軸">
+        <ol data-tour="每次送審都留一版，看得到導師的結果。" data-tour-order="2" class="review-timeline" data-review-timeline aria-label="送審版本時間軸">
           {% for item in review_timeline %}
           <li>
             <span>第 {{ item.version }} 版</span>
@@ -128,7 +128,7 @@
       <section class="sheet sheet--ink" aria-labelledby="package-title" data-tour="最後在這裡下載備審資料。" data-tour-order="3">
         <h2 id="package-title" class="mb-1">產出備審資料</h2>
         <p class="small mb-1">依上面的目錄順序產出 Word，可以再編輯後列印。{% if not review or review.status != "confirmed" %}還沒經導師確認，文件上會註明。{% endif %}</p>
-        <ul class="download-checklist" aria-label="下載前檢查清單">
+        <ul data-tour="下載前看一下還有哪幾項沒完成。" data-tour-order="3" class="download-checklist" aria-label="下載前檢查清單">
           {% for item in download_checklist %}
           <li class="download-checklist__item {{ 'is-complete' if item.complete else 'is-open' }}">
             <span class="download-checklist__state">{% if item.complete %}✓ 已完成{% else %}! 還沒{% endif %}</span>

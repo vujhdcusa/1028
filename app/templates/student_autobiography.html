@@ -35,7 +35,7 @@
   {% if asking %}
   {# 第一步：回答問題。有 JavaScript 時一次顯示一題 #}
   <div class="split">
-    <form class="sheet ask" method="post" action="{{ url_for('student.autobiography_generate') }}" data-steps>
+    <form class="sheet ask" method="post" action="{{ url_for('student.autobiography_generate') }}" data-steps data-tour="回答四個問題，AI 幫你排出草稿。" data-tour-order="1">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="program_id" value="{{ program.id }}">
       <p class="ask__progress small muted" data-step-progress></p>
@@ -114,7 +114,7 @@
       <textarea name="paragraph_{{ loop.index0 }}" rows="6" data-autosize data-char aria-label="{{ paragraph.title }}">{{ paragraph.text }}</textarea>
       {% if paragraph.teacher_comment %}<blockquote class="teacher-comment"><b>導師意見：</b>{{ paragraph.teacher_comment }}</blockquote>{% endif %}
       <div class="paragraph-review">
-        <section class="paragraph-review__evidence" aria-label="證據">
+        <section class="paragraph-review__evidence" aria-label="證據"{% if loop.first %} data-tour="每段都看得到依據、疑點和建議。" data-tour-order="2"{% endif %}>
           <h3>證據</h3>
           {% for evidence in review.evidence %}
           <details class="evidence-item">

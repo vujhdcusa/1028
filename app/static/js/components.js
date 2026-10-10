@@ -398,7 +398,7 @@ document.querySelectorAll("[data-open-year]").forEach((node) => {
     event.preventDefault();
     drawer.open = true;
     tab.click();
-    drawer.scrollIntoView({ behavior: "smooth", block: "start" });
+    drawer.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   });
 });
 
@@ -646,6 +646,15 @@ document.querySelectorAll("[data-photo-form]").forEach((form) => {
     layer.querySelector("[data-tour-next]").focus();
   };
   function onKey(event) {
+    if (event.key === "Tab" && layer) {
+      // 焦點只在導覽卡片的按鈕之間循環，不會跑到被遮住的頁面
+      const buttons = [...layer.querySelectorAll("button")].filter((b) => !b.hidden);
+      const at = buttons.indexOf(document.activeElement);
+      event.preventDefault();
+      const next = event.shiftKey ? (at <= 0 ? buttons.length - 1 : at - 1) : (at + 1) % buttons.length;
+      buttons[next].focus();
+      return;
+    }
     if (event.key === "Escape") close();
     if (event.key === "ArrowRight") go(index + 1);
     if (event.key === "ArrowLeft") go(index - 1);

@@ -41,3 +41,15 @@ def test_review_prioritizes_unanswered_question_over_missing_evidence():
     assert reviews[0]["issue"] == "這題還沒回答"
     assert reviews[0]["suggestion"] == "補上遇到的困難、你的做法與結果"
     assert reviews[0]["icon"] == "⚠"
+
+
+def test_missing_evidence_suggestion_matches_the_question():
+    """沒有資料佐證時，建議要依題目給，不是每段都叫學生寫負責的部分（會議 20261011-002400 #8）。"""
+    reviews = review_paragraphs(
+        [{"title": "學習動機", "text": "我喜歡資訊。", "sources": []},
+         {"title": "未來規劃", "text": "我想繼續學。", "sources": []}],
+        [],
+        {"motivation": "喜歡", "proud": "", "challenge": "", "future": "想學"},
+    )
+    assert reviews[0]["suggestion"] == "補上讓你想讀資管的具體契機"
+    assert reviews[1]["suggestion"] == "補上進二技後想學的內容與目標"
