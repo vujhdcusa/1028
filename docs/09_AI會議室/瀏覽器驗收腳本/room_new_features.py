@@ -43,10 +43,10 @@ with sync_playwright() as p:
     pg.on("dialog", lambda d: (dialogs.append(f"{d.type}：{d.message[:60]}"), d.dismiss()))
     pg.goto(BASE); pg.wait_for_selector(".meeting")
     mid = "20261009-185407"
-    pg.click(f".meeting[data-id='{mid}']"); pg.wait_for_selector("[data-confirm-ai]")
+    pg.click(f".meeting[data-id='{mid}']"); pg.wait_for_selector("[data-confirm-ai]", state="attached"); pg.wait_for_timeout(1500)
 
     # 1. AI 最終確認
-    btn = pg.locator("[data-confirm-ai]").first
+    btn = pg.locator("[data-confirm-ai]:visible").first   # 收合的發言裡的按鈕看不到，取看得到的
     agent, msg = btn.get_attribute("data-confirm-ai"), btn.get_attribute("data-confirm-message")
     before_version = api(f"/api/meetings/{mid}/history")["version"]
     btn.click(); pg.wait_for_timeout(800)

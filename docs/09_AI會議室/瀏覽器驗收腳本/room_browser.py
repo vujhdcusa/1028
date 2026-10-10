@@ -54,14 +54,14 @@ with sync_playwright() as p:
     check("右側說明文字都只有一行", wraps == 0, f"{wraps} 個換行")
 
     # 資料夾：新增兩個
-    for name, icon in (("小助手審查", "📚"), ("會議室開發", "🛠️")):
+    for name, icon in (("小助手審查", "📝"), ("會議室開發", "📊")):
         page.click("#folderAdd")
         page.fill("#folderForm input[name=name]", name)
         page.click(f"#iconChoices [data-icon='{icon}']")
         page.click("#folderForm button[value=save]")
         page.wait_for_function(f"document.querySelector('#folderHead')?.textContent.includes('{name}')")
     folders = api("/api/folders")
-    check("新增兩個資料夾（含圖示）", [f["name"] for f in folders] == ["小助手審查", "會議室開發"] and folders[0]["icon"] == "📚")
+    check("新增兩個資料夾（含圖示）", [f["name"] for f in folders] == ["小助手審查", "會議室開發"] and folders[0]["icon"] == "📝")
     check("資料夾記下建立者學號", all(f["created_by"] == "111534105" for f in folders))
     f1, f2 = folders[0]["id"], folders[1]["id"]
 
@@ -102,11 +102,11 @@ with sync_playwright() as p:
     page.click(f"#folderBar [data-folder='{f1}']")
     page.click("#folderEdit")
     page.fill("#folderForm input[name=name]", "小助手審查（改）")
-    page.click("#iconChoices [data-icon='🧪']")
+    page.click("#iconChoices [data-icon='💡']")
     page.click("#folderForm button[value=save]")
     page.wait_for_timeout(500)
     folders = api("/api/folders")
-    check("資料夾可以改名、換圖示", folders[0]["name"] == "小助手審查（改）" and folders[0]["icon"] == "🧪")
+    check("資料夾可以改名、換圖示", folders[0]["name"] == "小助手審查（改）" and folders[0]["icon"] == "💡")
     history = Path(sys.argv[2]) / "folders_history.jsonl"
     lines = [json.loads(x) for x in history.read_text(encoding="utf-8").splitlines() if x.strip()]
     check("資料夾的新增／搬移／改名都有紀錄", [x["action"] for x in lines] == ["create", "create", "move", "move", "rename"],
