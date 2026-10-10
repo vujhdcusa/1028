@@ -1,12 +1,7 @@
 {% extends "base.html" %}
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
+{% from "partials/status.html" import status_chip %}
 {% set page_name = "learning-profile" %}
-{% set status_tags = {
-  "uploaded": ("已上傳", "tag"),
-  "extracted": ("待你確認", "tag--warn"),
-  "analysis_failed": ("無法辨識，請手動輸入", "tag--danger"),
-  "confirmed": ("已確認", "tag--ok"),
-} %}
 {% set type_labels = {"transcript": "成績單", "credential": "證照"} %}
 {% set output_labels = {"profile_summary": "學習摘要", "curriculum_gap": "課程缺漏", "autobiography": "自傳草稿", "study_plan": "讀書計畫草稿"} %}
 
@@ -31,11 +26,10 @@
             <thead><tr><th>檔案</th><th>類型</th><th>狀態</th><th>上傳時間</th><th><span class="visually-hidden">操作</span></th></tr></thead>
             <tbody>
               {% for document in documents %}
-              {% set label, tag_class = status_tags.get(document.status, (document.status, "tag")) %}
               <tr>
                 <td>{{ document.display_name }}</td>
                 <td>{{ type_labels.get(document.document_type, document.document_type) }}</td>
-                <td><span class="tag {{ tag_class }}">{{ label }}</span></td>
+                <td>{{ status_chip(record_state(document)) }}</td>
                 <td class="mono small">{{ document.created_at.strftime("%Y-%m-%d") }}</td>
                 <td><a class="button button--small {{ 'button--line' if document.status == 'confirmed' else '' }}" href="{{ url_for('student.learning_profile_document_review', document_id=document.id) }}">{{ "修改" if document.status == "confirmed" else "確認" }}</a></td>
               </tr>
@@ -53,10 +47,10 @@
         {% if courses %}
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>年級</th><th>學期</th><th>課程</th><th>學分</th><th>分數</th></tr></thead>
+            <thead><tr><th>年級</th><th>學期</th><th>課程</th><th>學分</th><th>分數</th><th>狀態</th></tr></thead>
             <tbody>
               {% for course in courses %}
-              <tr><td>{{ course.school_year or "—" }}</td><td>{{ course.semester or "—" }}</td><td>{{ course.course_name }}</td><td>{{ course.credits if course.credits is not none else "—" }}</td><td>{{ course.score if course.score is not none else (course.status_mark or "—") }}</td></tr>
+              <tr><td>{{ course.school_year or "—" }}</td><td>{{ course.semester or "—" }}</td><td>{{ course.course_name }}</td><td>{{ course.credits if course.credits is not none else "—" }}</td><td>{{ course.score if course.score is not none else (course.status_mark or "—") }}</td><td>{{ status_chip(record_state(course)) }}</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -72,7 +66,7 @@
         <div class="record-cards">
           {% for credential in credentials %}
           <article class="record-card">
-            <div class="record-card__meta">{% if credential.level %}<span class="tag tag--info">{{ credential.level }}</span>{% endif %}{% if credential.issue_date %}<span class="tag mono">{{ credential.issue_date.isoformat() }}</span>{% else %}<span class="tag tag--warn">未填取得日期</span>{% endif %}</div>
+            <div class="record-card__meta">{{ status_chip(record_state(credential)) }}{% if credential.level %}<span class="tag tag--info">{{ credential.level }}</span>{% endif %}{% if credential.issue_date %}<span class="tag mono">{{ credential.issue_date.isoformat() }}</span>{% else %}<span class="tag tag--warn">未填取得日期</span>{% endif %}</div>
             <h3>{{ credential.credential_name }}</h3>
             {% if credential.issuing_organization %}<p>{{ credential.issuing_organization }}</p>{% endif %}
           </article>

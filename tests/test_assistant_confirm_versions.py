@@ -151,12 +151,13 @@ def test_editing_confirmed_record_needs_confirming_again(app):
         assert db.session.get(Portfolio, record_id).status == "confirmed"
 
 
-def test_portfolio_page_shows_unconfirmed_tag_and_confirm_button(app):
+def test_portfolio_page_shows_draft_status_and_confirm_button(app):
     record_id = add_portfolio(app)
 
     html = login(app).get("/student/portfolio").get_data(as_text=True)
 
-    assert "未確認" in html
+    assert 'class="status-chip status-chip--draft"' in html
+    assert "草稿" in html
     assert f"/student/portfolio/{record_id}/confirm" in html
 
 
