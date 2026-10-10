@@ -99,7 +99,9 @@ def test_return_scene_shows_once_per_login(app):
         db.session.commit()
     client.post("/login", data={"username": "stu", "password": "pw"})
 
-    assert "data-return" in client.get("/student/dashboard").get_data(as_text=True)
+    page = client.get("/student/dashboard").get_data(as_text=True)
+    assert 'data-return role="dialog" aria-modal="true"' in page
+    assert 'id="route-title" class="route-map__title" tabindex="-1"' in page
     assert "data-return" not in client.get("/student/dashboard").get_data(as_text=True)
 
 
@@ -175,3 +177,4 @@ def test_summary_stats_and_today_tasks(app):
     page = client.get("/student/dashboard").get_data(as_text=True)
     assert "今天先完成哪一步" in page
     assert "五年累積" in page and "待處理" in page and "最近成果" in page
+    assert "只是累積比例，不是錄取機率" in page

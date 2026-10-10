@@ -1,6 +1,9 @@
 """學期照片：學生上傳這學期最快樂的照片，當成首頁拼圖的圖。只有本人看得到。"""
 import io
+import struct
+import zlib
 from datetime import date
+from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -46,6 +49,16 @@ def jpeg_with_gps(size=(1200, 600)):
     image.save(out, "JPEG", exif=exif)
     out.seek(0)
     return out
+
+
+def png_declaring_size(width, height):
+    """只改 1×1 PNG 的 IHDR，讓檔案很小但宣告尺寸很大。"""
+    source = io.BytesIO()
+    Image.new("RGB", (1, 1), (1, 2, 3)).save(source, "PNG")
+    data = source.getvalue()
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    crc = zlib.crc32(b"IHDR" + ihdr) & 0xFFFFFFFF
+    return io.BytesIO(data[:8] + struct.pack(">I", len(ihdr)) + b"IHDR" + ihdr + struct.pack(">I", crc) + data[33:])
 
 
 def test_current_semester():
@@ -94,6 +107,84 @@ def test_rejects_non_image(app):
                            content_type="multipart/form-data")
     assert response.status_code == 400
     assert not list(app.tmp.rglob("*.jpg"))
+
+
+def test_rejects_oversized_png_and_keeps_existing_photo(app):
+    client = login(app)
+    client.post("/student/photo", data={"photo": (jpeg_with_gps(), "old.jpg")},
+                content_type="multipart/form-data")
+    semester = current_semester(date.today())
+    old_photo = client.get(f"/student/photo/3/{semester}").data
+
+    app.config["PROPAGATE_EXCEPTIONS"] = False
+    response = client.post(
+        "/student/photo",
+        data={"photo": (png_declaring_size(10_000, 4_001), "huge.png")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    assert "照片太大了，請換一張或先縮小再上傳。" in response.get_data(as_text=True)
+    assert client.get(f"/student/photo/3/{semester}").data == old_photo
+    assert not list(app.tmp.rglob("*.tmp"))
+
+
+def test_failed_atomic_replace_keeps_existing_photo_and_removes_temporary_file(app, monkeypatch):
+    client = login(app)
+    client.post("/student/photo", data={"photo": (jpeg_with_gps(), "old.jpg")},
+                content_type="multipart/form-data")
+    semester = current_semester(date.today())
+    old_photo = client.get(f"/student/photo/3/{semester}").data
+
+    def fail_replace(self, target):
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(Path, "replace", fail_replace)
+    with pytest.raises(OSError, match="simulated replace failure"):
+        client.post("/student/photo", data={"photo": (jpeg_with_gps((600, 400)), "new.jpg")},
+                    content_type="multipart/form-data")
+
+    assert client.get(f"/student/photo/3/{semester}").data == old_photo
+    assert not list(app.tmp.rglob("*.tmp"))
+
+
+def test_failed_temporary_save_keeps_existing_photo_and_removes_partial_file(app, monkeypatch):
+    client = login(app)
+    client.post("/student/photo", data={"photo": (jpeg_with_gps(), "old.jpg")},
+                content_type="multipart/form-data")
+    semester = current_semester(date.today())
+    old_photo = client.get(f"/student/photo/3/{semester}").data
+    new_photo = jpeg_with_gps((600, 400))
+
+    def fail_after_partial_write(self, target, *args, **kwargs):
+        Path(target).write_bytes(b"partial jpeg")
+        raise OSError("simulated save failure")
+
+    monkeypatch.setattr(Image.Image, "save", fail_after_partial_write)
+    with pytest.raises(OSError, match="simulated save failure"):
+        client.post("/student/photo", data={"photo": (new_photo, "new.jpg")},
+                    content_type="multipart/form-data")
+
+    assert client.get(f"/student/photo/3/{semester}").data == old_photo
+    assert not list(app.tmp.rglob("*.tmp"))
+
+
+def test_valid_upload_atomically_replaces_existing_photo(app):
+    client = login(app)
+    client.post("/student/photo", data={"photo": (jpeg_with_gps(), "old.jpg")},
+                content_type="multipart/form-data")
+    semester = current_semester(date.today())
+    old_photo = client.get(f"/student/photo/3/{semester}").data
+
+    response = client.post("/student/photo", data={"photo": (jpeg_with_gps((600, 400)), "new.jpg")},
+                           content_type="multipart/form-data")
+    new_photo = client.get(f"/student/photo/3/{semester}").data
+
+    assert response.status_code == 302
+    assert new_photo != old_photo
+    with Image.open(io.BytesIO(new_photo)) as image:
+        assert image.format == "JPEG"
+    assert not list(app.tmp.rglob("*.tmp"))
 
 
 def test_without_photo_shows_illustration_and_upload_prompt(app):

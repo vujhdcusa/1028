@@ -7,12 +7,16 @@
 
 from datetime import date
 from pathlib import Path
+from tempfile import NamedTemporaryFile
+import warnings
 
 from flask import current_app
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 RATIO = 3 / 2
 MAX_WIDTH = 1500
+MAX_PIXELS = 40_000_000
+TOO_LARGE_MESSAGE = "照片太大了，請換一張或先縮小再上傳。"
 
 
 def current_semester(today=None):
@@ -32,8 +36,15 @@ def has_photo(user_id, grade, semester):
 def save_photo(user_id, grade, semester, stream):
     """讀不懂的檔案丟 ValueError（訊息給學生看）。"""
     try:
-        with Image.open(stream) as image:
-            image = ImageOps.exif_transpose(image).convert("RGB")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(stream) as source:
+                width, height = source.size
+                if width * height > MAX_PIXELS:
+                    raise ValueError(TOO_LARGE_MESSAGE)
+                image = ImageOps.exif_transpose(source).convert("RGB")
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning) as error:
+        raise ValueError(TOO_LARGE_MESSAGE) from error
     except (UnidentifiedImageError, OSError) as error:
         raise ValueError("看不懂這個檔案，請上傳 JPG 或 PNG 照片。") from error
 
@@ -52,5 +63,14 @@ def save_photo(user_id, grade, semester, stream):
 
     path = photo_path(user_id, grade, semester)
     path.parent.mkdir(parents=True, exist_ok=True)
-    image.save(path, "JPEG", quality=85)  # 不帶 exif 參數，原本的拍攝資訊都不會寫入
+    temporary = None
+    try:
+        with NamedTemporaryFile(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as output:
+            temporary = Path(output.name)
+        image.save(temporary, "JPEG", quality=85)  # 不帶 exif 參數，原本的拍攝資訊都不會寫入
+        temporary.replace(path)
+    finally:
+        image.close()
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
     return path

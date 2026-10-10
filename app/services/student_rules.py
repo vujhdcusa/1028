@@ -3,7 +3,7 @@
 - 沒有入學學年度就不知道年級：擋下並請學生先補，不猜年級。
 - 不能填寫比目前年級更高的成績或經歷。
 - 送審與送審相關的 AI（自傳）要到 MIN_REVIEW_GRADE 年級才能用；更低年級只能看。
-- 目標校系：一到四年級不限（找方向用）；五年級做備審時同時最多 TARGET_LIMIT 所（規格 10.7）。
+- 目標校系：一到四年級不限（找方向用）；五年級準備備審資料時同時最多 TARGET_LIMIT 所（規格 10.7）。
   只算最新學年度的校系；舊學年度的另外列出，可以刪除。
 """
 
@@ -67,7 +67,7 @@ def over_limit_reason(student):
     slots = target_slots(student)
     if slots["limit"] is None or slots["used"] <= slots["limit"]:
         return None
-    return (f"五年級做備審，目標校系最多 {slots['limit']} 所。你現在有 {slots['used']} 所，"
+    return (f"五年級準備備審資料，目標校系最多 {slots['limit']} 所。你現在有 {slots['used']} 所，"
             f"請先取消 {slots['used'] - slots['limit']} 所，再送導師確認。")
 
 

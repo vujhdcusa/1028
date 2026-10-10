@@ -1222,3 +1222,6 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .teacher-journey-map__stop > a, .teacher-journey-map__stop > span { grid-template-columns: 2.4rem auto 1fr; justify-items: start; align-items: center; gap: .75rem; padding: .35rem 0; }
   .teacher-journey-map__stop small { justify-self: end; text-align: right; }
 }
+
+/* GPT 任務 07：程式移入焦點時，繼續按鈕不可仍受進場延遲隱藏。 */
+.return__go:focus { animation: none; opacity: 1; }

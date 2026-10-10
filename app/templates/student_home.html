@@ -23,7 +23,7 @@
 {% block content %}
 {# 好久不見：隔 60 天以上才登入時播一次。規格：AI_設計規格_我的五年路線首頁 #}
 {% if show_return %}
-<div class="return" data-return role="dialog" aria-label="好久不見">
+<div class="return" data-return role="dialog" aria-modal="true" aria-label="好久不見">
   <p class="return__days"><b data-count-to="{{ home.away_days }}">{{ home.away_days }}</b> 天沒見了。</p>
   {% if home.previous and home.previous.count %}<p class="return__note">{{ home.previous.label }}留下了 {{ home.previous.count }} 件。</p>{% endif %}
   <button type="button" class="return__go" data-return-close>繼續 →</button>
@@ -33,7 +33,7 @@
 <div class="page journey-home{% if show_return %} is-waiting{% endif %}" data-journey-home>
   {# 五年路線：畫到「你在這裡」 #}
   <section class="route-map" aria-labelledby="route-title" data-tour="這條路是你的五年，小人物站在今年。" data-tour-order="1">
-    <h1 id="route-title" class="route-map__title">{{ home.grade_label }}，你在這裡。</h1>
+    <h1 id="route-title" class="route-map__title" tabindex="-1">{{ home.grade_label }}，你在這裡。</h1>
     <svg class="route-map__svg" viewBox="0 0 1000 360" role="img" aria-label="專一到專五的路線，目前在{{ home.grade_label }}">
       {% for key, label, href, cx, cy, color in places %}
       <a href="{{ href }}" class="place" data-place="{{ key }}" data-x="{{ cx }}" data-y="{{ cy - 6 }}" style="--c: {{ color }}; --p: {{ loop.index0 }};">
@@ -189,7 +189,7 @@
   <section class="today" aria-labelledby="today-title" data-tour="不知道做什麼？從這三件事開始。" data-tour-order="2">
     <h2 id="today-title" class="today__title">今天先完成哪一步</h2>
     <p class="today__stats">
-      <span>五年累積 <b>{{ home.summary.percent }}%</b></span>
+      <span>五年累積 <b>{{ home.summary.percent }}%</b> <small>只是累積比例，不是錄取機率</small></span>
       <span>待處理 <b>{{ home.summary.pending }}</b></span>
       <span>最近成果 <b>{{ home.summary.latest or "還沒有" }}</b></span>
     </p>
