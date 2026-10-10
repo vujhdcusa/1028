@@ -39,6 +39,14 @@
 | 圖 17 | DFD 資料流程圖 | `images/D-06-dfd.*` | 圖 13 |
 | 圖 18-1～18-3 | ERD（依功能拆成三張；另有全部資料表總覽當參考） | `images/D-09-erd-part1-learning`、`part2-review`、`part3-sources`、`D-09-erd-v2`（由 `D-09-erd-build.py` 產生） | 圖 14 |
 | 圖 19 | 報告用總體流程圖 | `images/D-15-report-overview.*` | 圖 15 |
+| 圖 20 | 功能架構圖（系統→角色→功能） | `images/D-23-function-architecture.mmd`；待環境可用時輸出 PNG／SVG | — |
+| 圖 21 | 2026 開發甘特圖 | `images/D-24-gantt-2026.mmd`；待環境可用時輸出 PNG／SVG | — |
+| 圖 22 | 登入與角色導頁細部流程 | `images/D-25-login-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
+| 圖 23 | 學生資料上傳、擷取與本人確認流程 | `images/D-26-student-upload-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
+| 圖 24 | 二技目標校系推薦流程 | `images/D-27-target-recommendation-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
+| 圖 25 | 備審送審與導師確認流程 | `images/D-28-review-package-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
+| 圖 26 | 電子獎狀、TA 與社團證明流程 | `images/D-29-certificate-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
+| 圖 27 | 管理員資料來源維護流程 | `images/D-30-admin-source-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
 
 ## 圖 1～4：依角色的使用案例圖
 

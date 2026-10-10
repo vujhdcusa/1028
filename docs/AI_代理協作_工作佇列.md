@@ -36,14 +36,14 @@
 
 ### SPEC-01｜更新本機規格書（10-10 定案）→ 大改雲端正式版（**目前工作**）
 
-- 狀態：**待執行，交給 GPT**（2026-10-10：Claude 額度用完。本機部分已完成並提交 `955ad9c`；雲端還沒寫。**照本文件最後一筆「SPEC-01 進度」的下一步做**）
+- 狀態：**進行中（GPT／Codex 接手）**（2026-10-10：三份歷屆報告已逐份讀完，本機補圖來源與雲端副本九章重整已完成，待收尾驗證與圖片處理）
 - 認領：GPT／Codex（接手時先改成「進行中」）
-- 範圍：`docs/01_正式規格/` 規格書、`docs/04_圖表與介面/diagrams.md`、`docs/images/`、流程圖彙整簡報；雲端原文件不動。曾建立副本 <https://docs.google.com/document/d/1hi7GI-x_Ion__nDu4TTOUb8N2uVOqW3Q-Ia_7VGveqw/edit>，但副本內容已還原，不能視為完成品。
-- GPT 實際做過（未提交，後已還原）：只在本機規格書改過總表標題、加入 10-10 摘要、調整幾個完成狀態；只在雲端副本加入過一段補充並修過目錄標題，之後已還原。**本機規格書、雲端正式版都沒有完成本次規劃的大改。**
+- 範圍：`docs/01_正式規格/` 規格書、`docs/04_圖表與介面/diagrams.md`、`docs/images/`；雲端只更新副本 <https://docs.google.com/document/d/1hi7GI-x_Ion__nDu4TTOUb8N2uVOqW3Q-Ia_7VGveqw/edit>，原始正式版不動。
+- GPT 實際做過：逐份讀完三份歷屆報告；新增 D-23～D-30 八份 Mermaid 圖稿；更新本機規格書與圖表索引；將雲端副本保留封面並依招生平台九章格式重寫內文。雲端更新已由 Docs API 驗證 revision 與章節標題。
 - **Claude 查到 GPT 摘要和定案不符的 3 處（要修正）**：①「導師確認最新版本」→ 定案是**只能確認送審的那一版**，不同版要學生重新送審；②「不提供聊天框」→ 小助手 10.7 是**保留限定範圍的提問**＋引導卡片＋說明區；③「引導卡片模板可隱藏」→ 要隱藏的是**專題類型與需求模板**。
-- 還沒做：資料分類、資料來源維護、畢業學分檢查寫進功能表；圖號重排；主線圖、DFD、ERD 補新功能；ERD 拆三張。
+- 尚待收尾：D-23～D-30 尚未能在目前 Windows Puppeteer 環境輸出 PNG／SVG；雲端副本目前保留「此處插入圖 N」佔位，是否將圖片上傳至公開網址待使用者決定。
 - Claude 已做的草稿（未提交，不要刪）：`docs/images/D-21-school-data-import-flow.mmd`、`D-22-info-source-classify-flow.mmd`、`D-09-erd-build.py`；`D-06-dfd.mmd`、`D-10-main-line-flow.mmd`、`D-13-…`、`D-19-…` 的圖號與新功能。
-- 這段時間請不要改上述檔案。
+- 本次已在上述範圍完成規格與副本更新；未推送 Git，原始正式版未修改。
 
 ### ROOM-02｜AI 會議室修正清單（Claude 驗收後交給 GPT）（**目前工作**）
 
@@ -338,3 +338,12 @@
   - 還沒看：114 升學競賽（`18igB6VJaPlohFDJ2Rv-zzJPRA_K_lk_G`、期末審查簡報 `1Z2Af8AizgyCfAl1PtVP7kqBFza_Wfa7S`）、115 專題日報告書（`1HIAnyo3f08MKWLHmEbphoiSoNhw47msq`）、招生平台簡報（`1gB4U8spJ6t7SXZBBy6GXxXlmcp3OTxUs`）。**一次只下載一份**（同時下載會讓連線中斷）；下載結果存在檔案裡，用 `pypdf` 抽圖說與嵌入圖片來看（本機沒有 PDF 轉圖工具）。
 - **圖片**：Google 文件工具只能插入公開網址的圖片，不能擅自公開分享；寫雲端時先留「此處插入圖 N」，要不要上傳到 Drive 由使用者決定。
 - **下一步**：①看完剩下 3 份 → ②補畫缺的圖（功能架構圖、甘特圖、逐功能流程圖）並更新規格書圖號 → ③依招生平台格式寫進雲端副本（用 Docs 編輯工具，每批寫入前重讀並帶 revisionId）。
+
+### 【@GPT／Codex 回報】SPEC-01 接手收尾（2026-10-10）
+
+- **角色**：GPT／Codex
+- **已完成**：依序讀取 114 升學競賽、115 專題日與招生平台三份報告；在 `docs/images/` 新增 D-23～D-30 八份圖稿（功能架構、甘特圖、登入、資料上傳、目標推薦、送審、證明、資料來源維護）；同步更新本機規格書與 `docs/04_圖表與介面/diagrams.md`。
+- **雲端副本**：保留封面，僅改寫 GPT 副本 <https://docs.google.com/document/d/1hi7GI-x_Ion__nDu4TTOUb8N2uVOqW3Q-Ia_7VGveqw/edit> 內文為九章格式；原始正式版未修改。更新後 revision 已由 Docs API 讀回驗證，章節與圖示佔位文字存在。
+- **驗證結果**：三份報告逐份讀取完成；本機文件內容與圖表索引可讀；`git diff --check` 待收尾執行。Mermaid CLI 版本可用，但 Puppeteer 無法在目前 Windows 環境啟動瀏覽器，D-23～D-30 尚未輸出 PNG／SVG。
+- **修改檔案**：`docs/01_正式規格/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`、`docs/04_圖表與介面/diagrams.md`、`docs/images/D-23-function-architecture.mmd`～`D-30-admin-source-flow.mmd`、本工作佇列與 `docs/03_開發紀錄/development-log.md`。
+- **待確認／下一步**：是否要將圖檔上傳到可公開網址並替換雲端副本的「此處插入圖 N」；待使用者確認後再做圖片處理。未推送 Git，未改原始正式版。
