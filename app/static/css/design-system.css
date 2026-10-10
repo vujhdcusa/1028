@@ -999,3 +999,159 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .status-chip--confirmed { color: #246b45; background: #e4f3e9; }
 .status-chip--pending-source { color: #785900; background: #fff0b8; }
 .status-chip--draft { color: #656970; background: transparent; border-style: dashed; }
+/* =========================================================
+   公開首頁：Canva Piece × Path × Archive 六幕故事（2026-10-10）
+   僅以 data-page 限定公開首頁，避免覆蓋學生端元件。
+   ========================================================= */
+[data-page="public-home"] { overflow-x: clip; background: #f3efe6; }
+[data-page="public-home"] main { overflow: hidden; }
+[data-page="public-home"] .story-scene { position: relative; border-top: 1px solid rgb(28 34 48 / 18%); }
+[data-page="public-home"] .story-scene:not(.story-scene--scatter) { min-height: clamp(580px, 100svh, 820px); display: grid; align-items: center; }
+[data-page="public-home"] .story-scene__inner,
+[data-page="public-home"] .public-agent .story-scene__inner { width: min(1160px, calc(100% - 2.5rem)); margin: 0 auto; padding: clamp(2.5rem, 6svh, 4.5rem) 0; }
+[data-page="public-home"] .story-scene__inner { display: grid; gap: clamp(2rem, 4svh, 3.5rem); }
+[data-page="public-home"] .story-eyebrow { margin: 0 0 .8rem; font-family: var(--font-mono); font-size: .76rem; font-weight: 700; letter-spacing: .12em; color: #3158bd; text-transform: uppercase; }
+[data-page="public-home"] .story-scene h2,
+[data-page="public-home"] .public-agent h2 { max-width: 760px; margin: 0; font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 4.6rem); font-weight: 900; line-height: 1.08; letter-spacing: -.025em; }
+[data-page="public-home"] .story-scene__lead { max-width: 35rem; margin-top: 1rem; color: #4c5361; font-size: clamp(1rem, 1.8vw, 1.2rem); }
+
+/* 01：米白地面上的藍色資料夾海與小人物 */
+[data-page="public-home"] .cover.story-scene--scatter { width: min(1280px, calc(100% - 2.5rem)); height: calc(100svh - 65px); min-height: 620px; max-height: 800px; padding: 0; grid-template-columns: 1fr; overflow: hidden; }
+[data-page="public-home"] .scatter { position: absolute; inset: 0; width: 100%; min-height: 0; aspect-ratio: auto; border: 0; overflow: hidden; background: none; }
+[data-page="public-home"] .story-folder { position: absolute; left: var(--x); top: var(--y); width: clamp(44px, 7vw, 82px); aspect-ratio: 1.28 / 1; transform: rotate(var(--r)) skewY(-2deg); border: 1px solid rgb(22 50 119 / 36%); border-radius: 2px 6px 3px 3px; background: #315fc8; box-shadow: 5px 7px 0 rgb(25 63 151 / 14%); opacity: calc(.72 + var(--d) * .05); }
+[data-page="public-home"] .story-folder::before { content: ""; position: absolute; left: 8%; top: -14%; width: 44%; height: 18%; border: inherit; border-bottom: 0; border-radius: 3px 5px 0 0; background: inherit; }
+[data-page="public-home"] .story-person { position: absolute; left: 50%; bottom: 4%; z-index: 4; width: clamp(30px, 4vw, 46px); transform: translateX(-50%); overflow: visible; }
+[data-page="public-home"] .story-person circle { fill: #1c2230; }
+[data-page="public-home"] .story-person path { fill: none; stroke: #1c2230; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+[data-page="public-home"] .story-person .story-person__coat { fill: #efb7ad; stroke-width: 2; }
+[data-page="public-home"] .cover__copy { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+[data-page="public-home"] .cover__copy .story-eyebrow { position: absolute; top: 5%; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+[data-page="public-home"] .cover__copy .story-scene__lead { position: absolute; left: 50%; top: 11%; width: min(32rem, 84%); margin: 0; padding: .15rem .4rem; text-align: center; background: rgb(243 239 230 / 82%); transform: translateX(-50%); }
+[data-page="public-home"] .cover__title { position: absolute; left: 0; right: 0; bottom: 18%; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(6rem, 14vw, 13rem); margin: 0; font-size: clamp(2.8rem, 6.8vw, 6.6rem); line-height: .98; }
+[data-page="public-home"] .cover__title span:first-child { color: #52745d; text-align: right; text-shadow: 0 0 14px #f3efe6, 3px 3px 0 #dbe5d4; }
+[data-page="public-home"] .cover__title span:last-child { color: #3158bd; text-align: left; text-shadow: 0 0 14px #f3efe6, 3px 3px 0 #c9d4f6; }
+
+/* 02：資料夾之間的細線逐段成路 */
+[data-page="public-home"] .story-scene--link { background: #f8f5ee; }
+[data-page="public-home"] .story-scene--link .story-scene__inner { gap: clamp(1.5rem, 3svh, 2.5rem); }
+[data-page="public-home"] .link-map { display: block; width: min(100%, 900px); height: auto; margin: 0 auto; overflow: visible; }
+[data-page="public-home"] .link-map__path { fill: none; stroke: #3158bd; stroke-width: 2; stroke-dasharray: 8 10; stroke-linecap: round; }
+.motion-ready [data-page="public-home"] .link-map__path { stroke-dasharray: 1200; stroke-dashoffset: 1200; transition: stroke-dashoffset 1.8s cubic-bezier(.2,.7,.25,1); }
+.motion-ready [data-page="public-home"] .is-visible .link-map__path { stroke-dashoffset: 0; }
+[data-page="public-home"] .link-map__folder { fill: #4a70cc; stroke: #203e8d; stroke-width: 2; }
+
+/* 03：五個低飽和彩色資料夾斜排 */
+[data-page="public-home"] .story-scene--years { background: #efe9dd; }
+[data-page="public-home"] .route { margin: 0; }
+[data-page="public-home"] .route__stops { min-height: 350px; display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: clamp(.6rem, 2vw, 1.5rem); align-items: center; padding: 2rem 0; border: 0; transform: rotate(-5deg); }
+[data-page="public-home"] .stop,
+[data-page="public-home"] .stop:nth-child(even) { position: relative; width: auto; min-height: 245px; display: block; justify-self: auto; padding: 2.5rem 1rem 1.25rem; border: 1px solid rgb(28 34 48 / 48%); border-radius: 3px 12px 4px 4px; background: var(--year); transform: translateY(calc((var(--i) - 2) * 14px)); box-shadow: 8px 10px 0 rgb(28 34 48 / 10%); }
+[data-page="public-home"] .stop::before { content: ""; position: absolute; left: -1px; top: -18px; width: 54%; height: 20px; border: inherit; border-bottom: 0; border-radius: 5px 10px 0 0; background: inherit; }
+[data-page="public-home"] .stop__tab { position: absolute; top: .55rem; right: .75rem; font-family: var(--font-mono); font-size: .78rem; }
+[data-page="public-home"] .stop h3 { margin-top: 2.2rem; font-size: 1.35rem; }
+[data-page="public-home"] .stop p { color: #252a33; font-size: .92rem; }
+
+/* 04：專五之後的三條分岔 */
+[data-page="public-home"] .story-scene--fork { color: #f8f5ee; background: #202737; }
+[data-page="public-home"] .story-scene--fork .story-eyebrow,
+[data-page="public-home"] .story-scene--fork .story-scene__lead { color: #c9d4f6; }
+[data-page="public-home"] .tickets { position: relative; margin: 1rem 0 0; padding-top: 3rem; }
+[data-page="public-home"] .tickets::before { content: ""; position: absolute; left: 50%; top: -1.5rem; width: 3px; height: 1.5rem; background: #f1f5ff; box-shadow: 0 0 8px rgb(201 212 246 / 60%); }
+[data-page="public-home"] .tickets::after { content: ""; position: absolute; left: 16.66%; right: 16.66%; top: 0; height: 3px; background: #f1f5ff; box-shadow: 0 0 8px rgb(201 212 246 / 60%); }
+[data-page="public-home"] .ticket { border: 0; border-radius: 4px; box-shadow: 7px 8px 0 rgb(0 0 0 / 22%); }
+[data-page="public-home"] .ticket__stub { position: relative; }
+[data-page="public-home"] .ticket__branch { position: absolute; left: 50%; bottom: 100%; width: 3px; height: 3rem; background: #f1f5ff; box-shadow: 0 0 8px rgb(201 212 246 / 60%); }
+[data-page="public-home"] .ticket::before,
+[data-page="public-home"] .ticket::after { background: #202737; }
+
+/* 05：無關資料淡去，相關資料留在框中 */
+[data-page="public-home"] .story-scene--focus { background: #f8f5ee; }
+[data-page="public-home"] .focus-demo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding: clamp(1rem, 3vw, 2rem); border: 1px dashed #7a8292; }
+[data-page="public-home"] .focus-card { min-height: 110px; display: grid; place-items: center; padding: 1rem; border: 1px solid #aeb2ba; background: #ece9e2; color: #6f7580; font-weight: 700; transition: opacity .7s ease, border-color .7s ease, background .7s ease; }
+.motion-ready [data-page="public-home"] [data-motion="focus"] .focus-card { opacity: .65; }
+.motion-ready [data-page="public-home"] [data-motion="focus"].is-visible .focus-card:not(.is-match) { opacity: .22; }
+[data-page="public-home"] .focus-card.is-match { border: 3px solid #3158bd; background: #fff; color: #1c2230; box-shadow: 5px 5px 0 #c9d4f6; }
+.motion-ready [data-page="public-home"] [data-motion="focus"] .focus-card.is-match { opacity: 1; }
+
+/* 06：紫、藍、青綠、灰玻璃方片組成資料包 */
+[data-page="public-home"] .story-scene--bundle { background: linear-gradient(140deg, #ebe3f3 0%, #e3eaf7 45%, #e1f0eb 100%); }
+[data-page="public-home"] .story-scene__inner--bundle { min-height: 660px; grid-template-columns: minmax(0, .85fr) minmax(360px, 1.15fr); align-items: center; }
+[data-page="public-home"] .story-cta { margin-top: 2rem; }
+[data-page="public-home"] .story-cta:focus-visible { outline: 4px solid #1c2230; outline-offset: 5px; }
+[data-page="public-home"] .bundle-stack { position: relative; min-height: 450px; perspective: 1000px; }
+[data-page="public-home"] .bundle-stack span { position: absolute; left: calc(5% + var(--i) * 9%); top: calc(8% + var(--i) * 10%); width: 68%; aspect-ratio: 1.2 / 1; border: 1px solid rgb(28 34 48 / 24%); border-radius: 8px; background: linear-gradient(135deg, rgb(143 110 191 / 58%), rgb(50 96 195 / 48%), rgb(84 174 151 / 42%), rgb(126 135 148 / 40%)); box-shadow: 15px 18px 28px rgb(32 39 55 / 10%); backdrop-filter: blur(3px); transform: rotateX(56deg) rotateZ(-34deg) translateZ(calc(var(--i) * 22px)); transition: left .8s ease, top .8s ease, opacity .5s ease; }
+.motion-ready [data-page="public-home"] .bundle-stack:not(.is-visible) span { left: 20%; top: 35%; opacity: .25; }
+
+/* 校系資料沿用原資料與表格，但回到米白視覺。 */
+[data-page="public-home"] .public-agent { color: #f8f5ee; background: #202737; }
+[data-page="public-home"] .public-agent .story-scene__inner { display: grid; grid-template-columns: minmax(240px, .65fr) minmax(0, 1.35fr); gap: clamp(2rem, 5vw, 5rem); }
+[data-page="public-home"] .public-agent .chapter__lead { color: #c7cbd3; }
+[data-page="public-home"] .agent-board { margin: 0; min-width: 0; }
+[data-page="public-home"] .public-agent__note { grid-column: 2; margin: -3.5rem 0 0; }
+
+/* 一般動效只做成路、聚焦、組合；進場幅度保持輕。 */
+.motion-ready [data-page="public-home"] [data-motion] { opacity: 0; transform: translateY(14px); transition: opacity .65s ease, transform .65s ease; }
+.motion-ready [data-page="public-home"] [data-motion].is-visible { opacity: 1; transform: none; }
+.motion-ready [data-page="public-home"] [data-motion="focus"],
+.motion-ready [data-page="public-home"] [data-motion="bundle"] { transform: none; }
+
+@media (max-width: 960px) {
+  [data-page="public-home"] .cover.story-scene--scatter,
+  [data-page="public-home"] .story-scene__inner--bundle,
+  [data-page="public-home"] .public-agent .story-scene__inner { grid-template-columns: 1fr; }
+  [data-page="public-home"] .cover.story-scene--scatter { min-height: 580px; }
+  [data-page="public-home"] .scatter { min-height: 480px; order: 2; }
+  [data-page="public-home"] .route__stops { min-height: auto; grid-template-columns: repeat(5, minmax(140px, 1fr)); overflow-x: auto; padding: 2rem 1rem 3rem; }
+  [data-page="public-home"] .route__stops { border-left: 0; }
+  [data-page="public-home"] .bundle-stack { min-height: 390px; }
+  [data-page="public-home"] .tickets { grid-template-columns: 1fr; padding-top: 0; padding-left: 2rem; }
+  [data-page="public-home"] .tickets::before { left: .75rem; top: 0; bottom: 0; width: 3px; height: auto; }
+  [data-page="public-home"] .tickets::after { display: none; }
+  [data-page="public-home"] .ticket__branch { left: auto; right: 100%; top: 50%; bottom: auto; width: 2rem; height: 3px; }
+  [data-page="public-home"] .public-agent__note { grid-column: auto; margin: -1rem 0 0; }
+}
+
+@media (max-width: 600px) {
+  [data-page="public-home"] .story-scene__inner,
+  [data-page="public-home"] .public-agent .story-scene__inner,
+  [data-page="public-home"] .cover.story-scene--scatter { width: min(100% - 2rem, 1160px); }
+  [data-page="public-home"] .story-scene .story-scene__inner { padding: 2rem 0; gap: 1.5rem; }
+  [data-page="public-home"] .cover.story-scene--scatter { height: calc(100svh - 125px); min-height: 560px; max-height: 720px; padding: 0; }
+  [data-page="public-home"] .cover__copy .story-eyebrow { top: 4%; }
+  [data-page="public-home"] .cover__title { bottom: 23%; gap: 4.75rem; font-size: clamp(1.85rem, 8.6vw, 2.4rem); }
+  [data-page="public-home"] .cover__title span { white-space: nowrap; }
+  [data-page="public-home"] .cover__copy .story-scene__lead { top: 11%; bottom: auto; width: 94%; font-size: 1rem; }
+  [data-page="public-home"] .scatter { min-height: 0; aspect-ratio: auto; }
+  [data-page="public-home"] .story-person { bottom: 20%; }
+  [data-page="public-home"] .story-folder { width: clamp(38px, 16vw, 62px); }
+  [data-page="public-home"] .route__stops { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; transform: none; overflow: visible; }
+  [data-page="public-home"] .stop,
+  [data-page="public-home"] .stop:nth-child(even) { min-height: 0; padding: 1.55rem .7rem .8rem; transform: rotate(calc((var(--i) - 2) * 1deg)); }
+  [data-page="public-home"] .stop:last-child { grid-column: 1 / -1; width: calc(50% - .375rem); justify-self: center; }
+  [data-page="public-home"] .stop h3 { margin-top: .6rem; font-size: 1.05rem; }
+  [data-page="public-home"] .stop p { font-size: .82rem; }
+  [data-page="public-home"] .tickets { grid-template-columns: 1fr; }
+  [data-page="public-home"] .focus-demo { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+  [data-page="public-home"] .focus-card { min-height: 82px; }
+  [data-page="public-home"] .story-scene__inner--bundle { min-height: auto; }
+  [data-page="public-home"] .bundle-stack { min-height: 300px; }
+  [data-page="public-home"] .bundle-stack span { width: 74%; }
+  [data-page="public-home"] .agent-board .table-wrap { max-width: 100%; }
+}
+
+/* 減少動態效果：六幕維持最終靜態排列，只做短暫淡入。 */
+@media (prefers-reduced-motion: reduce) {
+  .reduced-motion [data-page="public-home"] [data-motion] { opacity: 0; transform: none !important; transition: opacity .2s ease !important; }
+  .reduced-motion [data-page="public-home"] [data-motion].is-visible { opacity: 1; }
+  [data-page="public-home"] .link-map__path { stroke-dasharray: 8 10; stroke-dashoffset: 0; }
+  [data-page="public-home"] .bundle-stack span { left: calc(5% + var(--i) * 9%); top: calc(8% + var(--i) * 10%); opacity: 1; }
+  [data-page="public-home"] .focus-card:not(.is-match) { opacity: .22; }
+}
+
+/* Claude 審查修正：標語要在資料夾層上面（原本被 .scatter 蓋住，看起來很淡） */
+[data-page="public-home"] .cover__copy { z-index: 30; }
+@media (max-width: 640px) {
+  /* 手機：標語改上下兩行、夾著小人物，避免右邊被切掉 */
+  [data-page="public-home"] .cover__title { grid-template-columns: 1fr; gap: 5.2rem; bottom: 12%; font-size: clamp(2rem, 10vw, 2.6rem); }
+  [data-page="public-home"] .cover__title span:first-child, [data-page="public-home"] .cover__title span:last-child { text-align: center; }
+}

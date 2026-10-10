@@ -34,6 +34,37 @@ def test_public_home_uses_the_shared_design_system_and_motion_shell():
     assert b'id="agent"' in response.data
 
 
+def test_public_home_tells_the_six_step_story_in_order():
+    client = ui_app().test_client()
+
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert html.count("data-story-step=") == 6
+    story_beats = [
+        "把五年，拼成下一站",
+        "散落的資料，開始連成一條路",
+        "專一到專五，各有一格位置",
+        "升學、實習、就業",
+        "只留下和目標有關的證明",
+        "五年，組成一份能出發的資料包",
+    ]
+    positions = [html.index(beat) for beat in story_beats]
+    assert positions == sorted(positions)
+    assert html.count("data-route-branch") == 3
+
+
+def test_public_home_finishes_with_a_login_call_to_action():
+    client = ui_app().test_client()
+
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert 'href="/login"' in html
+    assert ">開始我的路徑<" in html
+
+
 def test_student_dashboard_exposes_a_personal_journey_layout():
     client = ui_app().test_client()
     login_response = client.post(

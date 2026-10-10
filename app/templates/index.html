@@ -2,160 +2,163 @@
 {% from "partials/nav.html" import masthead, footer with context %}
 {% set page_name = "public-home" %}
 
-{% block title %}資管科智慧學習歷程系統｜五年，會留下很多東西{% endblock %}
+{% block title %}資管科智慧學習歷程系統｜把五年，拼成下一站{% endblock %}
 
 {% block navigation %}{{ masthead() }}{% endblock %}
 
 {% block content %}
-{# 第一幕：散落的資料。往下捲動後，資料會自動排整齊。#}
-<section class="cover">
-  <div data-motion="reveal">
-    <p class="kicker"><b>No.01</b> · 康寧大學資訊管理科 · 五專五年學習歷程</p>
-    <h1 class="cover__title"><span>五年，</span><span>會留下<em>很多</em></span><span>東西。</span></h1>
-    <p class="cover__lead">五年的成果，散在各處。這裡幫你收好。</p>
-    <div class="cover__actions">
-      <a class="button" href="{{ url_for('main.login') }}">開始 →</a>
-      <a class="button button--line" href="#route">看五年怎麼走</a>
-    </div>
-  </div>
-
-  {% set chips = [
-    ("成績單", "TRANSCRIPT", "var(--year-1)", "5%", "11%", "-9deg", "5%", "16%"),
-    ("網頁設計丙級", "CERTIFICATE", "var(--year-2)", "67%", "7%", "7deg", "36.5%", "16%"),
-    ("迎新活動", "ACTIVITY", "var(--year-3)", "35%", "22%", "-4deg", "68%", "16%"),
-    ("全國技藝競賽", "COMPETITION", "var(--year-4)", "69%", "36%", "11deg", "5%", "38%"),
-    ("資訊週志工", "SERVICE", "var(--year-2)", "3%", "40%", "6deg", "36.5%", "38%"),
-    ("班級學藝股長", "LEADERSHIP", "var(--year-5)", "34%", "50%", "-12deg", "68%", "38%"),
-    ("期末專案", "PROJECT", "var(--year-1)", "68%", "62%", "-6deg", "5%", "60%"),
-    ("自傳草稿", "DRAFT", "var(--year-3)", "6%", "70%", "9deg", "36.5%", "60%"),
-    ("實習週記", "INTERNSHIP", "var(--year-4)", "66%", "82%", "3deg", "68%", "60%"),
-  ] %}
-  <div class="scatter" data-scatter role="img" aria-label="散落的成績單、證照、活動與競賽資料，捲動後被整理成整齊的資料夾">
-    <span class="scatter__label kicker">FIG.1 我的資料</span>
-    <span class="scatter__state tag tag--warn" data-scatter-state>散落中</span>
-    {% for name, en, color, x, y, r, sx, sy in chips %}
-    <div class="chip" style="--chip: {{ color }}; --x: {{ x }}; --y: {{ y }}; --r: {{ r }}; --sx: {{ sx }}; --sy: {{ sy }};" aria-hidden="true"><small>{{ en }}</small>{{ name }}</div>
+{# 六幕故事 01：散落碎片 #}
+<section class="cover story-scene story-scene--scatter" data-story-step="1" aria-labelledby="story-1-title">
+  <div class="scatter" data-scatter role="img" aria-label="藍色資料夾散落成海，一位學生站在中央">
+    {% set folders = [
+      (5, 8, -8, 1), (23, 5, 5, 2), (43, 10, -3, 3), (65, 5, 8, 4), (83, 12, -6, 5),
+      (12, 27, 6, 2), (34, 24, -7, 4), (59, 29, 4, 1), (77, 25, -4, 3),
+      (3, 47, -5, 5), (24, 45, 7, 1), (70, 48, -8, 2), (87, 43, 5, 4),
+      (9, 68, 8, 3), (31, 70, -4, 5), (57, 66, 6, 2), (78, 71, -6, 1),
+      (18, 86, -7, 4), (46, 84, 4, 3), (72, 87, -3, 5)
+    ] %}
+    {% for x, y, r, d in folders %}
+    <span class="story-folder story-folder--blue" style="--x: {{ x }}%; --y: {{ y }}%; --r: {{ r }}deg; --d: {{ d }};" aria-hidden="true"></span>
     {% endfor %}
-    <svg class="walker" viewBox="0 0 34 80" aria-hidden="true">
-      <circle cx="17" cy="9" r="8" fill="#1c2230"/>
-      <path d="M8 22h18v26H8z" fill="#2448c9"/>
-      <path d="M10 48l-3 30M24 48l3 30M8 24l-6 18M26 24l6 18" stroke="#1c2230" stroke-width="4" stroke-linecap="round"/>
+    <svg class="story-person" viewBox="0 0 44 92" aria-hidden="true">
+      <circle cx="22" cy="12" r="10"/>
+      <path d="M12 27h20l5 34H7z" class="story-person__coat"/>
+      <path d="M14 60 10 90M30 60l4 30M10 34 2 22M34 34l8 22"/>
     </svg>
-    <span class="scatter__caption">↓ 往下捲，把它們整理好</span>
+  </div>
+  <div class="cover__copy" data-motion="reveal">
+    <p class="story-eyebrow">五專五年學習歷程</p>
+    <h1 class="cover__title" id="story-1-title"><span>把五年，</span><span>拼成下一站</span></h1>
+    <p class="story-scene__lead">散落的每一件事，都能成為出發的線索。</p>
   </div>
 </section>
 
-{# 第二幕：六類資料疊成一份歷程 #}
-<section class="chapter" id="sort">
-  <div class="chapter__inner">
-    <p class="chapter__num"><strong>02</strong>收好</p>
+{# 六幕故事 02：路徑連結 #}
+<section class="chapter story-scene story-scene--link" data-story-step="2" aria-labelledby="story-2-title">
+  <div class="story-scene__inner" data-motion="reveal">
     <div>
-      <h2>留下，也要整理。</h2>
-      <p class="chapter__lead">六類資料，一層一層疊成你的五年。</p>
-      <div class="stack-demo">
-        {% set layers = [("成績與學分", "#c9d4f6"), ("證照", "#c4e3dd"), ("活動", "#f3dfb3"), ("競賽", "#f2c9bd"), ("服務學習", "#c4e3dd"), ("幹部經歷", "#d8cdf1")] %}
-        <div class="stack" aria-hidden="true">
-          {% for name, color in layers %}
-          <div class="stack__layer" style="--i: {{ loop.index0 }}; --layer: {{ color }};"></div>
-          <span class="stack__tag" style="--i: {{ loop.index0 }};">{{ name }}</span>
-          {% endfor %}
-        </div>
-        <ol class="legend plain-list">
-          <li><span class="mono">01</span><span><b>成績</b>　上傳成績單。</span></li>
-          <li><span class="mono">02</span><span><b>證照</b>　上傳證書。</span></li>
-          <li><span class="mono">03–06</span><span><b>活動、競賽、服務、幹部</b>　自己新增。</span></li>
-        </ol>
-      </div>
+      <p class="story-eyebrow">02 · 連起來</p>
+      <h2 id="story-2-title">散落的資料，開始連成一條路</h2>
+      <p class="story-scene__lead">細線穿過每個片段，讓累積有了方向。</p>
     </div>
+    <svg class="link-map" viewBox="0 0 900 300" role="img" aria-label="資料夾由細線連成一條路">
+      <path class="link-map__path" d="M70 215 C190 70 285 245 410 125 S645 55 830 170"/>
+      {% for x, y in [(70, 215), (240, 140), (410, 125), (620, 78), (830, 170)] %}
+      <g class="link-map__folder" transform="translate({{ x - 27 }} {{ y - 21 }})">
+        <path d="M2 10h20l7-8h23v12H2z"/><rect x="2" y="10" width="52" height="36" rx="3"/>
+      </g>
+      {% endfor %}
+    </svg>
   </div>
 </section>
 
-{# 第三幕：資管科五年路徑（內容在 app/content/five_year_plan.py） #}
-<section class="chapter" id="route">
-  <div class="chapter__inner">
-    <p class="chapter__num"><strong>03</strong>五年路徑</p>
-    <div>
-      <h2>專一到專五，一路走。</h2>
-      <p class="chapter__lead">每一年，都有東西可以留下。</p>
-      <div class="route">
-        <svg class="route__line" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
-          <path vector-effect="non-scaling-stroke" d="M70 30 C70 170 930 120 930 260 S70 380 70 520 S930 640 930 780 S70 880 70 990"/>
-        </svg>
-        <ol class="route__stops">
-          {% for stop in plan %}
-          <li class="stop" style="--year: var(--year-{{ stop.grade }});" data-motion="reveal">
-            <span class="stop__badge">{{ stop.code }}</span>
-            <div>
-              <h3>{{ stop.title }}</h3>
-              <p>{{ stop.summary }}</p>
-              <div class="stop__keep">{% for item in stop.keep %}<span>{{ item }}</span>{% endfor %}</div>
-            </div>
-          </li>
-          {% endfor %}
-        </ol>
-      </div>
+{# 六幕故事 03：五年整理 #}
+<section class="chapter story-scene story-scene--years" id="route" data-story-step="3" aria-labelledby="story-3-title">
+  <div class="story-scene__inner">
+    <div data-motion="reveal">
+      <p class="story-eyebrow">03 · 排成五年</p>
+      <h2 id="story-3-title">專一到專五，各有一格位置</h2>
+      <p class="story-scene__lead">每年留下一句話，慢慢看見自己的方向。</p>
     </div>
-  </div>
-</section>
-
-{# 第四幕：下一站 #}
-<section class="chapter chapter--ink" id="next">
-  <div class="chapter__inner">
-    <p class="chapter__num"><strong>04</strong>下一站</p>
-    <div>
-      <h2>五年後，去哪裡？</h2>
-      <p class="chapter__lead">升學、實習、就業，都從這份資料出發。</p>
-      <div class="tickets">
-        {% for item in next_stops %}
-        <article class="ticket" data-motion="reveal">
-          <span class="ticket__stub">{{ item.code }}</span>
-          <div class="ticket__body"><h3>{{ item.title }}</h3><p>{{ item.text }}</p></div>
-        </article>
+    <div class="route" data-motion="reveal">
+      {% set year_colors = ["#e5b7bd", "#dfb07f", "#aebfe8", "#d4bd72", "#a9b6c2"] %}
+      <ol class="route__stops">
+        {% for stop in plan %}
+        <li class="stop" style="--year: {{ year_colors[loop.index0] }}; --i: {{ loop.index0 }};">
+          <span class="stop__tab">{{ stop.code }}</span>
+          <h3>{{ stop.title }}</h3>
+          <p>{{ stop.summary }}</p>
+        </li>
         {% endfor %}
-      </div>
+      </ol>
     </div>
   </div>
 </section>
 
-{# 第五幕：系統亮點－二技招生資料 Agent #}
-<section class="chapter chapter--ink" id="agent">
-  <div class="chapter__inner">
-    <p class="chapter__num"><strong>05</strong>校系資料</p>
-    <div>
-      <h2>備審要求，不用自己查。</h2>
-      <p class="chapter__lead">各校要什麼，每年自動更新。</p>
-      <div class="agent-board">
-        <ol class="agent-steps plain-list">
-          <li><span class="mono">STEP 1</span><b>偵測新年度簡章</b></li>
-          <li><span class="mono">STEP 2</span><b>擷取各校系加權</b></li>
-          <li><span class="mono">STEP 3</span><b>管理者比對並核准</b></li>
-          <li><span class="mono">STEP 4</span><b>學生看到最新要求</b></li>
-        </ol>
-        {% if sample_programs %}
-        <div class="table-wrap table-wrap--bare">
-          <table class="program-table">
-            <thead><tr><th>志願代碼</th><th>學校／科系</th><th>備審加權（{{ sample_programs[0].year }} 學年度）</th></tr></thead>
-            <tbody>
-              {% set palette = ["#c9d4f6", "#f3dfb3", "#c4e3dd", "#f2c9bd"] %}
-              {% for program in sample_programs %}
-              <tr>
-                <td class="mono">{{ program.code }}</td>
-                <td><b>{{ program.school }}</b><br><span class="muted">{{ program.department }}</span></td>
-                <td>
-                  <div class="weight-bar" role="img" aria-label="{% for item in program["items"] %}{{ item.name }} {{ item.weight }}%{% if not loop.last %}、{% endif %}{% endfor %}">
-                    {% for item in program["items"] %}<span style="width: {{ item.weight }}%; background: {{ palette[loop.index0 % 4] }};">{{ item.weight }}%</span>{% endfor %}
-                  </div>
-                  <p class="weight-names">{% for item in program["items"] %}{{ item.name }}{% if not loop.last %}／{% endif %}{% endfor %}</p>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% endif %}
-      </div>
-      <p class="muted small mt-1">範例來自 115 學年度簡章，以當年度公告為準。</p>
+{# 六幕故事 04：目標分岔 #}
+<section class="chapter story-scene story-scene--fork" data-story-step="4" aria-labelledby="story-4-title">
+  <div class="story-scene__inner">
+    <div data-motion="reveal">
+      <p class="story-eyebrow">04 · 選下一站</p>
+      <h2 id="story-4-title">升學、實習、就業</h2>
+      <p class="story-scene__lead">同一段累積，可以走向不同的下一站。</p>
     </div>
+    <div class="tickets" data-motion="reveal">
+      {% for item in next_stops %}
+      <article class="ticket">
+        <span class="ticket__branch" data-route-branch aria-hidden="true"></span>
+        <span class="ticket__stub">{{ item.code }}</span>
+        <div class="ticket__body"><h3>{{ item.title }}</h3><p>{{ item.text }}</p></div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# 六幕故事 05：相關聚焦 #}
+<section class="chapter story-scene story-scene--focus" data-story-step="5" aria-labelledby="story-5-title">
+  <div class="story-scene__inner">
+    <div data-motion="reveal">
+      <p class="story-eyebrow">05 · 聚焦</p>
+      <h2 id="story-5-title">只留下和目標有關的證明</h2>
+      <p class="story-scene__lead">其他資料淡去，重要的幾件被框出來。</p>
+    </div>
+    <div class="focus-demo" data-motion="focus" role="img" aria-label="專題、證照與實習資料被聚焦框選">
+      {% for name, matched in [("課程筆記", false), ("專題作品", true), ("社團照片", false), ("乙級證照", true), ("服務紀錄", false), ("實習成果", true)] %}
+      <span class="focus-card{% if matched %} is-match{% endif %}">{{ name }}</span>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# 六幕故事 06：資料包組合 #}
+<section class="chapter story-scene story-scene--bundle" data-story-step="6" aria-labelledby="story-6-title">
+  <div class="story-scene__inner story-scene__inner--bundle">
+    <div data-motion="reveal">
+      <p class="story-eyebrow">06 · 組成資料包</p>
+      <h2 id="story-6-title">五年，組成一份能出發的資料包</h2>
+      <p class="story-scene__lead">整理完成後，帶著自己的故事往前走。</p>
+      <a class="button story-cta" href="{{ url_for('main.login') }}">開始我的路徑</a>
+    </div>
+    <div class="bundle-stack" data-motion="bundle" aria-hidden="true">
+      {% for i in range(5) %}<span style="--i: {{ i }};"></span>{% endfor %}
+    </div>
+  </div>
+</section>
+
+{# 保留既有測試與公開展示需要的校系資料、加權表。 #}
+<section class="chapter public-agent" id="agent" aria-labelledby="agent-title">
+  <div class="story-scene__inner">
+    <div>
+      <p class="story-eyebrow">校系資料</p>
+      <h2 id="agent-title">下一站的要求，也能一起整理</h2>
+      <p class="chapter__lead">簡章更新後，由管理者比對核准。</p>
+    </div>
+    <div class="agent-board">
+      {% if sample_programs %}
+      <div class="table-wrap table-wrap--bare">
+        <table class="program-table">
+          <thead><tr><th>代碼</th><th>學校／科系</th><th>備審加權（{{ sample_programs[0].year }}）</th></tr></thead>
+          <tbody>
+            {% set palette = ["#c9d4f6", "#f3dfb3", "#c4e3dd", "#f2c9bd"] %}
+            {% for program in sample_programs %}
+            <tr>
+              <td class="mono">{{ program.code }}</td>
+              <td><b>{{ program.school }}</b><br><span class="muted">{{ program.department }}</span></td>
+              <td>
+                <div class="weight-bar" role="img" aria-label="{% for item in program['items'] %}{{ item.name }} {{ item.weight }}%{% if not loop.last %}、{% endif %}{% endfor %}">
+                  {% for item in program["items"] %}<span style="width: {{ item.weight }}%; background: {{ palette[loop.index0 % 4] }};">{{ item.weight }}%</span>{% endfor %}
+                </div>
+                <p class="weight-names">{% for item in program["items"] %}{{ item.name }}{% if not loop.last %}／{% endif %}{% endfor %}</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+    <p class="muted small public-agent__note">115 學年度簡章範例，以當年度公告為準。</p>
   </div>
 </section>
 {% endblock %}
