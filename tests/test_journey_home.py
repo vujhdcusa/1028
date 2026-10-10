@@ -119,6 +119,30 @@ def test_blank_pieces_are_draggable(app):
     client.post("/login", data={"username": "stu", "password": "pw"})
     page = client.get("/student/dashboard").get_data(as_text=True)
 
-    assert page.count("data-drag-piece") == 6  # 專三沒有資料：六塊都是空白，各有一片可以拖
-    assert page.count("data-slot") == 6
+    assert page.count("data-drag-piece") == 6  # 專三沒有資料：六塊都是洞，各有一片散在旁邊可以拖
+    assert page.count("data-hole=") == 6
     assert "data-board" in page
+
+
+def test_jigsaw_pieces_interlock(app):
+    """六片拼圖的邊要咬合：相鄰兩片共用的那條邊，一片凸出、另一片凹進去。"""
+    from app.services.journey_home import jigsaw_pieces
+    pieces = jigsaw_pieces()
+    assert len(pieces) == 6
+    assert all(piece["d"].startswith("M") and piece["d"].endswith("Z") for piece in pieces)
+    # 3×2，每片 200×200
+    assert [(p["x"], p["y"]) for p in pieces] == [(0, 0), (200, 0), (400, 0), (0, 200), (200, 200), (400, 200)]
+    assert pieces[0]["d"] != pieces[1]["d"]
+
+
+def test_filled_pieces_show_the_picture(app):
+    with app.test_request_context():
+        user = student()
+        db.session.add(Portfolio(student_id=user.id, title="資訊週", category="service", school_year=3))
+        db.session.commit()
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    page = client.get("/student/dashboard").get_data(as_text=True)
+    assert page.count("data-filled") == 1
+    assert page.count("data-drag-piece") == 5
+    assert 'id="year-scene"' in page

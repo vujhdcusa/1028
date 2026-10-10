@@ -903,3 +903,30 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .puzzle-piece.is-new path { animation: snap-in .55s cubic-bezier(.2,.9,.3,1.4) both; }
 @keyframes loose-float { from { transform: rotate(10deg) translateY(0); } to { transform: rotate(6deg) translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .puzzle-loose { animation: none; } }
+
+/* 今年的拼圖：一張圖切六片 */
+.jig-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.jig { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: 1.5rem; align-items: center; max-width: 60rem; margin: 0 auto; }
+.jig__board { width: 100%; height: auto; overflow: visible; }
+.jig__frame { fill: var(--paper-deep); stroke: var(--line); stroke-width: 2; }
+.jig__edge { fill: none; stroke: #1c2230; stroke-width: 2.5; stroke-linejoin: round; }
+.jig__piece { transform-box: fill-box; transform-origin: center; animation: jig-in .5s cubic-bezier(.2,.9,.3,1.3) both; animation-delay: calc(2s + var(--n) * .12s); }
+.jig__piece.is-new { animation: jig-in .6s cubic-bezier(.2,.9,.3,1.5) both; }
+.jig__tag { font: 700 20px var(--font-sans); fill: #fff; paint-order: stroke; stroke: #1c2230; stroke-width: 4px; }
+.jig__hole path { fill: rgba(28,34,48,.06); stroke: #1c2230; stroke-width: 2.5; stroke-dasharray: 9 7; transition: fill .2s; }
+.jig__hole text { font: 700 22px var(--font-sans); fill: var(--muted); }
+.jig__hole:hover path, .jig__hole.is-near path { fill: rgba(36,72,201,.14); }
+.jig__tray { display: flex; flex-wrap: wrap; gap: .5rem 1rem; justify-content: center; }
+.jig__loose { display: grid; justify-items: center; text-decoration: none; color: var(--ink-soft); font-size: .85rem; font-weight: 700; width: var(--size, 7rem); }
+.jig__loose svg { width: 100%; height: auto; overflow: visible; cursor: grab; touch-action: none; transform: rotate(var(--r)); filter: drop-shadow(4px 6px 0 rgba(28,34,48,.22)); transition: transform .35s cubic-bezier(.3,1.4,.5,1); animation: loose-in .6s cubic-bezier(.2,.9,.3,1.2) both; animation-delay: calc(2.4s + var(--n) * .12s); }
+.jig__loose svg.is-dragging { cursor: grabbing; transition: none; animation: none; position: relative; z-index: 20; filter: drop-shadow(8px 12px 0 rgba(28,34,48,.25)); }
+.jig__loose svg.is-snapped { transition: transform .25s ease-in; filter: none; }
+@keyframes jig-in { from { opacity: 0; transform: scale(.85) rotate(-6deg); } to { opacity: 1; transform: none; } }
+@keyframes loose-in { from { opacity: 0; transform: translateY(-40px) rotate(calc(var(--r) * 3)); } to { opacity: 1; transform: rotate(var(--r)); } }
+@media (max-width: 720px) { .jig { grid-template-columns: 1fr; } .jig__tray { order: 2; } }
+@media (prefers-reduced-motion: reduce) { .jig__piece, .jig__loose svg { animation: none !important; } }
+/* 版面：圖在上，散落的片在下面錯落擺放（像桌上剛倒出來的拼圖） */
+.jig { grid-template-columns: 1fr; max-width: 40rem; gap: .5rem; }
+.jig__tray { gap: 0 .25rem; margin-top: -.5rem; }
+.jig__loose:nth-child(even) { margin-top: 1.5rem; }
+.jig__loose span { margin-top: -.6rem; }

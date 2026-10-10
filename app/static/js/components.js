@@ -492,46 +492,70 @@ document.querySelectorAll("[data-walker]").forEach((walker) => {
   });
 });
 
-// 拖拉拼圖：把浮起來的那片拖進空格（或直接點），拼上後打開新增
+// 拼圖：把旁邊散落的那片拖回圖上的洞裡（或直接點），拼上後打開新增
 document.querySelectorAll("[data-board]").forEach((board) => {
-  board.querySelectorAll("[data-drag-piece]").forEach((loose) => {
-    const slot = loose.closest("[data-slot]");
+  const boardSvg = board.querySelector(".jig__board");
+  // 散落的片要和圖上的洞一樣大：整張圖 viewBox 寬 660，每片的 viewBox 寬 260
+  const resize = () => {
+    if (!boardSvg) return;
+    const scale = boardSvg.getBoundingClientRect().width / 660;
+    board.querySelectorAll("[data-loose]").forEach((loose) => loose.style.setProperty("--size", `${260 * scale}px`));
+  };
+  resize();
+  window.addEventListener("resize", resize);
+
+  board.querySelectorAll("[data-loose]").forEach((loose) => {
+    const piece = loose.querySelector("[data-drag-piece]");
+    const hole = board.querySelector(`[data-hole="${loose.dataset.loose}"]`);
     let start = null;
     let moved = false;
-    const go = () => {
-      loose.classList.remove("is-dragging", "is-returning");
-      loose.classList.add("is-snapped");
-      loose.style.transform = "translate(-16%, 14%) rotate(0deg)";
-      setTimeout(() => { window.location.href = slot.getAttribute("href"); }, 260);
+    // 這片在畫面上應該到的位置（洞的左上角，含拼圖凸出的留白）
+    const target = () => {
+      const box = boardSvg.getBoundingClientRect();
+      const scale = box.width / 660;
+      return { x: box.left + (Number(loose.dataset.x) + 30 - 30) * scale, y: box.top + (Number(loose.dataset.y) + 30 - 30) * scale };
     };
-    loose.addEventListener("pointerdown", (event) => {
+    const snap = () => {
+      const now = piece.getBoundingClientRect();
+      const goal = target();
+      const base = piece.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
+      const bx = base ? Number(base[1]) : 0;
+      const by = base ? Number(base[2]) : 0;
+      piece.classList.remove("is-dragging");
+      piece.classList.add("is-snapped");
+      piece.style.transform = `translate(${bx + goal.x - now.left}px, ${by + goal.y - now.top}px) rotate(0deg)`;
+      setTimeout(() => { window.location.href = loose.getAttribute("href"); }, 320);
+    };
+    piece.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      loose.setPointerCapture(event.pointerId);
+      piece.setPointerCapture(event.pointerId);
       start = { x: event.clientX, y: event.clientY };
       moved = false;
-      loose.classList.remove("is-returning");
-      loose.classList.add("is-dragging");
+      piece.classList.add("is-dragging");
     });
-    loose.addEventListener("pointermove", (event) => {
+    piece.addEventListener("pointermove", (event) => {
       if (!start) return;
       const dx = event.clientX - start.x;
       const dy = event.clientY - start.y;
       if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
-      loose.style.transform = `translate(${dx}px, ${dy}px) rotate(4deg)`;
+      piece.style.transform = `translate(${dx}px, ${dy}px) rotate(0deg)`;
+      if (hole) {
+        const a = piece.getBoundingClientRect();
+        const goal = target();
+        hole.classList.toggle("is-near", Math.hypot(a.left - goal.x, a.top - goal.y) < a.width * 0.35);
+      }
     });
-    loose.addEventListener("pointerup", () => {
+    piece.addEventListener("pointerup", () => {
       if (!start) return;
       start = null;
-      const a = loose.getBoundingClientRect();
-      const b = slot.querySelector("svg").getBoundingClientRect();
-      const distance = Math.hypot(a.x + a.width / 2 - (b.x + b.width / 2), a.y + a.height / 2 - (b.y + b.height / 2));
-      if (!moved || distance < b.width * 0.45) { go(); return; }
-      loose.classList.remove("is-dragging");
-      loose.classList.add("is-returning");
-      loose.style.transform = "";
+      if (hole) hole.classList.remove("is-near");
+      const a = piece.getBoundingClientRect();
+      const goal = target();
+      if (!moved || Math.hypot(a.left - goal.x, a.top - goal.y) < a.width * 0.35) { snap(); return; }
+      piece.classList.remove("is-dragging");
+      piece.style.transform = "";
     });
-    // 拖完放開時，瀏覽器還會送出一次 click；交給上面處理，不讓連結自己換頁
-    slot.addEventListener("click", (event) => { if (event.target.closest("[data-drag-piece]")) event.preventDefault(); });
+    loose.addEventListener("click", (event) => event.preventDefault());
   });
 
   // 回到首頁時：比對上次看到的拼圖，新拼上的那片跳一下，標題變成「又留下了一塊。」
