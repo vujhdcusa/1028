@@ -22,6 +22,7 @@ from app.models import (
     User,
 )
 from app.routes.main import get_current_user, role_required
+from app.services.focus_service import focus_view
 from app.services.portfolio_service import owned_portfolio, create_submission_snapshot
 from app.security import validate_upload_filename
 from app.services.document_analysis_service import ALLOWED_DOCUMENT_TYPES, analyze_document
@@ -535,7 +536,7 @@ def target_list():
             return _blocked(user, reason)
         if not StudentTarget.query.filter_by(student_id=user.id, rule_version_id=program.id).first():
             slots = student_rules.target_slots(user)
-            if slots["used"] >= slots["limit"]:
+            if slots["limit"] is not None and slots["used"] >= slots["limit"]:
                 error = f"目標校系同時最多 {slots['limit']} 所，請先取消一所再加入新的。"
             else:
                 db.session.add(StudentTarget(student_id=user.id, rule_version_id=program.id))
@@ -553,6 +554,7 @@ def target_list():
         slots=student_rules.target_slots(user),
         cancelled_programs=_cancelled_autobiography_programs(user),
         gaps={p.id: analyze_gap(user, p, journey) for p in programs},
+        focus=focus_view(user, journey),
         error=error,
     ), (400 if error else 200)
 

@@ -364,3 +364,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+// 聚焦：捲到畫面時，先讓校系要求一張張堆滿，再淡出，只留最重要的 3 件
+document.querySelectorAll("[data-focus]").forEach((root) => {
+  const pieces = root.querySelectorAll(".focus__piece").length;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let timer;
+  const play = () => {
+    clearTimeout(timer);
+    root.classList.remove("is-focused", "is-flood");
+    if (reduce) { root.classList.add("is-focused"); return; }
+    void root.offsetWidth; // 重新開始動畫
+    root.classList.add("is-flood");
+    timer = setTimeout(() => root.classList.add("is-focused"), pieces * 28 + 1400);
+  };
+  if ("IntersectionObserver" in window) {
+    const watch = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) { play(); watch.disconnect(); }
+    }, { threshold: 0.35 });
+    watch.observe(root);
+  } else {
+    root.classList.add("is-focused");
+  }
+  root.querySelector("[data-focus-replay]")?.addEventListener("click", play);
+});

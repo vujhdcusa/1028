@@ -191,7 +191,11 @@ def target_count(app):
         return StudentTarget.query.filter_by(student_id=user_id(app, "stu")).count()
 
 
-def test_sixth_target_is_refused(app):
+def test_sixth_target_is_refused_in_fifth_year(app):
+    with app.app_context():
+        profile = StudentProfile.query.filter_by(student_no="111534100").one()
+        profile.admission_year = GRADE3_ADMISSION_YEAR - 2
+        db.session.commit()
     client = login(app)
     with app.app_context():
         seeded = [p.id for p in AdmissionProgram.query.filter_by(status="published").all()]
@@ -203,6 +207,16 @@ def test_sixth_target_is_refused(app):
 
     assert target_count(app) == 5
     assert "最多 5 所" in response.get_data(as_text=True)
+
+
+def test_third_year_can_choose_more_than_five(app):
+    client = login(app)
+    with app.app_context():
+        seeded = [p.id for p in AdmissionProgram.query.filter_by(status="published").all()]
+    for pid in seeded + add_programs(app, 3):
+        client.post("/student/targets", data={"program_id": pid})
+
+    assert target_count(app) == len(seeded) + 3 > 5
 
 
 def test_old_year_target_does_not_use_a_slot_and_can_be_removed(app):
@@ -222,7 +236,7 @@ def test_old_year_target_does_not_use_a_slot_and_can_be_removed(app):
 
     html = client.get("/student/targets").get_data(as_text=True)
     assert "舊學年度" in html
-    assert "已選 0／5" in html
+    assert "隨時可以換" in html  # 三年級不限所數；五年級上限的檢查在 test_sixth_target_is_refused_in_fifth_year
 
     client.post(f"/student/targets/{old_id}/remove")
     assert target_count(app) == 0

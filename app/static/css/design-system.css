@@ -782,3 +782,26 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 
 .welcome__step[hidden] { display: none; }
 body[data-page="student-welcome"] .assistant { display: none; }
+
+/* ---------- 聚焦：校系要求堆滿畫面 → 淡出 → 留下最重要的 3 件 ---------- */
+.focus { position: relative; min-height: 26rem; margin: 0 0 2rem; overflow: hidden; background: var(--sheet); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
+.focus__pile { position: absolute; inset: 0; }
+.focus__piece { position: absolute; left: var(--x); top: var(--y); display: flex; flex-direction: column; padding: .3rem .55rem; font-size: .78rem; line-height: 1.3; white-space: nowrap; background: var(--paper); border: 1.5px solid var(--ink); transform: rotate(var(--r)); opacity: .14; filter: blur(1.5px); transition: opacity .6s, filter .6s, transform .6s; }
+.focus__piece small { color: var(--muted); font-size: .68rem; }
+.focus.is-flood .focus__piece { animation: pile-in .45s cubic-bezier(.2,.9,.3,1.3) both; animation-delay: calc(var(--i) * 28ms); opacity: 1; filter: none; }
+.focus.is-focused .focus__piece { animation: none; opacity: .12; filter: blur(2px); transform: rotate(var(--r)) scale(.92); }
+.focus__front { position: relative; z-index: 1; display: grid; gap: .9rem; justify-items: center; text-align: center; padding: 3rem 1.25rem 2rem; transition: opacity .5s; }
+.focus.is-flood:not(.is-focused) .focus__front { opacity: 0; }
+.focus__count { margin: 0; font-family: var(--font-mono, monospace); color: var(--muted); }
+.focus h2 { margin: 0; font-family: var(--font-serif); font-size: clamp(1.6rem, 4.5vw, 2.4rem); }
+.focus__top { display: grid; gap: .7rem; width: min(100%, 32rem); margin: .5rem 0 0; }
+.focus__top li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .9rem; padding: .85rem 1rem; text-align: left; background: var(--sheet); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--accent); }
+.focus.is-focused .focus__top li { animation: focus-rise .55s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(.25s + var(--n) * .15s); }
+.focus__top li:first-child { box-shadow: 4px 4px 0 var(--year-4); }
+.focus__top span:nth-child(2) { display: grid; }
+.focus__top small { color: var(--muted); }
+.focus__no { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 700; }
+.focus__replay { background: none; border: 0; color: var(--muted); font: inherit; font-size: .85rem; text-decoration: underline; cursor: pointer; }
+@keyframes pile-in { from { opacity: 0; transform: translateY(-30px) rotate(calc(var(--r) * 3)) scale(.6); } to { opacity: 1; transform: rotate(var(--r)); } }
+@keyframes focus-rise { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .focus__piece, .focus__top li { animation: none !important; transition: none !important; } }

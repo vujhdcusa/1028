@@ -3,7 +3,8 @@
 - 沒有入學學年度就不知道年級：擋下並請學生先補，不猜年級。
 - 不能填寫比目前年級更高的成績或經歷。
 - 送審與送審相關的 AI（自傳）要到 MIN_REVIEW_GRADE 年級才能用；更低年級只能看。
-- 目標校系同時最多 TARGET_LIMIT 所，只算最新學年度的校系；舊學年度的另外列出，可以刪除。
+- 目標校系：一到四年級不限（找方向用）；五年級做備審時同時最多 TARGET_LIMIT 所（規格 10.7）。
+  只算最新學年度的校系；舊學年度的另外列出，可以刪除。
 """
 
 from datetime import date
@@ -67,7 +68,8 @@ def target_slots(student):
     targets = StudentTarget.query.filter_by(student_id=student.id).order_by(StudentTarget.selected_at).all()
     current = [t for t in targets if t.rule_version_id in newest]
     return {
-        "limit": current_app.config.get("TARGET_LIMIT", 5),
+        # None 代表不限
+        "limit": current_app.config.get("TARGET_LIMIT", 5) if grade_of(student) == 5 else None,
         "used": len(current),
         "current": current,
         "old": [t for t in targets if t.rule_version_id not in newest],

@@ -1,0 +1,28 @@
+{# 聚焦：先把所有校系要的東西堆滿畫面，再淡出，只留最重要的 3 件。資料來自 focus_service。 #}
+<section class="focus" data-focus aria-labelledby="focus-title">
+  <div class="focus__pile" aria-hidden="true">
+    {% for piece in focus.pieces %}
+    <span class="focus__piece" style="--i: {{ loop.index0 }}; --x: {{ (loop.index0 * 37) % 92 }}%; --y: {{ (loop.index0 * 53) % 84 }}%; --r: {{ ((loop.index0 * 29) % 21) - 10 }}deg;">
+      <small>{{ piece.school }}</small>{{ piece.name }} {{ piece.weight }}%
+    </span>
+    {% endfor %}
+  </div>
+  <div class="focus__front">
+    <p class="focus__count" data-focus-count>{{ focus.targets }} 所校系，{{ focus.pieces|length }} 項要求</p>
+    <h2 id="focus-title">{% if focus.top %}資料很多，先做這 {{ focus.top|length }} 件。{% else %}資料很多，但你都準備好了。{% endif %}</h2>
+    {% if focus.top %}
+    <ol class="focus__top plain-list">
+      {% for item in focus.top %}
+      <li data-focus-top style="--n: {{ loop.index0 }};">
+        <span class="focus__no">{{ loop.index }}</span>
+        <span><b>{{ item.verb }}{{ item.label }}</b><small>{{ item.schools }} 所校系都看重</small></span>
+        <a class="button button--small" href="{{ item.href }}">去做 →</a>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p>你選的校系要的資料，你都有了。</p>
+    {% endif %}
+    <button type="button" class="focus__replay" data-focus-replay>再看一次</button>
+  </div>
+</section>

@@ -9,8 +9,13 @@
 {% block content %}
 {{ page_band("目標校系") }}
 <div class="page page--banded">
-  <p class="muted mb-1">先選最想上的 {{ slots.limit }} 所，看準備度。</p>
+  {% if slots.limit %}
+  <p class="muted mb-1">先選最想上的 {{ slots.limit }} 所，看準備度。換掉學校，寫好的自傳要重寫。</p>
   <p class="mb-1"><span class="tag {{ 'tag--warn' if slots.used >= slots.limit else 'tag--info' }}">已選 {{ slots.used }}／{{ slots.limit }}</span></p>
+  {% else %}
+  <p class="muted mb-1">想去哪裡都可以選，隨時可以換。五年級做備審時只能留 5 所。</p>
+  {% endif %}
+  {% if focus %}{% include "partials/focus.html" %}{% endif %}
   {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
 
   {% if slots.old %}
