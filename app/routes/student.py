@@ -593,7 +593,7 @@ def target_gap(program_id):
 def target_request_review(program_id):
     user = get_current_user()
     program = _selected_target_or_404(user, program_id)
-    reason = student_rules.review_block_reason(user)
+    reason = student_rules.review_block_reason(user) or student_rules.over_limit_reason(user)
     if reason:
         return _blocked(user, reason)
     review_snapshot_service.request_review(user, program)

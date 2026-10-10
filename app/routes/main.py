@@ -149,7 +149,7 @@ def student_welcome():
         user=user,
         grade_label=GRADE_LABELS.get(grade),
         grade=grade,
-        schools=load_sample_programs()[:2],
+        schools=load_sample_programs()[:1],
         plan=FIVE_YEAR_PLAN,
     )
 
@@ -163,11 +163,12 @@ def student_welcome_done():
         db.session.commit()
     destinations = {
         "upload": "student.learning_profile_upload_page",
-        "activity": "student.portfolio_list",
+        "activity": "student.portfolio_new",
         "schools": "student.target_list",
     }
-    endpoint = destinations.get(request.form.get("to", ""), "main.student_dashboard")
-    return redirect(url_for(endpoint))
+    choice = request.form.get("to", "")
+    endpoint = destinations.get(choice, "main.student_dashboard")
+    return redirect(url_for(endpoint, category="activity") if choice == "activity" else url_for(endpoint))
 
 
 @main_bp.post("/student/guide/snooze")

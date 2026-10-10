@@ -21,7 +21,7 @@
 
   <header class="student-cover">
     <div>
-      <p class="muted small">志願代碼 {{ program.program_code }} · {{ program.admission_year }} 學年度簡章</p>
+      <p class="muted small">{{ program.admission_year }} 學年度 · {{ program.admission_category or "" }}{% if program.program_code.isdigit() %} · 志願代碼 {{ program.program_code }}{% endif %}{% if program.admission_category == "日間部申請入學" %} · 下面是書審內部比例，另計統測{% endif %}</p>
       <h2 class="program-title">{{ program.school_name }} {{ program.department_name }}</h2>
       <p>方塊越寬，佔分越多；裝得越滿，準備得越完整。點方塊看細節。</p>
     </div>

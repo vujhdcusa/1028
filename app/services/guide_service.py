@@ -10,7 +10,8 @@ from datetime import datetime, timedelta, timezone
 
 from flask import url_for
 
-from app.models import SourceDocument, StudentTarget
+from app.models import AuditLog, SourceDocument, StudentTarget
+from app.services import student_rules
 from app.services.journey_service import build_journey
 from app.services.student_progress import student_progress
 
@@ -21,7 +22,7 @@ SNOOZE_HOURS = 24
 CARD_IDS = (
     "welcome", "meet-schools", "first-save", "confirm-docs", "upload-grades",
     "each-term", "certificates", "see-requirements", "internship",
-    "target-five", "write-bio", "grad-next",
+    "target-five", "write-bio", "grad-next", "competition", "trim-targets",
 )
 
 
@@ -52,6 +53,10 @@ def guide_cards(user, snoozed=None, now=None):
     pending_docs = SourceDocument.query.filter(
         SourceDocument.owner_id == user.id, SourceDocument.status != "confirmed").count()
     progress = student_progress(user)
+    welcome_done = AuditLog.query.filter_by(user_id=user.id, action="student.welcome_done").first() is not None
+    # 這個年級的資料夾裡有沒有自己新增的經歷（活動、競賽、服務、幹部）
+    this_year = next((year for year in journey["years"] if year["grade"] == grade), None)
+    year_records = sum(len(this_year["categories"][key]) for key in ("activity", "competition", "service", "leadership")) if this_year else 0
 
     cards = []
     # 有事才出現的卡片（不分年級）排最前面
@@ -60,7 +65,8 @@ def guide_cards(user, snoozed=None, now=None):
                            url_for("student.learning_profile"), "todo"))
 
     if grade == 1:
-        cards.append(_card("welcome", "五年的成果，在這裡一次收好。", "30 秒看五年怎麼走", url_for("main.index") + "#route"))
+        if not welcome_done:
+            cards.append(_card("welcome", "五年的成果，在這裡一次收好。", "30 秒認識系統", url_for("main.student_welcome")))
         if not has_target:
             cards.append(_card("meet-schools", "先看看二技有哪些學校，挑一兩所想去的。", "去看學校", url_for("student.target_list")))
         if not has_any:
@@ -69,20 +75,27 @@ def guide_cards(user, snoozed=None, now=None):
     elif grade == 2:
         if not totals["grades"]:
             cards.append(_card("upload-grades", "學期成績出來了，上傳成績單。", "上傳成績單", url_for("student.learning_profile_upload_page")))
-        cards.append(_card("each-term", "每學期留一份課程成果。", "新增成果", url_for("student.portfolio_new", category="activity")))
+        if not year_records:
+            cards.append(_card("each-term", "每學期留一份課程成果。", "新增成果", url_for("student.portfolio_new", category="activity")))
         if not totals["credential"]:
             cards.append(_card("certificates", "有考到證照就先存起來。", "上傳證照", url_for("student.learning_profile_upload_page")))
     elif grade == 3:
         if not totals["credential"]:
             cards.append(_card("certificates", "整理你的證照，備審用得到。", "上傳證照", url_for("student.learning_profile_upload_page")))
         if not totals["competition"]:
-            cards.append(_card("each-term", "參加過比賽嗎？記下來。", "新增競賽", url_for("student.portfolio_new", category="competition")))
+            cards.append(_card("competition", "參加過比賽嗎？記下來。", "新增競賽", url_for("student.portfolio_new", category="competition")))
         if not has_target:
             cards.append(_card("see-requirements", "看看想去的學校，備審要什麼。", "看各校要求", url_for("student.target_list")))
     elif grade == 4:
-        cards.append(_card("internship", "實習的經驗，現在就整理。", "新增經歷", url_for("student.portfolio_new", category="activity")))
-        cards.append(_card("see-requirements", "明年就要申請了，先看各校要求。", "看各校要求", url_for("student.target_list")))
+        if not year_records:
+            cards.append(_card("internship", "實習的經驗，現在就整理。", "新增經歷", url_for("student.portfolio_new", category="activity")))
+        if not has_target:
+            cards.append(_card("see-requirements", "明年就要申請了，先看各校要求。", "看各校要求", url_for("student.target_list")))
     else:
+        slots = student_rules.target_slots(user)
+        if slots["limit"] is not None and slots["used"] > slots["limit"]:
+            cards.append(_card("trim-targets", f"五年級最多留 {slots['limit']} 所，先取消 {slots['used'] - slots['limit']} 所。",
+                               "整理目標校系", url_for("student.target_list"), "todo"))
         if not has_target:
             cards.append(_card("target-five", "選出最想申請的學校，最多 5 所。", "選校系", url_for("student.target_list"), "todo"))
         cards.append(_card("grad-next", progress["next"]["text"] + "。", "前往", progress["next"]["href"], "todo"))

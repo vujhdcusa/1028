@@ -62,6 +62,15 @@ def check_record_year(student, school_year, today=None):
         raise ValueError(f"{school_year} 學年度還沒到，請確認學年度。")
 
 
+def over_limit_reason(student):
+    """五年級目標超過上限（例如四年級選了 6 所後升上來）：送導師確認前要先縮減。不會自動刪除。"""
+    slots = target_slots(student)
+    if slots["limit"] is None or slots["used"] <= slots["limit"]:
+        return None
+    return (f"五年級做備審，目標校系最多 {slots['limit']} 所。你現在有 {slots['used']} 所，"
+            f"請先取消 {slots['used'] - slots['limit']} 所，再送導師確認。")
+
+
 def target_slots(student):
     """目前占名額的目標（最新學年度）與舊學年度的目標。"""
     newest = {program.id for program in published_programs()}

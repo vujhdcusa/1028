@@ -8,11 +8,14 @@
 - 「自傳與讀書計畫」不是學習資料，但很多系佔分不低：還沒替該系寫自傳時也列入，
   分數一樣用該項目加權平分（要到可以寫自傳的年級才列）。
 - 分數最高的 3 類就是先做的事；同分時，需要它的校系多的排前面。
+- 分數是系統把加權「平分」後的估算，不是校方公布的細項配分，也不是錄取機率。
+- 只算現行目標（最新學年度的校系，和選校名額同一套）；舊學年度的目標不參與。
+- 簡章項目對應哪一類若還是「待確認」（關鍵字推測），結果會標 pending，畫面要寫「分類待確認」。
+- 專題作品等要自己準備的文件不在推薦範圍內；沒有推薦時不能說「都準備好了」。
 """
 
 from flask import url_for
 
-from app.models import StudentTarget
 from app.services import student_rules
 from app.services.autobiography_service import latest_draft
 from app.services.gap_service import ALL_LABELS, analyze_gap
@@ -34,13 +37,13 @@ def _short_school(name):
 
 
 def focus_view(user, journey=None):
-    targets = StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
+    targets = student_rules.target_slots(user)["current"]
     if len(targets) < FOCUS_MIN_TARGETS:
         return None
     journey = journey or build_journey(user)
 
     can_write_bio = student_rules.review_block_reason(user) is None
-    pieces, scores, schools, links = [], {}, {}, {}
+    pieces, scores, schools, links, pending = [], {}, {}, {}, set()
     for target in targets:
         program = target.program
         gap = analyze_gap(user, program, journey)
@@ -55,6 +58,8 @@ def focus_view(user, journey=None):
             for key in missing:
                 scores[key] = scores.get(key, 0) + item["weight"] / share
                 schools.setdefault(key, set()).add(program.id)
+                if item["mapping_pending"]:
+                    pending.add(key)
 
     ranked = sorted(scores, key=lambda key: (-scores[key], -len(schools[key])))
     top = [{
@@ -64,5 +69,12 @@ def focus_view(user, journey=None):
         "score": round(scores[key], 1),
         "schools": len(schools[key]),
         "href": links.get(key) or _add_link(key),
+        "pending": key in pending,
     } for key in ranked[:MAX_TOP]]
-    return {"targets": len(targets), "pieces": pieces[:MAX_PIECES], "top": top}
+    return {
+        "targets": len(targets),
+        "total": len(pieces),
+        "pieces": pieces[:MAX_PIECES],
+        "top": top,
+        "has_pending": any(item["pending"] for item in top),
+    }

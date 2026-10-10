@@ -551,6 +551,10 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .guide { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
 .guide-card { display: flex; flex-direction: column; justify-content: space-between; gap: 1.25rem; min-height: 9rem; padding: 1.25rem 1.4rem; background: var(--sheet); border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--accent); animation: guide-in .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * .12s); transition: transform .3s, opacity .3s; }
 .guide-card--todo { box-shadow: 4px 4px 0 var(--year-4); }
+/* 第一張是最該先做的事：放大成整列，其餘是次要選項 */
+.guide-card:first-child { grid-column: 1 / -1; min-height: 0; flex-direction: row; align-items: center; flex-wrap: wrap; }
+.guide-card:first-child .guide-card__text { font-size: 1.55rem; flex: 1 1 18rem; }
+.guide-card:not(:first-child) .guide-card__text { font-size: 1.1rem; }
 .guide-card.is-leaving { opacity: 0; transform: translateY(-10px) scale(.96); }
 .guide-card__text { margin: 0; font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.5; font-weight: 700; }
 .guide-card__actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
@@ -805,3 +809,5 @@ body[data-page="student-welcome"] .assistant { display: none; }
 @keyframes pile-in { from { opacity: 0; transform: translateY(-30px) rotate(calc(var(--r) * 3)) scale(.6); } to { opacity: 1; transform: rotate(var(--r)); } }
 @keyframes focus-rise { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .focus__piece, .focus__top li { animation: none !important; transition: none !important; } }
+.focus__pending { font-style: normal; color: var(--warn); font-weight: 700; }
+.focus__note { max-width: 32rem; margin: 0; font-size: .8rem; color: var(--muted); }

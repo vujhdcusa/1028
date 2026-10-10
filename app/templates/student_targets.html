@@ -9,6 +9,9 @@
 {% block content %}
 {{ page_band("目標校系") }}
 <div class="page page--banded">
+  {% if slots.limit and slots.used > slots.limit %}
+  <p class="alert mb-1" role="alert">五年級做備審，目標校系最多 {{ slots.limit }} 所。你現在有 {{ slots.used }} 所，請先取消 {{ slots.used - slots.limit }} 所，再送導師確認。已寫好的自傳不會刪除。</p>
+  {% endif %}
   {% if slots.limit %}
   <p class="muted mb-1">先選最想上的 {{ slots.limit }} 所，看準備度。換掉學校，寫好的自傳要重寫。</p>
   <p class="mb-1"><span class="tag {{ 'tag--warn' if slots.used >= slots.limit else 'tag--info' }}">已選 {{ slots.used }}／{{ slots.limit }}</span></p>
@@ -39,7 +42,8 @@
     {% set gap = gaps[program.id] %}
     {% set chosen = program.id in selected %}
     <article class="program-card{% if chosen %} program-card--selected{% endif %}" data-motion="reveal">
-      <p class="muted small">志願代碼 {{ program.program_code }}</p>
+      <p class="muted small">{{ program.admission_year }} 學年度 · {{ program.admission_category or "" }}{% if program.program_code.isdigit() %} · 志願代碼 {{ program.program_code }}{% endif %}</p>
+      {% if program.admission_category == "日間部申請入學" %}<p class="muted small">下面是書審內部比例，另計統測</p>{% endif %}
       <h3>{{ program.school_name }}<br>{{ program.department_name }}</h3>
       <div class="mini-weights" role="img" aria-label="{% for item in gap['items'] %}{{ item.name }} {{ item.weight }}%{% if not loop.last %}、{% endif %}{% endfor %}">
         {% for item in gap["items"] %}<span style="width: {{ item.weight }}%; --fill: {{ item.percent or 0 }}%;"><i></i></span>{% endfor %}
@@ -72,7 +76,7 @@
     </ul>
   </section>
   {% endif %}
-  <p class="muted small mt-1">校系資料整理自當年度二技技優甄審簡章；正式規定以簡章與各校系分則為準。準備度只依你已確認的資料計算，不代表錄取機率。</p>
+  <p class="muted small mt-1">校系資料整理自各校二技簡章（技優甄審、日間部申請入學，學年度標在每張卡片上）；正式規定以當年度簡章與各校系分則為準。準備度只依你已確認的資料計算，不代表錄取機率。</p>
 </div>
 {% endblock %}
 
