@@ -26,6 +26,8 @@ from docx.shared import Cm, Pt, RGBColor
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "docs" / "01_正式規格" / "正式報告書" / "報告書內容.md"
 OUT = ROOT / "docs" / "01_正式規格" / "正式報告書" / "資管科智慧學習歷程系統_專題報告書.docx"
+LITE_SRC = ROOT / "docs" / "01_正式規格" / "正式報告書" / "報告書內容_精簡版.md"
+LITE_OUT = ROOT / "docs" / "01_正式規格" / "正式報告書" / "資管科智慧學習歷程系統_專題報告書_精簡版.docx"
 ANNEX_SRC = ROOT / "docs" / "01_正式規格" / "正式報告書" / "開發規格附件內容.md"
 ANNEX_OUT = ROOT / "docs" / "01_正式規格" / "正式報告書" / "資管科智慧學習歷程系統_系統開發規格附件.docx"
 IMG = ROOT / "docs" / "images"
@@ -412,5 +414,7 @@ if __name__ == "__main__":
     import sys
     if "--annex" in sys.argv:
         build(ANNEX_SRC, ANNEX_OUT, "系統開發規格附件")
+    elif "--lite" in sys.argv:      # 精簡版：只放符合專題資格的核心圖
+        build(LITE_SRC, LITE_OUT)
     else:
         build()
