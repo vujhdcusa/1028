@@ -22,6 +22,20 @@ DIAGRAMS = ORIGINAL_DIAGRAMS + [
     ("D-28-review-package-flow.png", "圖 25｜備審送審與導師確認流程圖"),
     ("D-29-certificate-flow.png", "圖 26｜電子獎狀、TA 與社團證明流程圖"),
     ("D-30-admin-source-flow.png", "圖 27｜管理員資料來源維護流程圖"),
+    ("D-31-student-role-architecture.png", "圖 28｜學生角色功能架構圖"),
+    ("D-32-teacher-role-architecture.png", "圖 29｜教師／導師角色功能架構圖"),
+    ("D-33-staff-role-architecture.png", "圖 30｜科辦／行政角色功能架構圖"),
+    ("D-34-admin-role-architecture.png", "圖 31｜系統管理員角色功能架構圖"),
+    ("D-35-permission-matrix.png", "圖 32｜角色／功能權限表"),
+    ("D-36-student-detailed-flow.png", "圖 33｜學生細部功能流程圖"),
+    ("D-37-teacher-detailed-flow.png", "圖 34｜教師／導師細部功能流程圖"),
+    ("D-38-staff-detailed-flow.png", "圖 35｜科辦／行政細部功能流程圖"),
+    ("D-39-admin-detailed-flow.png", "圖 36｜管理員細部功能流程圖"),
+    ("D-40-version-history-download-flow.png", "圖 37｜版本／歷史／下載流程圖"),
+    ("D-41-student-dashboard-wireframe.png", "圖 38｜學生主工作台展示架構"),
+    ("D-42-data-confirmation-wireframe.png", "圖 39｜學生資料確認頁展示架構"),
+    ("D-43-teacher-review-wireframe.png", "圖 40｜導師審查頁展示架構"),
+    ("D-44-admin-maintenance-wireframe.png", "圖 41｜管理員維護頁展示架構"),
 ]
 
 
@@ -39,7 +53,7 @@ def make_deck():
     prs.slide_height = Inches(7.5)
     cover = base_slide(prs, "資管科智慧學習歷程系統", dark=True)
     add_text(cover, "流程圖大全（給指導老師／Canva 貼圖用）", 0.82, 1.55, 11, 0.7, 32, WHITE, True)
-    add_text(cover, "圖 1～27；沿用原流程圖彙整簡報格式，新增圖 20～27 並為每頁標明流程名稱。", 0.86, 4.95, 11.5, 0.45, 16, WHITE)
+    add_text(cover, "圖 1～41；沿用原流程圖彙整簡報格式，新增角色架構、權限、細部流程與介面展示圖。", 0.86, 4.95, 11.5, 0.45, 16, WHITE)
     missing = []
     for filename, title in DIAGRAMS:
         path = IMG / filename

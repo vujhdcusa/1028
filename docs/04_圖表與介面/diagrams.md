@@ -47,6 +47,20 @@
 | 圖 25 | 備審送審與導師確認流程 | `images/D-28-review-package-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
 | 圖 26 | 電子獎狀、TA 與社團證明流程 | `images/D-29-certificate-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
 | 圖 27 | 管理員資料來源維護流程 | `images/D-30-admin-source-flow.mmd`；待環境可用時輸出 PNG／SVG | — |
+| 圖 28 | 學生角色功能架構圖 | `images/D-31-student-role-architecture.mmd` | 依現有 P02～P11 頁面與學生主線 |
+| 圖 29 | 教師／導師角色功能架構圖 | `images/D-32-teacher-role-architecture.mmd` | 依現有 P10、teacher scope 與送審規格 |
+| 圖 30 | 科辦／行政角色功能架構圖 | `images/D-33-staff-role-architecture.mmd` | 依電子證明與表單下載規格 |
+| 圖 31 | 系統管理員角色功能架構圖 | `images/D-34-admin-role-architecture.mmd` | 依 P19、P20、P29～P31 |
+| 圖 32 | 角色／功能權限表 | `images/D-35-permission-matrix.mmd` | 依現有權限矩陣，不新增角色 |
+| 圖 33 | 學生細部功能流程 | `images/D-36-student-detailed-flow.mmd` | 上傳、確認、送審與下載 |
+| 圖 34 | 教師／導師細部功能流程 | `images/D-37-teacher-detailed-flow.mmd` | 版本檢查、註解、確認或退回 |
+| 圖 35 | 科辦／行政細部功能流程 | `images/D-38-staff-detailed-flow.mmd` | 電子證明與表單下載 |
+| 圖 36 | 管理員細部功能流程 | `images/D-39-admin-detailed-flow.mmd` | 來源、分類、公告與操作紀錄 |
+| 圖 37 | 版本／歷史／下載流程 | `images/D-40-version-history-download-flow.mmd` | 自傳版本、送審快照與 Word 下載 |
+| 圖 38 | 學生主工作台展示架構 | `images/D-41-student-dashboard-wireframe.mmd` | 依 P02、P03、P06～P11 |
+| 圖 39 | 學生資料確認頁展示架構 | `images/D-42-data-confirmation-wireframe.mmd` | 依學生確認與 AI 來源標籤規格 |
+| 圖 40 | 導師審查頁展示架構 | `images/D-43-teacher-review-wireframe.mmd` | 依 P10 與送審版本規格 |
+| 圖 41 | 管理員維護頁展示架構 | `images/D-44-admin-maintenance-wireframe.mmd` | 依 P12、P20、P29～P31 |
 
 ## 圖 1～4：依角色的使用案例圖
 
