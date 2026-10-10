@@ -47,13 +47,15 @@
 
 /* ---------- 基礎 ---------- */
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* 基準字級 18px（Canva 第 19 頁「最小內文 18px」）：改在最外層，用 rem 的字會一起放大；
+   小標籤（約 .78rem）因此約 14px，註腳不小於 13px */
+html { scroll-behavior: smooth; font-size: 112.5%; }
 body {
   margin: 0;
   color: var(--ink);
   background: var(--paper);
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
 }
@@ -173,7 +175,7 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .scatter__state { position: absolute; right: 1rem; top: .8rem; z-index: 3; }
 .chip { position: absolute; width: 27%; padding: .55rem .65rem .6rem; background: var(--sheet); border: 1.5px solid var(--ink); border-radius: 2px 8px 2px 2px; font-size: clamp(.72rem, 1.4vw, .9rem); font-weight: 700; box-shadow: 4px 4px 0 var(--chip, var(--accent));
   left: var(--x); top: var(--y); transform: rotate(var(--r)); transition: left 1.1s cubic-bezier(.65, 0, .25, 1), top 1.1s cubic-bezier(.65, 0, .25, 1), transform 1.1s ease, box-shadow .6s ease; }
-.chip small { display: block; font-family: var(--font-mono); font-weight: 400; font-size: .68rem; color: var(--muted); }
+.chip small { display: block; font-family: var(--font-mono); font-weight: 400; font-size: .75rem; color: var(--muted); }
 .scatter.is-sorted .chip { left: var(--sx); top: var(--sy); transform: rotate(0deg); box-shadow: 2px 2px 0 var(--chip, var(--accent)); }
 .walker { position: absolute; left: 50%; bottom: 7%; width: 34px; transform: translateX(-50%); z-index: 2; transition: left 1.1s cubic-bezier(.65, 0, .25, 1); }
 .scatter.is-sorted .walker { left: 88%; }
@@ -267,12 +269,12 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .folders { margin-top: .5rem; }
 .folder-tabs { display: flex; align-items: flex-end; gap: 0; padding-left: .5rem; overflow-x: auto; }
 .folder-tab { position: relative; min-width: 110px; padding: .55rem 1rem .5rem; margin-right: -6px; border: 1.5px solid var(--ink); border-bottom: 0; border-radius: var(--radius-tab); background: var(--paper-deep); font-weight: 700; cursor: pointer; text-align: left; transform: translateY(6px); transition: transform .15s ease; }
-.folder-tab .mono { display: block; font-size: .68rem; color: var(--muted); font-weight: 400; }
+.folder-tab .mono { display: block; font-size: .75rem; color: var(--muted); font-weight: 400; }
 .folder-tab::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 4px; background: var(--year); border-radius: 0 0 3px 3px; }
 .folder-tab[aria-selected="true"] { z-index: 2; background: var(--sheet); transform: translateY(1.5px); }
 .folder-tab:hover { transform: translateY(2px); }
 .folder-tab__count { position: absolute; right: .6rem; top: .55rem; font-family: var(--font-mono); font-size: .72rem; }
-.folder-tab__now { font-family: var(--font-mono); font-size: .62rem; color: var(--sheet); background: var(--ink); padding: 0 .3rem; margin-left: .3rem; vertical-align: middle; }
+.folder-tab__now { font-family: var(--font-mono); font-size: .72rem; color: var(--sheet); background: var(--ink); padding: 0 .3rem; margin-left: .3rem; vertical-align: middle; }
 .folder-panel { position: relative; z-index: 1; border: 1.5px solid var(--ink); background: var(--sheet); padding: clamp(1rem, 3vw, 1.75rem); box-shadow: 6px 6px 0 var(--year, var(--ink)); }
 .folder-panel[hidden] { display: none; }
 .js .folder-panel + .folder-panel { margin-top: 0; }
@@ -791,7 +793,7 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .focus { position: relative; min-height: 26rem; margin: 0 0 2rem; overflow: hidden; background: var(--sheet); border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); }
 .focus__pile { position: absolute; inset: 0; }
 .focus__piece { position: absolute; left: var(--x); top: var(--y); display: flex; flex-direction: column; padding: .3rem .55rem; font-size: .78rem; line-height: 1.3; white-space: nowrap; background: var(--paper); border: 1.5px solid var(--ink); transform: rotate(var(--r)); opacity: .14; filter: blur(1.5px); transition: opacity .6s, filter .6s, transform .6s; }
-.focus__piece small { color: var(--muted); font-size: .68rem; }
+.focus__piece small { color: var(--muted); font-size: .75rem; }
 .focus.is-flood .focus__piece { animation: pile-in .45s cubic-bezier(.2,.9,.3,1.3) both; animation-delay: calc(var(--i) * 28ms); opacity: 1; filter: none; }
 .focus.is-focused .focus__piece { animation: none; opacity: .12; filter: blur(2px); transform: rotate(var(--r)) scale(.92); }
 .focus__front { position: relative; z-index: 1; display: grid; gap: .9rem; justify-items: center; text-align: center; padding: 3rem 1.25rem 2rem; transition: opacity .5s; }
