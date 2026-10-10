@@ -1175,3 +1175,31 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .download-checklist__item { grid-template-columns: auto 1fr; }
   .download-checklist__item a { grid-column: 2; }
 }
+
+/* GPT 任務 05：導師查看學生時的五年簡圖（純靜態）。 */
+.teacher-journey-map { margin: 0 0 1.25rem; padding: 1.25rem 1.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--sheet); }
+.teacher-journey-map__head { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.teacher-journey-map__head h2, .teacher-journey-map__head p { margin: 0; }
+.teacher-journey-map__route { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 1.25rem 0 0; padding: 0; list-style: none; }
+.teacher-journey-map__stop { position: relative; min-width: 0; text-align: center; }
+.teacher-journey-map__stop:not(:last-child)::after { content: ""; position: absolute; z-index: 0; top: 1.15rem; left: 50%; width: 100%; border-top: 3px solid var(--line); }
+.teacher-journey-map__stop > a, .teacher-journey-map__stop > span { position: relative; z-index: 1; display: grid; justify-items: center; gap: .25rem; color: var(--ink); text-decoration: none; }
+.teacher-journey-map__dot { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border: 3px solid var(--year-3); border-radius: 50%; background: var(--sheet); font-weight: 800; line-height: 1; }
+.teacher-journey-map__stop--past .teacher-journey-map__dot { background: var(--year-3); color: #fff; }
+.teacher-journey-map__stop--now .teacher-journey-map__dot { background: var(--accent); border-color: var(--accent); color: #fff; outline: 3px solid var(--sheet); box-shadow: 0 0 0 6px var(--accent); }
+.teacher-journey-map__stop--future { opacity: .48; }
+.teacher-journey-map__stop small { color: var(--muted); line-height: 1.35; }
+.teacher-journey-map__stop > a:hover b { text-decoration: underline; text-underline-offset: .2em; }
+.teacher-journey-map__stop > a:focus-visible { border-radius: .4rem; outline: 3px solid var(--accent); outline-offset: 4px; }
+.teacher-year-data { scroll-margin-top: 6rem; }
+
+@media (max-width: 600px) {
+  .teacher-journey-map { padding: 1rem; }
+  .teacher-journey-map__head { display: block; }
+  .teacher-journey-map__head > p { margin-top: .35rem; }
+  .teacher-journey-map__route { grid-template-columns: 1fr; margin-top: 1rem; text-align: left; }
+  .teacher-journey-map__stop { text-align: left; }
+  .teacher-journey-map__stop:not(:last-child)::after { top: 2.4rem; bottom: 0; left: 1.15rem; width: 0; border-top: 0; border-left: 3px solid var(--line); }
+  .teacher-journey-map__stop > a, .teacher-journey-map__stop > span { grid-template-columns: 2.4rem auto 1fr; justify-items: start; align-items: center; gap: .75rem; padding: .35rem 0; }
+  .teacher-journey-map__stop small { justify-self: end; text-align: right; }
+}

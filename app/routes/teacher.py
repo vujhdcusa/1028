@@ -33,6 +33,20 @@ def student_detail(student_id):
     if not student or not can_view_student(teacher, student):
         abort(403)
     journey = build_journey(student)
+    current_grade = journey["current_grade"] or 1
+    journey_stops = [
+        {
+            "grade": year["grade"],
+            "label": year["label"],
+            "count": year["count"],
+            "state": (
+                "past"
+                if year["grade"] < current_grade
+                else "now" if year["grade"] == current_grade else "future"
+            ),
+        }
+        for year in journey["years"]
+    ]
     programs = [t.program for t in StudentTarget.query.filter_by(student_id=student.id).order_by(StudentTarget.selected_at)]
     chosen = {program.id for program in programs}
     # 學生取消的目標：送審紀錄與快照保留，導師仍看得到（規格 10.4）
@@ -60,6 +74,7 @@ def student_detail(student_id):
         user=teacher,
         student=student,
         journey=journey,
+        journey_stops=journey_stops,
         targets=targets,
         documents=SourceDocument.query.filter_by(owner_id=student.id, status="confirmed")
                                       .order_by(SourceDocument.created_at).all(),
