@@ -402,12 +402,40 @@ document.querySelectorAll("[data-open-year]").forEach((node) => {
   });
 });
 
-// 好久不見：數字跳到天數，約 4 秒後淡出；點一下就略過
+// 好久不見：焦點留在對話框內；沒有鍵盤焦點在裡面時才自動淡出
 document.querySelectorAll("[data-return]").forEach((root) => {
+  const closeButton = root.querySelector("[data-return-close]");
+  let closing = false;
+  let autoClose = null;
   const close = () => {
+    if (closing) return;
+    closing = true;
+    clearTimeout(autoClose);
     root.classList.add("is-leaving");
     document.querySelector("[data-journey-home]")?.classList.remove("is-waiting");
-    setTimeout(() => root.remove(), 600);
+    setTimeout(() => {
+      document.removeEventListener("keydown", onKey);
+      root.remove();
+      document.getElementById("route-title")?.focus();
+    }, 600);
+  };
+  function onKey(event) {
+    if (event.key === "Escape") { event.preventDefault(); close(); return; }
+    if (event.key === "Tab") {
+      const focusable = [...root.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")]
+        .filter((node) => !node.hidden && !node.disabled);
+      if (!focusable.length) return;
+      const at = focusable.indexOf(document.activeElement);
+      event.preventDefault();
+      const next = event.shiftKey ? (at <= 0 ? focusable.length - 1 : at - 1) : (at + 1) % focusable.length;
+      focusable[next].focus();
+    }
+  }
+  const scheduleAutoClose = () => {
+    autoClose = setTimeout(() => {
+      if (root.contains(document.activeElement)) scheduleAutoClose();
+      else close();
+    }, 4500);
   };
   const number = root.querySelector("[data-count-to]");
   const target = Number(number.dataset.countTo) || 0;
@@ -420,14 +448,21 @@ document.querySelectorAll("[data-return]").forEach((root) => {
     };
     requestAnimationFrame(tick);
   }
-  root.addEventListener("click", close);
-  setTimeout(close, 4500);
+  closeButton.addEventListener("click", close);
+  document.addEventListener("keydown", onKey);
+  root.querySelector("[data-return-close]").focus();
+  scheduleAutoClose();
 });
 
 // 小人物：沿著路線從專一走到今年；點路邊的地方，走過去再進入
 document.querySelectorAll("[data-walker]").forEach((walker) => {
   const svg = walker.ownerSVGElement;
-  if (!svg || svg.getBoundingClientRect().width === 0) return;  // 手機版不顯示這張圖
+  const notifyWalked = () => {
+    document.documentElement.dataset.journeyWalked = "true";
+    document.dispatchEvent(new CustomEvent("journey:walked"));
+  };
+  if (!svg) return;
+  if (svg.getBoundingClientRect().width === 0) { notifyWalked(); return; }  // 手機版不顯示這張圖
   const route = svg.querySelector(".route-map__walked");
   const home = walker.closest("[data-journey-home]");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -447,7 +482,12 @@ document.querySelectorAll("[data-walker]").forEach((walker) => {
   const end = lengthAtX(stops[grade - 1]);
   let seen = false;
   try { seen = sessionStorage.getItem("journey-walked") === "1"; } catch (e) { /* 讀不到就當沒看過 */ }
-  const finish = () => { walker.classList.remove("is-walking"); current = route.getPointAtLength(end); place(current); };
+  const finish = () => {
+    walker.classList.remove("is-walking");
+    current = route.getPointAtLength(end);
+    place(current);
+    notifyWalked();
+  };
   const walk = () => {
     if (reduce || seen || grade === 1) { finish(); return; }
     walker.classList.add("is-walking");
@@ -695,9 +735,23 @@ document.querySelectorAll("[data-photo-form]").forEach((form) => {
     let seen = false;
     try { seen = localStorage.getItem(`tour-seen-${page}`) === "1"; } catch (e) { seen = true; }
     if (!seen) {
+      const waitForWalker = () => {
+        if (document.documentElement.dataset.journeyWalked === "true") { start(); return; }
+        let started = false;
+        let fallback = null;
+        const begin = () => {
+          if (started) return;
+          started = true;
+          clearTimeout(fallback);
+          document.removeEventListener("journey:walked", begin);
+          start();
+        };
+        document.addEventListener("journey:walked", begin, { once: true });
+        fallback = setTimeout(begin, 6000);
+      };
       const wait = () => {
         if (document.querySelector("[data-return]")) setTimeout(wait, 500);
-        else setTimeout(start, reduce ? 300 : 2600);
+        else waitForWalker();
       };
       wait();
     }
