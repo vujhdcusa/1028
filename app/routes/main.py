@@ -189,6 +189,15 @@ def student_welcome_done():
     return redirect(url_for(endpoint, category="activity") if choice == "activity" else url_for(endpoint))
 
 
+@main_bp.get("/help")
+@role_required("student", "teacher", "staff", "admin")
+def help_page():
+    """❓ 怎麼操作：常見問題（不用 AI、不花額度）。內容在 app/content/help.py。"""
+    from app.content.help import HELP
+    user = get_current_user()
+    return render_template("help.html", user=user, sections=HELP.get(user.role, HELP["student"]))
+
+
 @main_bp.post("/student/photo")
 @role_required("student")
 def semester_photo_upload():

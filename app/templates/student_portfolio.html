@@ -14,8 +14,8 @@
   <div class="list-head">
     <p class="muted">填上年級的資料會放進「我的五年」。</p>
     <div class="record-card__actions">
-      <a class="button button--line" href="{{ url_for('award.award_upload_page') }}">從學校獎懲記錄匯入</a>
-      <a class="button" href="{{ url_for('student.portfolio_new') }}">＋ 新增一筆</a>
+      <a class="button button--line" href="{{ url_for('award.award_upload_page') }}" data-tour="學校的獎懲記錄可以直接匯入。" data-tour-order="2">從學校獎懲記錄匯入</a>
+      <a class="button" href="{{ url_for('student.portfolio_new') }}" data-tour="活動、競賽、服務、幹部從這裡新增。" data-tour-order="1">＋ 新增一筆</a>
     </div>
   </div>
   {% if request.args.get("imported") is not none %}<p class="notice mb-1" role="status">已從獎懲記錄匯入 {{ request.args.get("imported") }} 筆（已經匯入過的不會重複）。</p>{% endif %}

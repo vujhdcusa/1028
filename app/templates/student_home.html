@@ -32,7 +32,7 @@
 
 <div class="page journey-home{% if show_return %} is-waiting{% endif %}" data-journey-home>
   {# 五年路線：畫到「你在這裡」 #}
-  <section class="route-map" aria-labelledby="route-title">
+  <section class="route-map" aria-labelledby="route-title" data-tour="這條路是你的五年，小人物站在今年。" data-tour-order="1">
     <h1 id="route-title" class="route-map__title">{{ home.grade_label }}，你在這裡。</h1>
     <svg class="route-map__svg" viewBox="0 0 1000 360" role="img" aria-label="專一到專五的路線，目前在{{ home.grade_label }}">
       {% for key, label, href, cx, cy, color in places %}
@@ -138,7 +138,7 @@
       </defs>
     </svg>
 
-    <div class="jig" data-board data-grade="{{ home.grade }}">
+    <div class="jig" data-board data-grade="{{ home.grade }}" data-tour="缺的片拖回洞裡，就去補那一類資料。" data-tour-order="3">
       <svg class="jig__board" viewBox="-30 -30 660 460" role="img" aria-label="{{ home.grade_label }}的拼圖，{{ 6 - home.blanks }} 片已拼上">
         <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
         {% for piece in home.pieces %}
@@ -174,7 +174,7 @@
     </div>
 
     {# 換成自己的照片：只有自己看得到 #}
-    <form class="jig-photo" method="post" action="{{ url_for('main.semester_photo_upload') }}" enctype="multipart/form-data" data-photo-form>
+    <form class="jig-photo" data-tour="換成這學期最快樂的照片，只有你看得到。" data-tour-order="4" method="post" action="{{ url_for('main.semester_photo_upload') }}" enctype="multipart/form-data" data-photo-form>
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="jig-photo__pick">
         <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required data-photo-input>
@@ -186,7 +186,7 @@
   </section>
 
   {# 今天先完成哪一步（Canva 第 11 頁）：最多三件事＋一行概況 #}
-  <section class="today" aria-labelledby="today-title">
+  <section class="today" aria-labelledby="today-title" data-tour="不知道做什麼？從這三件事開始。" data-tour-order="2">
     <h2 id="today-title" class="today__title">今天先完成哪一步</h2>
     <p class="today__stats">
       <span>五年累積 <b>{{ home.summary.percent }}%</b></span>
@@ -197,7 +197,7 @@
   </section>
 
   {# 五年資料夾：收起來，點路線上的節點才打開 #}
-  <details class="folders-drawer" id="folders" data-folders-drawer>
+  <details class="folders-drawer" id="folders" data-folders-drawer data-tour="五年所有資料都收在這裡。" data-tour-order="5">
     <summary>打開五年資料夾</summary>
     <div class="split mt-1">
       <section class="folders" data-folders aria-label="五年資料夾">

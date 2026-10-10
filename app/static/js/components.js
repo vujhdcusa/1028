@@ -589,3 +589,108 @@ document.querySelectorAll("[data-photo-form]").forEach((form) => {
   form.querySelector("[data-photo-submit]").hidden = true;
   input.addEventListener("change", () => { if (input.files.length) form.submit(); });
 });
+
+// ---------- 網頁導覽：一步一步指出畫面上的功能 ----------
+// 頁面上有 data-tour="一句話" data-tour-order="1" 的元素就是步驟；看不到的元素（例如手機版隱藏）自動略過。
+// 首頁第一次來會自動播一次（瀏覽器記住），其他頁按上方「導覽」才播；Esc 結束、← → 換步。
+(() => {
+  const page = document.body.dataset.page || "page";
+  const steps = () => [...document.querySelectorAll("[data-tour]")]
+    .filter((el) => el.getClientRects().length && el.getBoundingClientRect().width > 0)
+    .sort((a, b) => (Number(a.dataset.tourOrder) || 99) - (Number(b.dataset.tourOrder) || 99));
+  const startButton = document.querySelector("[data-tour-start]");
+  if (startButton && steps().length) startButton.hidden = false;
+
+  let layer = null;
+  let index = 0;
+  let list = [];
+  let returnFocus = null;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const place = () => {
+    if (!layer) return;
+    const rect = list[index].getBoundingClientRect();
+    const pad = 8;
+    const spot = layer.querySelector(".tour__spot");
+    spot.style.top = `${rect.top - pad}px`;
+    spot.style.left = `${rect.left - pad}px`;
+    spot.style.width = `${rect.width + pad * 2}px`;
+    spot.style.height = `${rect.height + pad * 2}px`;
+    const card = layer.querySelector(".tour__card");
+    const below = rect.bottom + 14 + card.offsetHeight < window.innerHeight;
+    const top = below ? rect.bottom + 14 : rect.top - card.offsetHeight - 14;
+    card.style.top = `${Math.min(Math.max(12, top), window.innerHeight - card.offsetHeight - 12)}px`;
+    card.style.left = `${Math.min(Math.max(12, rect.left), window.innerWidth - card.offsetWidth - 12)}px`;
+  };
+  const close = () => {
+    if (!layer) return;
+    layer.remove();
+    layer = null;
+    document.removeEventListener("keydown", onKey);
+    window.removeEventListener("resize", place);
+    window.removeEventListener("scroll", place);
+    if (returnFocus && returnFocus.focus) returnFocus.focus();
+  };
+  const go = (next) => {
+    if (next < 0) return;
+    if (next >= list.length) { close(); return; }
+    index = next;
+    const target = list[index];
+    target.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    layer.querySelector(".tour__text").textContent = target.dataset.tour;
+    layer.querySelector(".tour__count").textContent = `${index + 1}／${list.length}`;
+    layer.querySelector("[data-tour-prev]").hidden = index === 0;
+    layer.querySelector("[data-tour-next]").textContent = index === list.length - 1 ? "完成" : "下一步 →";
+    place();
+    setTimeout(place, 400);
+    layer.querySelector("[data-tour-next]").focus();
+  };
+  function onKey(event) {
+    if (event.key === "Escape") close();
+    if (event.key === "ArrowRight") go(index + 1);
+    if (event.key === "ArrowLeft") go(index - 1);
+  }
+  const start = () => {
+    list = steps();
+    if (!list.length) return;
+    close();
+    returnFocus = document.activeElement;
+    layer = document.createElement("div");
+    layer.className = "tour";
+    layer.setAttribute("role", "dialog");
+    layer.setAttribute("aria-modal", "true");
+    layer.setAttribute("aria-label", "網頁導覽");
+    layer.innerHTML = '<div class="tour__spot"></div>'
+      + '<div class="tour__card"><p class="tour__text" aria-live="polite"></p>'
+      + '<div class="tour__actions"><span class="tour__count"></span>'
+      + '<button type="button" class="tour__skip" data-tour-close>結束</button>'
+      + '<button type="button" class="button button--small button--line" data-tour-prev>← 上一步</button>'
+      + '<button type="button" class="button button--small" data-tour-next>下一步 →</button></div></div>';
+    document.body.appendChild(layer);
+    layer.querySelector("[data-tour-close]").addEventListener("click", close);
+    layer.querySelector("[data-tour-prev]").addEventListener("click", () => go(index - 1));
+    layer.querySelector("[data-tour-next]").addEventListener("click", () => go(index + 1));
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, { passive: true });
+    go(0);
+    try { localStorage.setItem(`tour-seen-${page}`, "1"); } catch (e) { /* 存不了也沒關係 */ }
+  };
+  if (startButton) startButton.addEventListener("click", start);
+  document.querySelectorAll("[data-tour-replay]").forEach((button) => button.addEventListener("click", () => {
+    try { localStorage.removeItem(`tour-seen-${button.dataset.tourReplay}`); } catch (e) { /* 沒關係 */ }
+    window.location.href = "/student/dashboard";
+  }));
+  // 首頁第一次來自動播；「好久不見」那一幕還在的話等它關掉，也等小人物走完
+  if (page === "student-dashboard") {
+    let seen = false;
+    try { seen = localStorage.getItem(`tour-seen-${page}`) === "1"; } catch (e) { seen = true; }
+    if (!seen) {
+      const wait = () => {
+        if (document.querySelector("[data-return]")) setTimeout(wait, 500);
+        else setTimeout(start, reduce ? 300 : 2600);
+      };
+      wait();
+    }
+  }
+})();

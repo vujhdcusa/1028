@@ -19,11 +19,11 @@
 <div class="page page--banded">
   <div class="list-head">
     <p class="muted">從學校系統下載成績單（或拍下證照）後上傳，確認內容就會放進「我的五年」。</p>
-    <a class="button" href="{{ url_for('student.learning_profile_upload_page') }}">＋ 上傳成績單或證照</a>
+    <a class="button" href="{{ url_for('student.learning_profile_upload_page') }}" data-tour="成績單、證照從這裡上傳。" data-tour-order="1">＋ 上傳成績單或證照</a>
   </div>
 
     <div>
-      <section class="record-group" aria-labelledby="docs-title">
+      <section class="record-group" aria-labelledby="docs-title" data-tour="上傳後按「確認」，資料才算數。" data-tour-order="2">
         <div class="record-group__head"><h2 id="docs-title">我上傳的文件</h2><span class="muted small">{{ documents|length }} 份</span></div>
         {% if documents %}
         <div class="table-wrap">

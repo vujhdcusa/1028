@@ -13,10 +13,10 @@
   <p class="alert mb-1" role="alert">五年級做備審，目標校系最多 {{ slots.limit }} 所。你現在有 {{ slots.used }} 所，請先取消 {{ slots.used - slots.limit }} 所，再送導師確認。已寫好的自傳不會刪除。</p>
   {% endif %}
   {% if slots.limit %}
-  <p class="muted mb-1">先選最想上的 {{ slots.limit }} 所，看準備度。換掉學校，寫好的自傳要重寫。</p>
+  <p class="muted mb-1" data-tour="五年級最多選 5 所，換學校自傳要重寫。" data-tour-order="0">先選最想上的 {{ slots.limit }} 所，看準備度。換掉學校，寫好的自傳要重寫。</p>
   <p class="mb-1"><span class="tag {{ 'tag--warn' if slots.used >= slots.limit else 'tag--info' }}">已選 {{ slots.used }}／{{ slots.limit }}</span></p>
   {% else %}
-  <p class="muted mb-1">想去哪裡都可以選，隨時可以換。五年級做備審時只能留 5 所。</p>
+  <p class="muted mb-1" data-tour="想去哪裡都可以選，隨時可以換。" data-tour-order="0">想去哪裡都可以選，隨時可以換。五年級做備審時只能留 5 所。</p>
   {% endif %}
   {% if focus %}{% include "partials/focus.html" %}{% endif %}
   {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}
@@ -37,7 +37,7 @@
   {% endif %}
 
   {% if programs %}
-  <div class="program-cards">
+  <div class="program-cards" data-tour="每張卡片是一個校系，按「設為目標」加入。" data-tour-order="2">
     {% for program in programs %}
     {% set gap = gaps[program.id] %}
     {% set chosen = program.id in selected %}

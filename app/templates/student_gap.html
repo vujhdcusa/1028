@@ -25,7 +25,7 @@
       <h2 class="program-title">{{ program.school_name }} {{ program.department_name }}</h2>
       <p>方塊越寬，佔分越多；裝得越滿，準備得越完整。點方塊看細節。</p>
     </div>
-    <div class="readiness">
+    <div class="readiness" data-tour="準備度只看你確認過的資料，不是錄取機率。" data-tour-order="1">
       {% if gap.readiness is not none %}
       <strong><span data-count="{{ gap.readiness }}">{{ gap.readiness }}</span><small>%</small></strong>
       <span>準備度</span>
@@ -89,7 +89,7 @@
         <p class="small muted mb-1">回答 4 個問題，AI 會依你的資料和這個系的加權寫草稿，你再改成自己的話。</p>
         <a class="button button--line" href="{{ url_for('student.autobiography', program_id=program.id) }}">{{ "繼續修改自傳" if autobiography else "開始寫自傳" }}</a>
       </section>
-      <section class="sheet review-box" id="review" aria-labelledby="review-title">
+      <section class="sheet review-box" id="review" aria-labelledby="review-title" data-tour="資料齊了，從這裡請導師確認。" data-tour-order="2">
         <div class="sheet__head"><h2 id="review-title">導師確認</h2>
           {% if review %}{% set label, cls = review_text[review.status] %}<span class="tag {{ cls }}">{{ label }}</span>{% else %}<span class="tag">尚未送出</span>{% endif %}
         </div>
@@ -112,7 +112,7 @@
         {% endif %}
       </section>
 
-      <section class="sheet sheet--ink" aria-labelledby="package-title">
+      <section class="sheet sheet--ink" aria-labelledby="package-title" data-tour="最後在這裡下載備審資料。" data-tour-order="3">
         <h2 id="package-title" class="mb-1">產出備審資料</h2>
         <p class="small mb-1">依上面的目錄順序產出 Word，可以再編輯後列印。{% if not review or review.status != "confirmed" %}還沒經導師確認，文件上會註明。{% endif %}</p>
         <a class="button button--accent" href="{{ url_for('student.target_package', program_id=program.id) }}">下載 Word ↓</a>
