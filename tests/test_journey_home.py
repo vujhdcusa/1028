@@ -112,3 +112,13 @@ def test_home_has_walker_and_four_places(app):
     assert page.count("data-place=") == 4
     for href in ("/student/learning-profile", "/student/portfolio", "/student/targets"):
         assert f'href="{href}"' in page
+
+
+def test_blank_pieces_are_draggable(app):
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    page = client.get("/student/dashboard").get_data(as_text=True)
+
+    assert page.count("data-drag-piece") == 6  # 專三沒有資料：六塊都是空白，各有一片可以拖
+    assert page.count("data-slot") == 6
+    assert "data-board" in page

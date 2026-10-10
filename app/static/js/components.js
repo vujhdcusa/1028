@@ -491,3 +491,61 @@ document.querySelectorAll("[data-walker]").forEach((walker) => {
     });
   });
 });
+
+// 拖拉拼圖：把浮起來的那片拖進空格（或直接點），拼上後打開新增
+document.querySelectorAll("[data-board]").forEach((board) => {
+  board.querySelectorAll("[data-drag-piece]").forEach((loose) => {
+    const slot = loose.closest("[data-slot]");
+    let start = null;
+    let moved = false;
+    const go = () => {
+      loose.classList.remove("is-dragging", "is-returning");
+      loose.classList.add("is-snapped");
+      loose.style.transform = "translate(-16%, 14%) rotate(0deg)";
+      setTimeout(() => { window.location.href = slot.getAttribute("href"); }, 260);
+    };
+    loose.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      loose.setPointerCapture(event.pointerId);
+      start = { x: event.clientX, y: event.clientY };
+      moved = false;
+      loose.classList.remove("is-returning");
+      loose.classList.add("is-dragging");
+    });
+    loose.addEventListener("pointermove", (event) => {
+      if (!start) return;
+      const dx = event.clientX - start.x;
+      const dy = event.clientY - start.y;
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      loose.style.transform = `translate(${dx}px, ${dy}px) rotate(4deg)`;
+    });
+    loose.addEventListener("pointerup", () => {
+      if (!start) return;
+      start = null;
+      const a = loose.getBoundingClientRect();
+      const b = slot.querySelector("svg").getBoundingClientRect();
+      const distance = Math.hypot(a.x + a.width / 2 - (b.x + b.width / 2), a.y + a.height / 2 - (b.y + b.height / 2));
+      if (!moved || distance < b.width * 0.45) { go(); return; }
+      loose.classList.remove("is-dragging");
+      loose.classList.add("is-returning");
+      loose.style.transform = "";
+    });
+    // 拖完放開時，瀏覽器還會送出一次 click；交給上面處理，不讓連結自己換頁
+    slot.addEventListener("click", (event) => { if (event.target.closest("[data-drag-piece]")) event.preventDefault(); });
+  });
+
+  // 回到首頁時：比對上次看到的拼圖，新拼上的那片跳一下，標題變成「又留下了一塊。」
+  const key = `journey-pieces-${board.dataset.grade}`;
+  const filled = [...board.querySelectorAll("[data-filled]")].map((el) => el.dataset.piece);
+  let before = null;
+  try { before = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (e) { before = null; }
+  if (Array.isArray(before)) {
+    const fresh = filled.filter((piece) => !before.includes(piece));
+    if (fresh.length) {
+      fresh.forEach((piece) => board.querySelector(`[data-piece="${piece}"]`)?.classList.add("is-new"));
+      const title = document.querySelector("[data-board-title]");
+      if (title) title.textContent = "又留下了一塊。";
+    }
+  }
+  try { sessionStorage.setItem(key, JSON.stringify(filled)); } catch (e) { /* 存不了也沒關係 */ }
+});

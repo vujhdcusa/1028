@@ -84,16 +84,20 @@
 
   {# 今年的六塊拼圖：空白就是還沒留下的 #}
   <section class="year-puzzle" aria-labelledby="puzzle-title">
-    <h2 id="puzzle-title" class="year-puzzle__title">{% if home.blanks %}還有 {{ home.blanks }} 塊空白。{% else %}今年六塊都拼上了。{% endif %}</h2>
-    <div class="year-puzzle__board">
+    <h2 id="puzzle-title" class="year-puzzle__title" data-board-title>{% if home.blanks %}還有 {{ home.blanks }} 塊空白。{% else %}今年六塊都拼上了。{% endif %}</h2>
+    {% if home.blanks %}<p class="year-puzzle__hint">把浮起來的那片拖進空格。</p>{% endif %}
+    <div class="year-puzzle__board" data-board data-grade="{{ home.grade }}">
       {% for piece in home.pieces %}
       {% if piece.filled %}
-      <span class="puzzle-piece puzzle-piece--filled" data-piece="{{ piece.key }}" style="--c: {{ piece_colors[piece.key] }}; --n: {{ loop.index0 }};" title="{{ piece.full_label }}">
+      <span class="puzzle-piece puzzle-piece--filled" data-piece="{{ piece.key }}" data-filled style="--c: {{ piece_colors[piece.key] }}; --n: {{ loop.index0 }};" title="{{ piece.full_label }}">
         <svg viewBox="-5 -5 125 110" aria-hidden="true"><path d="{{ piece_path }}"/></svg><span>{{ piece.label }}</span>
       </span>
       {% else %}
-      <a class="puzzle-piece puzzle-piece--blank" data-piece="{{ piece.key }}" href="{{ piece.href }}" style="--c: {{ piece_colors[piece.key] }}; --n: {{ loop.index0 }};" aria-label="補上{{ piece.full_label }}">
-        <svg viewBox="-5 -5 125 110" aria-hidden="true"><path d="{{ piece_path }}"/></svg><span>＋{{ piece.label }}</span>
+      {# 空格＋一片浮起來的拼圖：拖進空格或直接點，都會打開新增 #}
+      <a class="puzzle-piece puzzle-piece--blank" data-piece="{{ piece.key }}" data-slot href="{{ piece.href }}" style="--c: {{ piece_colors[piece.key] }}; --n: {{ loop.index0 }};" aria-label="補上{{ piece.full_label }}">
+        <svg viewBox="-5 -5 125 110" aria-hidden="true"><path d="{{ piece_path }}"/></svg>
+        <svg class="puzzle-loose" data-drag-piece viewBox="-5 -5 125 110" aria-hidden="true"><path d="{{ piece_path }}"/></svg>
+        <span>＋{{ piece.label }}</span>
       </a>
       {% endif %}
       {% endfor %}

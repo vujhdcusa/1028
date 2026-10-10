@@ -890,3 +890,16 @@ body[data-page="student-welcome"] .assistant { display: none; }
 @keyframes swing { from { transform: rotate(-22deg); } to { transform: rotate(22deg); } }
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .jwalker, .place * { transition: none !important; animation: none !important; } }
+
+/* 拖拉拼圖：空格上方浮著一片，拖進去就拼上 */
+.year-puzzle__hint { margin: -.4rem 0 1rem; color: var(--muted); font-size: .9rem; }
+.puzzle-piece { position: relative; }
+.puzzle-loose { position: absolute; top: -14%; left: 16%; width: 100%; cursor: grab; touch-action: none; transform: rotate(10deg); filter: drop-shadow(3px 5px 0 rgba(28,34,48,.25)); animation: loose-float 2.4s ease-in-out infinite alternate; animation-delay: calc(2.2s + var(--n) * .2s); }
+.puzzle-loose path { fill: var(--c) !important; stroke-dasharray: none !important; opacity: .92; }
+.puzzle-loose.is-dragging { cursor: grabbing; animation: none; filter: drop-shadow(6px 10px 0 rgba(28,34,48,.25)); z-index: 5; }
+.puzzle-loose.is-returning { transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
+.puzzle-loose.is-snapped { transition: transform .22s ease-in; animation: none; filter: none; }
+.puzzle-piece--blank:hover path { transform: none; }
+.puzzle-piece.is-new path { animation: snap-in .55s cubic-bezier(.2,.9,.3,1.4) both; }
+@keyframes loose-float { from { transform: rotate(10deg) translateY(0); } to { transform: rotate(6deg) translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .puzzle-loose { animation: none; } }
