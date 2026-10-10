@@ -62,11 +62,11 @@ def test_teacher_student_page_shows_static_five_year_overview_with_correct_count
 
     assert response.status_code == 200
     assert html.count("data-teacher-journey-stop") == 5
-    assert 'data-grade="1" data-count="1"' in html
-    assert 'data-grade="2" data-count="0"' in html
-    assert 'data-grade="3" data-count="3"' in html
-    assert 'data-grade="3" data-count="3" data-state="now"' in html
-    assert 'data-grade="4" data-count="0" data-state="future"' in html
+    assert 'data-grade="1" data-records="1"' in html
+    assert 'data-grade="2" data-records="0"' in html
+    assert 'data-grade="3" data-records="3"' in html
+    assert 'data-grade="3" data-records="3" data-state="now"' in html
+    assert 'data-grade="4" data-records="0" data-state="future"' in html
     assert 'href="#teacher-year-1"' in html
     assert 'href="#teacher-year-3"' in html
     assert 'href="#teacher-year-2"' not in html

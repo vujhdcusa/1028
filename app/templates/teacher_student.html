@@ -30,7 +30,7 @@
     <ol class="teacher-journey-map__route" aria-label="專一到專五的資料筆數">
       {% for stop in journey_stops %}
       <li class="teacher-journey-map__stop teacher-journey-map__stop--{{ stop.state }}"
-          data-teacher-journey-stop data-grade="{{ stop.grade }}" data-count="{{ stop.count }}" data-state="{{ stop.state }}"{% if stop.state == "now" %} aria-current="step"{% endif %}>
+          data-teacher-journey-stop data-grade="{{ stop.grade }}" data-records="{{ stop.count }}" data-state="{{ stop.state }}"{% if stop.state == "now" %} aria-current="step"{% endif %}>
         {% if stop.count %}<a href="#teacher-year-{{ stop.grade }}">{% else %}<span>{% endif %}
           <span class="teacher-journey-map__dot" aria-hidden="true">{{ stop.count }}</span>
           <b>{{ stop.label }}</b>

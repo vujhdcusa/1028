@@ -1170,7 +1170,7 @@ body[data-page="student-welcome"] .assistant { display: none; }
   /* 手機：標語改上下兩行、夾著小人物，避免右邊被切掉 */
   [data-page="public-home"] .cover__title { grid-template-columns: 1fr; gap: 5.2rem; bottom: 12%; font-size: clamp(2rem, 10vw, 2.6rem); }
   [data-page="public-home"] .cover__title span:first-child, [data-page="public-home"] .cover__title span:last-child { text-align: center; }
-=======
+}
 
 /* 缺件頁：送審版本與下載前提醒 */
 .readiness__note { display: block; max-width: 16rem; margin-top: .35rem; color: var(--muted); font-size: .78rem; line-height: 1.4; text-align: center; }
