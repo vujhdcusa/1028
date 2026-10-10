@@ -1,4 +1,4 @@
-%%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
+%%{init: {'theme':'base','themeVariables': {'fontSize':'18px','fontFamily':'DFKai-SB, BiauKai, serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
 flowchart TD
     classDef student fill:#DBEAFE,stroke:#9CA3AF,color:#111827,stroke-width:1px;
     classDef teacher fill:#DCFCE7,stroke:#9CA3AF,color:#111827,stroke-width:1px;
@@ -19,7 +19,7 @@ flowchart TD
     Dup -- 否 --> GradeConfirm
     Diff --> GradeConfirm[學生核對後確認才存入<br/>標示「來源：網頁成績（僅供參考）」]:::student
     Kind -- 紙本成績單 --> Paper[拍照或掃描上傳<br/>錯過網路成績也可以用學校寄來的紙本]:::student
-    Paper --> OCR[成績單 OCR 辨識<br/>（組員完成、待整合）]:::ai
+    Paper --> OCR[成績單 OCR 辨識<br/>（辨識後由學生確認）]:::ai
     OCR --> OCRNote[AI 在確認畫面旁註記<br/>例如：這一格可能被印章蓋住，請手動確認]:::ai
     OCRNote --> PaperConfirm[學生確認才存入<br/>標示「來源：紙本成績單」]:::student
 
