@@ -427,6 +427,7 @@ document.querySelectorAll("[data-return]").forEach((root) => {
 // 小人物：沿著路線從專一走到今年；點路邊的地方，走過去再進入
 document.querySelectorAll("[data-walker]").forEach((walker) => {
   const svg = walker.ownerSVGElement;
+  if (!svg || svg.getBoundingClientRect().width === 0) return;  // 手機版不顯示這張圖
   const route = svg.querySelector(".route-map__walked");
   const home = walker.closest("[data-journey-home]");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

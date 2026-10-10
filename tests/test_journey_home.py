@@ -146,3 +146,12 @@ def test_filled_pieces_show_the_picture(app):
     assert page.count("data-filled") == 1
     assert page.count("data-drag-piece") == 5
     assert 'id="year-scene"' in page
+
+
+def test_mobile_route_list_and_place_grid(app):
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    page = client.get("/student/dashboard").get_data(as_text=True)
+    assert page.count("route-list__stop ") == 5
+    assert page.count("place-grid__item") == 4
+    assert "你在這裡</span>" in page

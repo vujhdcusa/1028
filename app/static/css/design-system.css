@@ -939,3 +939,21 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .jig-photo__pick:focus-within span { outline: 2px solid var(--accent); outline-offset: 3px; }
 .jig-photo small { color: var(--muted); }
 .js .jig-photo [data-photo-submit] { display: none; }
+
+/* 手機版的五年路線：直的列表＋四個大按鈕 */
+.route-list, .place-grid { display: none; }
+@media (max-width: 640px) {
+  .route-map__svg { display: none; }
+  .route-list { display: grid; gap: 0; list-style: none; margin: 1rem auto 1.25rem; padding: 0; max-width: 22rem; text-align: left; }
+  .route-list__stop a { display: grid; grid-template-columns: 2.6rem auto 1fr; align-items: center; gap: .75rem; padding: .35rem 0; color: var(--ink); text-decoration: none; font-size: 1.1rem; position: relative; }
+  .route-list__stop:not(:last-child) a::after { content: ""; position: absolute; left: 1.24rem; top: 2.6rem; height: calc(100% - 2.2rem); border-left: 4px dotted var(--line); }
+  .route-list__stop--past:not(:last-child) a::after { border-left: 4px solid var(--accent); }
+  .route-list__dot { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; border: 3px solid var(--year); background: var(--sheet); color: #fff; font-weight: 700; animation: node-pop .4s ease-out both; animation-delay: calc(var(--n) * .15s); }
+  .route-list__stop--past .route-list__dot, .route-list__stop--now .route-list__dot { background: var(--year); }
+  .route-list__stop--now .route-list__dot { box-shadow: 0 0 0 4px var(--paper), 0 0 0 7px var(--year); }
+  .route-list__stop--future { opacity: .55; }
+  .route-list__word { color: var(--muted); font-size: .95rem; }
+  .route-list__here { justify-self: end; padding: .2rem .6rem; border-radius: 999px; background: var(--accent); color: #fff; font-size: .85rem; font-weight: 700; }
+  .place-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; max-width: 22rem; margin: 0 auto; }
+  .place-grid__item { display: grid; place-items: center; min-height: 4.2rem; padding: .75rem; border: 2px solid var(--ink); border-top: 8px solid var(--c); background: var(--sheet); color: var(--ink); font-size: 1.05rem; font-weight: 700; text-decoration: none; box-shadow: 3px 3px 0 var(--ink); }
+}

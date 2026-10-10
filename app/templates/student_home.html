@@ -80,6 +80,24 @@
         </g>
       </g>
     </svg>
+
+    {# 手機版：橫的路線太小看不清楚，改成直的年級列表和四個大按鈕（CSS 依螢幕寬度切換） #}
+    <ol class="route-list">
+      {% for stop in home.stops %}
+      <li class="route-list__stop route-list__stop--{{ stop.state }}" style="--year: var(--year-{{ stop.grade }}); --n: {{ loop.index0 }};"{% if stop.state == "now" %} aria-current="step"{% endif %}>
+        <a href="#folders" data-open-year="{{ stop.grade }}">
+          <span class="route-list__dot">{{ stop.count if stop.state != "future" else "" }}</span>
+          <b>{{ stop.label }}</b><span class="route-list__word">{{ stop.word }}</span>
+          {% if stop.state == "now" %}<span class="route-list__here">你在這裡</span>{% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+    <nav class="place-grid" aria-label="主要功能">
+      {% for key, label, href, cx, cy, color in places %}
+      <a class="place-grid__item" href="{{ href }}" style="--c: {{ color }};">{{ label }}</a>
+      {% endfor %}
+    </nav>
   </section>
 
   {# 今年的拼圖：一張插畫切成六片，每片是一類資料。有資料的拼在圖上，沒有的是洞，
