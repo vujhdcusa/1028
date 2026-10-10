@@ -35,7 +35,7 @@ from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES,
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
 from app.services.record_status import learning_profile_state, portfolio_state
-from app.services import ai_quota_service, autobiography_service, review_snapshot_service, student_rules
+from app.services import ai_quota_service, autobiography_review, autobiography_service, review_snapshot_service, student_rules
 from app.services.gemini_client import AIUnavailable, ai_ready
 
 
@@ -641,6 +641,12 @@ def _render_autobiography(user, program, targets, error=None, answers=None, stat
     """stale：用舊頁面存檔被擋下時，顯示最新版，並把沒存到的文字列出來（不讓學生白打）。"""
     draft = autobiography_service.latest_draft(user, program) if program else None
     asking = program and (not draft or request.args.get("redo") or error) and not stale
+    paragraph_reviews = []
+    if draft:
+        content = draft.content_json
+        paragraph_reviews = autobiography_review.review_paragraphs(
+            content.get("paragraphs", []), content.get("facts", []), content.get("answers", {}),
+        )
     return render_template(
         "student_autobiography.html",
         user=user,
@@ -652,6 +658,7 @@ def _render_autobiography(user, program, targets, error=None, answers=None, stat
         answers=answers or (draft.content_json.get("answers", {}) if draft else {}),
         facts=autobiography_service.build_facts(user, program) if program else None,
         version=autobiography_service.version_of(draft) if draft else None,
+        paragraph_reviews=paragraph_reviews,
         school_turns=ai_quota_service.remaining(user) if ai_ready() else None,
         error=error,
         stale=stale,

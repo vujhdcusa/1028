@@ -45,6 +45,23 @@
   --shadow-sheet: 0 1px 0 var(--line), 0 18px 30px -22px rgb(28 34 48 / 45%);
 }
 
+/* GPT 任務 04：自傳草稿的主張、證據、疑點與建議 */
+[data-page="student-autobiography"] .ai-boundary { padding: 1rem 1.25rem; border: 1px solid #9b3d36; border-left-width: 5px; background: #fff8f5; }
+[data-page="student-autobiography"] .ai-boundary h2,
+[data-page="student-autobiography"] .ai-boundary p { margin: 0; }
+[data-page="student-autobiography"] .ai-boundary__confirm { margin-top: .4rem !important; font-weight: 800; }
+[data-page="student-autobiography"] .review-label { margin: .65rem 0 .3rem; font-size: .85rem; font-weight: 800; letter-spacing: .08em; }
+[data-page="student-autobiography"] .paragraph-review { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; margin-top: .75rem; }
+[data-page="student-autobiography"] .paragraph-review > section { min-width: 0; padding: .75rem; border: 1px solid var(--line); background: #faf9f5; }
+[data-page="student-autobiography"] .paragraph-review h3 { margin: 0 0 .35rem; font-size: .85rem; letter-spacing: .08em; }
+[data-page="student-autobiography"] .review-line { margin: 0; font-size: .9rem; line-height: 1.45; }
+[data-page="student-autobiography"] .evidence-item + .evidence-item { margin-top: .35rem; }
+[data-page="student-autobiography"] .evidence-item summary { cursor: pointer; font-size: .88rem; font-weight: 700; }
+[data-page="student-autobiography"] .evidence-item p { margin: .4rem 0 0; font-size: .84rem; line-height: 1.5; }
+@media (max-width: 760px) {
+  [data-page="student-autobiography"] .paragraph-review { grid-template-columns: 1fr; }
+}
+
 /* ---------- 基礎 ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 /* 基準字級 18px（Canva 第 19 頁「最小內文 18px」）：改在最外層，用 rem 的字會一起放大；
