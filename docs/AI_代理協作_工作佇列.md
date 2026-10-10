@@ -347,3 +347,9 @@
 - **驗證結果**：三份報告逐份讀取完成；雲端最新 revision 已由 Docs API 讀回，正文約 52,000 字元、1,037 個段落，附錄與功能表存在；`git diff --check` 通過。Mermaid CLI 版本可用，但 Puppeteer 無法在目前 Windows 環境啟動瀏覽器，D-23～D-30 尚未輸出 PNG／SVG。
 - **修改檔案**：`docs/01_正式規格/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`、`docs/04_圖表與介面/diagrams.md`、`docs/images/D-23-function-architecture.mmd`～`D-30-admin-source-flow.mmd`、本工作佇列與 `docs/03_開發紀錄/development-log.md`。
 - **待確認／下一步**：是否要將圖檔上傳到可公開網址並替換雲端副本的「此處插入圖 N」；待使用者確認後再做圖片處理。未推送 Git，未改原始正式版。
+
+### 【@GPT／Codex 回報】流程圖大全簡報副本（2026-10-10）
+
+- **修改檔案**：新增 `scripts/build_diagram_deck_teacher_copy.py` 與 `docs/08_簡報/AI_流程圖大全_給指導老師_2026-10-10.pptx`。
+- **內容**：找到原本的 `AI_流程圖彙整_2026-10-10.pptx` 和產生腳本，沿用相同版型複製；副本共 30 張投影片，圖 1～27 每張加上中文流程名稱。新增圖 20～27 尚無 PNG，因此先建立清楚標名、原始碼路徑與貼圖位置的佔位頁。
+- **驗證**：簡報產生成功；PPTX 可由 `python-pptx` 讀取，共 30 張投影片；未覆蓋原簡報、未上傳 Canva、未推送 Git。
