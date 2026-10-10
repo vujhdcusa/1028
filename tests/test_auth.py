@@ -26,7 +26,15 @@ def auth_app():
 
 
 def test_login_redirects_student_to_student_dashboard():
-    client = auth_app().test_client()
+    from app.extensions import db
+    from app.models import AuditLog, User
+
+    app = auth_app()
+    client = app.test_client()
+    with app.app_context():
+        student = User.query.filter_by(username="student001").one()
+        db.session.add(AuditLog(user_id=student.id, action="student.welcome_done"))
+        db.session.commit()
 
     response = client.post(
         "/login",

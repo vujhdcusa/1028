@@ -6,14 +6,14 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
-from app.models import AwardCertificate, PortfolioSubmission, SourceDocument, StudentTarget, SubmissionAssignment, TeacherReviewFeedback, User
+from app.models import AuditLog, AwardCertificate, PortfolioSubmission, SourceDocument, StudentTarget, SubmissionAssignment, TeacherReviewFeedback, User
 from app.services.gap_service import analyze_gap
 from app.services.guide_service import CARD_IDS, guide_cards
 from app.services.package_service import latest_review
 from app.services.teacher_scope import advised_classes, students_for_teacher
 from app.content.five_year_plan import FIVE_YEAR_PLAN, NEXT_STOPS
 from app.services.admission_sample import load_sample_programs
-from app.services.journey_service import CATEGORY_KEYS, CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
+from app.services.journey_service import GRADE_LABELS, current_grade, CATEGORY_KEYS, CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 
 main_bp = Blueprint("main", __name__)
 
@@ -84,6 +84,8 @@ def login():
     if not endpoint:
         session.clear()
         return render_template("login.html", error="此帳號尚未設定可用角色"), 403
+    if user.role == "student" and not _welcome_done(user):
+        return redirect(url_for("main.student_welcome"))
     return redirect(url_for(endpoint))
 
 
@@ -129,6 +131,43 @@ def student_dashboard():
         source_documents=SourceDocument.query.filter_by(owner_id=user.id).all(),
         guide=guide_cards(user, session.get("guide_snooze")),
     )
+
+
+def _welcome_done(user):
+    return AuditLog.query.filter_by(user_id=user.id, action="student.welcome_done").first() is not None
+
+
+@main_bp.get("/student/welcome")
+@role_required("student")
+def student_welcome():
+    """第一次登入的歡迎流程：一次一個畫面，像手機或電腦的開機設定。"""
+    user = get_current_user()
+    profile = user.student_profile
+    grade = current_grade(profile.admission_year if profile else None)
+    return render_template(
+        "student_welcome.html",
+        user=user,
+        grade_label=GRADE_LABELS.get(grade),
+        grade=grade,
+        schools=load_sample_programs()[:2],
+        plan=FIVE_YEAR_PLAN,
+    )
+
+
+@main_bp.post("/student/welcome/done")
+@role_required("student")
+def student_welcome_done():
+    user = get_current_user()
+    if not _welcome_done(user):
+        db.session.add(AuditLog(user_id=user.id, action="student.welcome_done", ip_address=request.remote_addr))
+        db.session.commit()
+    destinations = {
+        "upload": "student.learning_profile_upload_page",
+        "activity": "student.portfolio_list",
+        "schools": "student.target_list",
+    }
+    endpoint = destinations.get(request.form.get("to", ""), "main.student_dashboard")
+    return redirect(url_for(endpoint))
 
 
 @main_bp.post("/student/guide/snooze")
