@@ -19,6 +19,28 @@
     </div>
   </header>
 
+  <section class="teacher-journey-map" aria-labelledby="teacher-journey-title" data-teacher-journey-map>
+    <div class="teacher-journey-map__head">
+      <div>
+        <p class="small">五年簡圖</p>
+        <h2 id="teacher-journey-title">這位學生五年留下的資料</h2>
+      </div>
+      <p class="small muted">點有資料的年級，可直接查看下方內容。</p>
+    </div>
+    <ol class="teacher-journey-map__route" aria-label="專一到專五的資料筆數">
+      {% for stop in journey_stops %}
+      <li class="teacher-journey-map__stop teacher-journey-map__stop--{{ stop.state }}"
+          data-teacher-journey-stop data-grade="{{ stop.grade }}" data-count="{{ stop.count }}" data-state="{{ stop.state }}"{% if stop.state == "now" %} aria-current="step"{% endif %}>
+        {% if stop.count %}<a href="#teacher-year-{{ stop.grade }}">{% else %}<span>{% endif %}
+          <span class="teacher-journey-map__dot" aria-hidden="true">{{ stop.count }}</span>
+          <b>{{ stop.label }}</b>
+          <small>{{ stop.count }} 筆{% if stop.state == "now" %} · 今年{% elif stop.state == "future" %} · 尚未到{% endif %}</small>
+        {% if stop.count %}</a>{% else %}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+
   {% set notice = review_notices.get(request.args.get("notice")) %}
   {% if notice %}<p class="alert mb-1" role="alert">{{ notice }}</p>{% endif %}
   {% if request.args.get("saved") %}<p class="notice mb-1" role="status">自傳已存成新的一版，學生看得到你改了哪裡。</p>{% endif %}
@@ -135,10 +157,12 @@
   <section class="work-panel">
     <div class="work-panel__head"><div><h2>五年資料</h2></div></div>
     {% for year in journey.years if year.count %}
-    <h3 class="mt-1">{{ year.label }} <span class="mono muted small">{{ year.count }} 筆</span></h3>
-    <ul class="rule-item-list">
-      {% for key in category_keys %}{% for item in year.categories[key] %}<li><strong>{{ item.title }}</strong><span>{{ category_labels[key] }}{% if item.detail %} · {{ item.detail }}{% endif %}{% if item.source %} <span class="tag tag--source">{{ item.source }}</span>{% endif %}</span></li>{% endfor %}{% endfor %}
-    </ul>
+    <section class="teacher-year-data" id="teacher-year-{{ year.grade }}">
+      <h3 class="mt-1">{{ year.label }} <span class="mono muted small">{{ year.count }} 筆</span></h3>
+      <ul class="rule-item-list">
+        {% for key in category_keys %}{% for item in year.categories[key] %}<li><strong>{{ item.title }}</strong><span>{{ category_labels[key] }}{% if item.detail %} · {{ item.detail }}{% endif %}{% if item.source %} <span class="tag tag--source">{{ item.source }}</span>{% endif %}</span></li>{% endfor %}{% endfor %}
+      </ul>
+    </section>
     {% else %}
     <p class="muted">學生還沒有已確認的資料。</p>
     {% endfor %}
