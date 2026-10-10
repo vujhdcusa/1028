@@ -573,3 +573,10 @@ document.querySelectorAll("[data-board]").forEach((board) => {
   }
   try { sessionStorage.setItem(key, JSON.stringify(filled)); } catch (e) { /* 存不了也沒關係 */ }
 });
+
+// 學期照片：選好檔案就直接上傳
+document.querySelectorAll("[data-photo-form]").forEach((form) => {
+  const input = form.querySelector("[data-photo-input]");
+  form.querySelector("[data-photo-submit]").hidden = true;
+  input.addEventListener("change", () => { if (input.files.length) form.submit(); });
+});

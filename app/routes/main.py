@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from functools import wraps
 
-from flask import Blueprint, abort, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_file, session, url_for
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -10,6 +10,7 @@ from app.models import AuditLog, AwardCertificate, PortfolioSubmission, SourceDo
 from app.services.gap_service import analyze_gap
 from app.services.guide_service import CARD_IDS, guide_cards
 from app.services.journey_home import journey_home
+from app.services import photo_service
 from app.services.package_service import latest_review
 from app.services.teacher_scope import advised_classes, students_for_teacher
 from app.content.five_year_plan import FIVE_YEAR_PLAN, NEXT_STOPS
@@ -126,6 +127,10 @@ def student_dashboard():
         for target in StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
     ]
     home = journey_home(user, journey)
+    semester = photo_service.current_semester()
+    photo = photo_service.photo_path(user.id, home["grade"], semester)
+    photo_url = (url_for("main.semester_photo", grade=home["grade"], semester=semester, v=int(photo.stat().st_mtime))
+                 if photo.is_file() else None)
     show_return = bool(home["away_days"]) and not session.get("return_seen")
     if show_return:
         session["return_seen"] = True  # 同一次登入只播一次
@@ -135,6 +140,8 @@ def student_dashboard():
         journey=journey,
         home=home,
         show_return=show_return,
+        photo_url=photo_url,
+        semester_label="上學期" if semester == 1 else "下學期",
         targets=targets,
         category_keys=CATEGORY_KEYS,
         category_labels=CATEGORY_LABELS,
@@ -180,6 +187,34 @@ def student_welcome_done():
     choice = request.form.get("to", "")
     endpoint = destinations.get(choice, "main.student_dashboard")
     return redirect(url_for(endpoint, category="activity") if choice == "activity" else url_for(endpoint))
+
+
+@main_bp.post("/student/photo")
+@role_required("student")
+def semester_photo_upload():
+    """上傳這學期最快樂的照片，當成首頁拼圖的圖。只有本人看得到。"""
+    user = get_current_user()
+    upload = request.files.get("photo")
+    if not upload or not upload.filename:
+        abort(400)
+    from app.services.journey_service import current_grade
+    grade = current_grade(user.student_profile.admission_year if user.student_profile else None) or 1
+    try:
+        photo_service.save_photo(user.id, grade, photo_service.current_semester(), upload.stream)
+    except ValueError as error:
+        return str(error), 400
+    return redirect(url_for("main.student_dashboard") + "#puzzle-title")
+
+
+@main_bp.get("/student/photo/<int:grade>/<int:semester>")
+@role_required("student")
+def semester_photo(grade, semester):
+    path = photo_service.photo_path(get_current_user().id, grade, semester)
+    if semester not in (1, 2) or not path.is_file():
+        abort(404)
+    response = send_file(path, mimetype="image/jpeg")
+    response.headers["Cache-Control"] = "private, max-age=86400"
+    return response
 
 
 @main_bp.post("/student/guide/snooze")

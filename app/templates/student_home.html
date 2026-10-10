@@ -94,6 +94,11 @@
         <linearGradient id="scene-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe7fb"/><stop offset="1" stop-color="#fbf6ea"/></linearGradient>
         {% for piece in home.pieces %}<clipPath id="jp-{{ loop.index0 }}"><path d="{{ piece.d }}"/></clipPath>{% endfor %}
         <symbol id="year-scene" viewBox="0 0 600 400" overflow="visible">
+          {% if photo_url %}
+          {# 學生自己上傳的這學期照片（已裁成 3:2）；外圈補底色，讓凸出的拼圖邊不是空的 #}
+          <rect x="-40" y="-40" width="680" height="480" fill="#d9d2c3"/>
+          <image href="{{ photo_url }}" x="0" y="0" width="600" height="400" preserveAspectRatio="xMidYMid slice"/>
+          {% else %}
           <rect x="-40" y="-40" width="680" height="480" fill="url(#scene-sky)"/>
           <circle cx="470" cy="95" r="46" fill="#f3c55b"/>
           <path d="M-40 260 Q90 190 220 245 T470 230 T640 215 V440 H-40 Z" fill="#b9d8c9"/>
@@ -110,6 +115,7 @@
           <circle cx="330" cy="215" r="30" fill="#4e9f7d" stroke="#1c2230" stroke-width="3"/><rect x="325" y="240" width="10" height="28" fill="#1c2230"/>
           <circle cx="560" cy="250" r="24" fill="#4e9f7d" stroke="#1c2230" stroke-width="3"/><rect x="555" y="270" width="10" height="22" fill="#1c2230"/>
           <text x="520" y="350" text-anchor="middle" font-size="64" font-weight="900" fill="var(--year)" stroke="#1c2230" stroke-width="2" font-family="Noto Serif TC, serif">{{ home.grade_label }}</text>
+          {% endif %}
         </symbol>
       </defs>
     </svg>
@@ -148,6 +154,17 @@
       </div>
       {% endif %}
     </div>
+
+    {# 換成自己的照片：只有自己看得到 #}
+    <form class="jig-photo" method="post" action="{{ url_for('main.semester_photo_upload') }}" enctype="multipart/form-data" data-photo-form>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="jig-photo__pick">
+        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required data-photo-input>
+        <span>{% if photo_url %}換一張{{ semester_label }}的照片{% else %}放上{{ semester_label }}最快樂的照片{% endif %}</span>
+      </label>
+      <button class="button button--small" type="submit" data-photo-submit>上傳</button>
+      <small>只有你自己看得到。</small>
+    </form>
   </section>
 
   {{ guide_deck(guide) }}

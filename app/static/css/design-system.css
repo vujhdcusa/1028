@@ -930,3 +930,12 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .jig__tray { gap: 0 .25rem; margin-top: -.5rem; }
 .jig__loose:nth-child(even) { margin-top: 1.5rem; }
 .jig__loose span { margin-top: -.6rem; }
+
+/* 換成自己的照片 */
+.jig-photo { display: flex; align-items: center; justify-content: center; gap: .75rem; flex-wrap: wrap; margin-top: 1rem; }
+.jig-photo__pick { cursor: pointer; font-weight: 700; color: var(--accent); }
+.jig-photo__pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.jig-photo__pick span::before { content: "📷 "; }
+.jig-photo__pick:focus-within span { outline: 2px solid var(--accent); outline-offset: 3px; }
+.jig-photo small { color: var(--muted); }
+.js .jig-photo [data-photo-submit] { display: none; }
