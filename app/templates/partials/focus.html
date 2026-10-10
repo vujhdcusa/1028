@@ -11,7 +11,7 @@
   <div class="focus__front">
     <p class="focus__count" data-focus-count>{{ focus.targets }} 所校系，{{ focus.total }} 項要求</p>
     {% if focus.top %}
-    <h2 id="focus-title">資料很多，先做這 {{ focus.top|length }} 件。</h2>
+    <h2 id="focus-title">先做這 {{ focus.top|length }} 件，離下一站更近。</h2>
     <ol class="focus__top plain-list">
       {% for item in focus.top %}
       <li data-focus-top style="--n: {{ loop.index0 }};">

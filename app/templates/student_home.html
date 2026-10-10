@@ -1,96 +1,131 @@
 {% extends "base.html" %}
-{% from "partials/nav.html" import masthead, footer, page_band, next_card, guide_deck with context %}
+{% from "partials/nav.html" import masthead, footer, guide_deck with context %}
 {% set page_name = "student-dashboard" %}
-{% set slot_colors = {"grades": "var(--year-1)", "credential": "var(--year-2)", "activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
-{% set view_links = {"grades": url_for("student.learning_profile"), "credential": url_for("student.learning_profile")} %}
 {% set add_links = {"grades": url_for("student.learning_profile_upload_page"), "credential": url_for("student.learning_profile_upload_page")} %}
+{% set piece_colors = {"grades": "var(--year-1)", "credential": "var(--year-2)", "activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
+{% set piece_path = "M0 0H100V35A15 15 0 1 1 100 65V100H0V65A15 15 0 0 0 0 35Z" %}
+{# 五個節點的位置（viewBox 0 0 1000 200），路線依序穿過 #}
+{% set stop_xy = [(100, 140), (300, 60), (500, 140), (700, 60), (900, 140)] %}
+{% set route_d = "M100 140 C200 140 200 60 300 60 S400 140 500 140 S600 60 700 60 S800 140 900 140" %}
 
 {% block title %}我的五年｜資管科智慧學習歷程系統{% endblock %}
 
 {% block navigation %}{{ masthead(user, "我的五年") }}{% endblock %}
 
 {% block content %}
-{% set grade_note = ('目前 專' ~ '一二三四五'[journey.current_grade - 1]) if journey.current_grade else '' %}
-{{ page_band("我的五年", note=grade_note ~ (' · ' ~ user.student_profile.class_name if user.student_profile and user.student_profile.class_name else '')) }}
-<div class="page page--banded">
-  {{ guide_deck(guide) }}
+{# 好久不見：隔 60 天以上才登入時播一次。規格：AI_設計規格_我的五年路線首頁 #}
+{% if show_return %}
+<div class="return" data-return role="dialog" aria-label="好久不見">
+  <p class="return__days"><b data-count-to="{{ home.away_days }}">{{ home.away_days }}</b> 天沒見了。</p>
+  {% if home.previous and home.previous.count %}<p class="return__note">{{ home.previous.label }}留下了 {{ home.previous.count }} 件。</p>{% endif %}
+  <button type="button" class="return__go" data-return-close>繼續 →</button>
+</div>
+{% endif %}
 
-  {# 六類資料：空格（虛線）代表還沒有資料 #}
-  <section aria-labelledby="slots-title">
-    <h2 id="slots-title" class="visually-hidden">六類學習資料</h2>
-    <div class="slots">
-      {% for key in category_keys %}
-      {% set total = journey.totals[key] %}
-      <a class="slot{% if total == 0 %} slot--empty{% endif %}" style="--slot: {{ slot_colors[key] }};" href="{{ view_links.get(key, url_for('student.portfolio_list') ~ '#group-' ~ key) }}">
-        <strong>{{ total }}</strong>
-        <span>{{ category_labels[key] }}</span>
-        <small>{{ "還沒有" if total == 0 else "筆" }}</small>
+<div class="page journey-home{% if show_return %} is-waiting{% endif %}" data-journey-home>
+  {# 五年路線：畫到「你在這裡」 #}
+  <section class="route-map" aria-labelledby="route-title">
+    <h1 id="route-title" class="route-map__title">{{ home.grade_label }}，你在這裡。</h1>
+    <svg class="route-map__svg" viewBox="0 0 1000 210" role="img" aria-label="專一到專五的路線，目前在{{ home.grade_label }}">
+      <path class="route-map__ghost" d="{{ route_d }}" pathLength="100"/>
+      <path class="route-map__walked" d="{{ route_d }}" pathLength="100" style="--walked: {{ 100 - (home.grade - 1) * 25 }};"/>
+      {% for stop in home.stops %}
+      {% set x, y = stop_xy[loop.index0] %}
+      <a href="#folders" data-stop="{{ stop.grade }}" data-open-year="{{ stop.grade }}" class="stop-node stop-node--{{ stop.state }}"
+         style="--year: var(--year-{{ stop.grade }}); --d: {{ loop.index0 * 0.35 }}s;"{% if stop.state == "now" %} aria-current="step"{% endif %}>
+        {% if stop.state == "past" %}
+        {% for n in range([stop.count, 6]|min) %}
+        <rect class="stop-node__bit" x="{{ x - 9 }}" y="{{ y - 9 }}" width="18" height="18" rx="3"
+              style="--from-x: {{ ((n * 47) % 120) - 60 }}px; --from-y: {{ ((n * 31) % 80) - 90 }}px; --b: {{ loop.index0 * 0.35 + 0.15 + n * 0.08 }}s;"/>
+        {% endfor %}
+        {% endif %}
+        {% if stop.state == "now" %}<circle class="stop-node__pulse" cx="{{ x }}" cy="{{ y }}" r="30"/>{% endif %}
+        <circle class="stop-node__dot" cx="{{ x }}" cy="{{ y }}" r="24"/>
+        <text class="stop-node__count" x="{{ x }}" y="{{ y + 7 }}" text-anchor="middle">{{ stop.count if stop.state != "future" else "" }}</text>
+        <text class="stop-node__label" x="{{ x }}" y="{{ y + 52 }}" text-anchor="middle">{{ stop.label }}<tspan class="stop-node__word"> {{ stop.word }}</tspan></text>
+        <title>{{ stop.label }}：{{ stop.count }} 筆</title>
       </a>
+      {% endfor %}
+    </svg>
+  </section>
+
+  {# 今年的六塊拼圖：空白就是還沒留下的 #}
+  <section class="year-puzzle" aria-labelledby="puzzle-title">
+    <h2 id="puzzle-title" class="year-puzzle__title">{% if home.blanks %}還有 {{ home.blanks }} 塊空白。{% else %}今年六塊都拼上了。{% endif %}</h2>
+    <div class="year-puzzle__board">
+      {% for piece in home.pieces %}
+      {% if piece.filled %}
+      <span class="puzzle-piece puzzle-piece--filled" data-piece="{{ piece.key }}" style="--c: {{ piece_colors[piece.key] }}; --n: {{ loop.index0 }};" title="{{ piece.full_label }}">
+        <svg viewBox="-5 -5 125 110" aria-hidden="true"><path d="{{ piece_path }}"/></svg><span>{{ piece.label }}</span>
+      </span>
+      {% else %}
+      <a class="puzzle-piece puzzle-piece--blank" data-piece="{{ piece.key }}" href="{{ piece.href }}" style="--c: {{ piece_colors[piece.key] }}; --n: {{ loop.index0 }};" aria-label="補上{{ piece.full_label }}">
+        <svg viewBox="-5 -5 125 110" aria-hidden="true"><path d="{{ piece_path }}"/></svg><span>＋{{ piece.label }}</span>
+      </a>
+      {% endif %}
       {% endfor %}
     </div>
   </section>
 
-  <div class="split">
-    {# 五年資料夾 #}
-    <section class="folders" data-folders aria-labelledby="folders-title">
-      <h2 id="folders-title" class="visually-hidden">五年資料夾</h2>
-      <div class="folder-tabs" role="tablist" aria-label="選擇年級">
-        {% for year in journey.years %}
-        <button class="folder-tab" type="button" role="tab" id="tab-{{ year.grade }}" aria-controls="year-{{ year.grade }}"
-                style="--year: var(--year-{{ year.grade }});"
-                data-initial="{{ 'true' if year.grade == (journey.current_grade or 1) else 'false' }}">
-          <span class="mono">0{{ year.grade }}</span>{{ year.label }}{% if year.grade == journey.current_grade %}<span class="folder-tab__now">目前</span>{% endif %}
-          <span class="folder-tab__count">{{ year.count }}</span>
-        </button>
-        {% endfor %}
-      </div>
-      {% for year in journey.years %}
-      <div class="folder-panel" role="tabpanel" id="year-{{ year.grade }}" aria-labelledby="tab-{{ year.grade }}"
-           style="--year: var(--year-{{ year.grade }});" data-year-folder="{{ year.grade }}">
-        <div class="folder-panel__head">
-          <h2>{{ year.label }}</h2>
-          <span class="muted small">{{ year.count }} 筆</span>
-        </div>
-        <div class="drawer">
-          {% for key in category_keys %}
-          {% set items = year.categories[key] %}
-          <div class="drawer__col">
-            <h3>{{ category_labels[key] }} <span class="mono">{{ items|length }}</span></h3>
-            {% for item in items %}
-            <div class="paper-item"><b>{{ item.title }}</b>{% if item.detail %}<small>{{ item.detail }}</small>{% endif %}</div>
-            {% else %}
-            <a class="paper-empty" href="{{ add_links.get(key, url_for('student.portfolio_new', category=key)) }}">＋ 新增{{ category_labels[key] }}</a>
-            {% endfor %}
-          </div>
+  {{ guide_deck(guide) }}
+
+  {# 五年資料夾：收起來，點路線上的節點才打開 #}
+  <details class="folders-drawer" id="folders" data-folders-drawer>
+    <summary>打開五年資料夾</summary>
+    <div class="split mt-1">
+      <section class="folders" data-folders aria-label="五年資料夾">
+        <div class="folder-tabs" role="tablist" aria-label="選擇年級">
+          {% for year in journey.years %}
+          <button class="folder-tab" type="button" role="tab" id="tab-{{ year.grade }}" aria-controls="year-{{ year.grade }}"
+                  style="--year: var(--year-{{ year.grade }});"
+                  data-initial="{{ 'true' if year.grade == (journey.current_grade or 1) else 'false' }}">
+            <span class="mono">0{{ year.grade }}</span>{{ year.label }}{% if year.grade == journey.current_grade %}<span class="folder-tab__now">目前</span>{% endif %}
+            <span class="folder-tab__count">{{ year.count }}</span>
+          </button>
           {% endfor %}
         </div>
-      </div>
-      {% endfor %}
-      {% if journey.unsorted_count %}
-      <p class="notice mt-1">有 {{ journey.unsorted_count }} 筆資料還沒填年級，或屬於舊的類別，所以沒有放進資料夾。到「成績與證照」或「活動與經歷」補上年級即可。</p>
-      {% endif %}
-    </section>
-
-    {# 側欄：下一步 #}
-    <aside class="sticky form-stack">
-      {% if targets %}
-      <section class="sheet target-mini">
-        <div class="sheet__head"><h2>目標校系</h2></div>
-        {% for target in targets %}
-        <a class="paper-item" href="{{ url_for('student.target_gap', program_id=target.program.id) }}">
-          <b>{{ target.program.school_name|replace("國立", "") }} {{ target.program.department_name }}</b>
-          <small>準備度 {{ target.readiness if target.readiness is not none else "—" }}% · 看還缺什麼 →</small>
-        </a>
+        {% for year in journey.years %}
+        <div class="folder-panel" role="tabpanel" id="year-{{ year.grade }}" aria-labelledby="tab-{{ year.grade }}"
+             style="--year: var(--year-{{ year.grade }});" data-year-folder="{{ year.grade }}">
+          <div class="folder-panel__head">
+            <h2>{{ year.label }}</h2>
+            <span class="muted small">{{ year.count }} 筆</span>
+          </div>
+          <div class="drawer">
+            {% for key in category_keys %}
+            {% set items = year.categories[key] %}
+            <div class="drawer__col">
+              <h3>{{ category_labels[key] }} <span class="mono">{{ items|length }}</span></h3>
+              {% for item in items %}
+              <div class="paper-item"><b>{{ item.title }}</b>{% if item.detail %}<small>{{ item.detail }}</small>{% endif %}</div>
+              {% else %}
+              <a class="paper-empty" href="{{ add_links.get(key, url_for('student.portfolio_new', category=key)) }}">＋ 新增{{ category_labels[key] }}</a>
+              {% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
         {% endfor %}
+        {% if journey.unsorted_count %}
+        <p class="notice mt-1">有 {{ journey.unsorted_count }} 筆資料還沒填年級，補上年級就會放進資料夾。</p>
+        {% endif %}
       </section>
-      {% else %}
-      <section class="sheet">
-        <div class="sheet__head"><h2>目標校系</h2></div>
-        <p class="muted">還沒選。選好後，這裡會顯示每個校系的準備度。</p>
-      </section>
-      {% endif %}
-    </aside>
-  </div>
+
+      <aside class="sticky form-stack">
+        <section class="sheet target-mini">
+          <div class="sheet__head"><h2>目標校系</h2></div>
+          {% for target in targets %}
+          <a class="paper-item" href="{{ url_for('student.target_gap', program_id=target.program.id) }}">
+            <b>{{ target.program.school_name|replace("國立", "") }} {{ target.program.department_name }}</b>
+            <small>準備度 {{ target.readiness if target.readiness is not none else "—" }}%</small>
+          </a>
+          {% else %}
+          <a class="paper-item" href="{{ url_for('student.target_list') }}"><b>還沒選</b><small>去看學校 →</small></a>
+          {% endfor %}
+        </section>
+      </aside>
+    </div>
+  </details>
 </div>
 {% endblock %}
 

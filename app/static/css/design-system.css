@@ -811,3 +811,57 @@ body[data-page="student-welcome"] .assistant { display: none; }
 @media (prefers-reduced-motion: reduce) { .focus__piece, .focus__top li { animation: none !important; transition: none !important; } }
 .focus__pending { font-style: normal; color: var(--warn); font-weight: 700; }
 .focus__note { max-width: 32rem; margin: 0; font-size: .8rem; color: var(--muted); }
+
+/* ---------- 學生首頁：我的五年路線（規格 AI_設計規格_我的五年路線首頁） ---------- */
+.journey-home { padding-top: 2rem; }
+.route-map { text-align: center; margin-bottom: 2.5rem; }
+.route-map__title { margin: 0 0 .5rem; font-family: var(--font-serif); font-size: clamp(1.9rem, 5vw, 3rem); animation: welcome-in .6s ease-out both; }
+.route-map__svg { width: 100%; height: auto; overflow: visible; }
+.route-map__ghost { fill: none; stroke: var(--line); stroke-width: 6; stroke-dasharray: 2 3; }
+.route-map__walked { fill: none; stroke: var(--accent); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: var(--walked); animation: route-draw 1.6s cubic-bezier(.5,0,.2,1) .2s both; }
+.stop-node { cursor: pointer; }
+.stop-node__dot { fill: var(--sheet); stroke: var(--year); stroke-width: 4; transition: transform .2s; transform-box: fill-box; transform-origin: center; }
+.stop-node:hover .stop-node__dot, .stop-node:focus-visible .stop-node__dot { transform: scale(1.12); }
+.stop-node--past .stop-node__dot { fill: var(--year); animation: node-pop .4s ease-out both; animation-delay: var(--d); }
+.stop-node--now .stop-node__dot { fill: var(--year); stroke: var(--ink); stroke-width: 5; animation: node-pop .45s ease-out both; animation-delay: 1.6s; }
+.stop-node--future .stop-node__dot { stroke-dasharray: 5 5; opacity: .55; }
+.stop-node__pulse { fill: none; stroke: var(--year); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: node-pulse 2s ease-out 2s infinite; opacity: 0; }
+.stop-node__count { fill: #fff; font: 700 20px var(--font-sans); pointer-events: none; }
+.stop-node--future .stop-node__label { opacity: .5; }
+.stop-node__label { fill: var(--ink); font: 700 22px var(--font-sans); }
+.stop-node__word { fill: var(--muted); font-weight: 400; font-size: 18px; }
+.stop-node--now .stop-node__label { fill: var(--accent); }
+.stop-node__bit { fill: var(--year); stroke: var(--ink); stroke-width: 1.5; opacity: 0; animation: bit-in .6s cubic-bezier(.3,.8,.3,1) both; animation-delay: var(--b); }
+.year-puzzle { text-align: center; margin-bottom: 2.5rem; }
+.year-puzzle__title { margin: 0 0 1rem; font-family: var(--font-serif); font-size: clamp(1.4rem, 3.5vw, 2rem); animation: welcome-in .6s ease-out 1.8s both; }
+.year-puzzle__board { display: grid; grid-template-columns: repeat(6, minmax(3.5rem, 7rem)); justify-content: center; gap: .6rem; }
+.puzzle-piece { display: grid; justify-items: center; gap: .2rem; text-decoration: none; color: var(--ink); font-size: .9rem; }
+.puzzle-piece svg { width: 100%; height: auto; overflow: visible; }
+.puzzle-piece path { stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; transition: transform .2s; }
+.puzzle-piece--filled path { fill: var(--c); animation: snap-in .5s cubic-bezier(.2,.9,.3,1.3) both; animation-delay: calc(2s + var(--n) * .12s); }
+.puzzle-piece--filled span { font-weight: 700; }
+.puzzle-piece--blank path { fill: var(--sheet); stroke-dasharray: 7 6; }
+.puzzle-piece--blank span { color: var(--muted); }
+.puzzle-piece--blank:hover path, .puzzle-piece--blank:focus-visible path { fill: var(--c); fill-opacity: .25; transform: translateY(-4px); }
+.folders-drawer { margin-top: 1rem; }
+.folders-drawer > summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: .5rem 0; }
+@keyframes route-draw { from { stroke-dashoffset: 100; } }
+@keyframes node-pop { from { transform: scale(0); } 70% { transform: scale(1.2); } to { transform: none; } }
+@keyframes node-pulse { 0% { opacity: .8; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.7); } }
+@keyframes bit-in { from { opacity: 0; transform: translate(var(--from-x), var(--from-y)) rotate(40deg); } 60% { opacity: 1; } to { opacity: 0; transform: none; } }
+@keyframes snap-in { from { opacity: 0; transform: translateY(-30px) rotate(-10deg) scale(.7); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) { .year-puzzle__board { grid-template-columns: repeat(3, minmax(3.5rem, 6rem)); } .stop-node__word { display: none; } }
+
+/* 好久不見 */
+.return { position: fixed; inset: 0; z-index: 1000; display: grid; place-content: center; justify-items: center; gap: 1rem; text-align: center; background: var(--paper); transition: opacity .6s; }
+.return.is-leaving { opacity: 0; pointer-events: none; }
+.return__days { margin: 0; font-family: var(--font-serif); font-size: clamp(2rem, 7vw, 4rem); }
+.return__days b { color: var(--accent); }
+.return__note { margin: 0; font-size: 1.3rem; color: var(--ink-soft); animation: welcome-in .6s ease-out 1.2s both; }
+.return__go { margin-top: 1rem; background: none; border: 0; font: inherit; color: var(--muted); cursor: pointer; text-decoration: underline; animation: welcome-in .6s ease-out 1.8s both; }
+@media (prefers-reduced-motion: reduce) {
+  .route-map__walked, .stop-node__dot, .stop-node__pulse, .stop-node__bit, .puzzle-piece path, .route-map__title, .year-puzzle__title, .return__note, .return__go { animation: none !important; }
+  .stop-node__bit { display: none; }
+}
+/* 「好久不見」播放時，路線動畫先暫停，關掉後才開始 */
+.journey-home.is-waiting, .journey-home.is-waiting * { animation-play-state: paused !important; }

@@ -388,3 +388,38 @@ document.querySelectorAll("[data-focus]").forEach((root) => {
   }
   root.querySelector("[data-focus-replay]")?.addEventListener("click", play);
 });
+
+// 我的五年路線：點節點打開那一年的資料夾
+document.querySelectorAll("[data-open-year]").forEach((node) => {
+  node.addEventListener("click", (event) => {
+    const drawer = document.querySelector("[data-folders-drawer]");
+    const tab = document.getElementById(`tab-${node.dataset.openYear}`);
+    if (!drawer || !tab) return;
+    event.preventDefault();
+    drawer.open = true;
+    tab.click();
+    drawer.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
+
+// 好久不見：數字跳到天數，約 4 秒後淡出；點一下就略過
+document.querySelectorAll("[data-return]").forEach((root) => {
+  const close = () => {
+    root.classList.add("is-leaving");
+    document.querySelector("[data-journey-home]")?.classList.remove("is-waiting");
+    setTimeout(() => root.remove(), 600);
+  };
+  const number = root.querySelector("[data-count-to]");
+  const target = Number(number.dataset.countTo) || 0;
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const start = performance.now();
+    const tick = (time) => {
+      const t = Math.min(1, (time - start) / 1000);
+      number.textContent = Math.round(target * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  root.addEventListener("click", close);
+  setTimeout(close, 4500);
+});

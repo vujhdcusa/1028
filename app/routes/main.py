@@ -9,6 +9,7 @@ from app.extensions import db
 from app.models import AuditLog, AwardCertificate, PortfolioSubmission, SourceDocument, StudentTarget, SubmissionAssignment, TeacherReviewFeedback, User
 from app.services.gap_service import analyze_gap
 from app.services.guide_service import CARD_IDS, guide_cards
+from app.services.journey_home import journey_home
 from app.services.package_service import latest_review
 from app.services.teacher_scope import advised_classes, students_for_teacher
 from app.content.five_year_plan import FIVE_YEAR_PLAN, NEXT_STOPS
@@ -84,6 +85,10 @@ def login():
     if not endpoint:
         session.clear()
         return render_template("login.html", error="此帳號尚未設定可用角色"), 403
+    if user.role == "student":
+        # 記下登入時間：首頁用它判斷是不是很久沒來（「好久不見」那一幕）
+        db.session.add(AuditLog(user_id=user.id, action="student.login", ip_address=request.remote_addr))
+        db.session.commit()
     if user.role == "student" and not _welcome_done(user):
         return redirect(url_for("main.student_welcome"))
     return redirect(url_for(endpoint))
@@ -120,10 +125,16 @@ def student_dashboard():
         {"program": target.program, "readiness": analyze_gap(user, target.program, journey)["readiness"]}
         for target in StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
     ]
+    home = journey_home(user, journey)
+    show_return = bool(home["away_days"]) and not session.get("return_seen")
+    if show_return:
+        session["return_seen"] = True  # 同一次登入只播一次
     return render_template(
         "student_home.html",
         user=user,
         journey=journey,
+        home=home,
+        show_return=show_return,
         targets=targets,
         category_keys=CATEGORY_KEYS,
         category_labels=CATEGORY_LABELS,
