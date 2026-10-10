@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from flask import url_for
 
 from app.content.five_year_plan import FIVE_YEAR_PLAN
-from app.models import AuditLog
+from app.models import AuditLog, Portfolio, SourceDocument
 from app.services.journey_service import CATEGORY_KEYS, CATEGORY_LABELS, GRADE_LABELS, build_journey
 
 RETURN_DAYS = 60
@@ -98,7 +98,20 @@ def journey_home(user, journey=None, now=None):
     } for index, key in enumerate(CATEGORY_KEYS)]
 
     previous = next((year for year in journey["years"] if year["grade"] == grade - 1), None)
+
+    # 五年累積（Canva 第 11 頁）：走過的每一年 6 類，有資料的格數比例；不是錄取機率
+    walked = [year for year in journey["years"] if year["grade"] <= grade]
+    filled_cells = sum(1 for year in walked for key in CATEGORY_KEYS if year["categories"][key])
+    pending = (SourceDocument.query.filter(SourceDocument.owner_id == user.id, SourceDocument.status != "confirmed").count()
+               + Portfolio.query.filter_by(student_id=user.id, status="draft").count())
+    latest = Portfolio.query.filter_by(student_id=user.id).order_by(Portfolio.created_at.desc(), Portfolio.id.desc()).first()
+    summary = {
+        "percent": round(filled_cells / (len(walked) * len(CATEGORY_KEYS)) * 100) if walked else 0,
+        "pending": pending,
+        "latest": latest.title if latest else None,
+    }
     return {
+        "summary": summary,
         "grade": grade,
         "grade_label": GRADE_LABELS[grade],
         "stops": stops,

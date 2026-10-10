@@ -155,3 +155,23 @@ def test_mobile_route_list_and_place_grid(app):
     assert page.count("route-list__stop ") == 5
     assert page.count("place-grid__item") == 4
     assert "你在這裡</span>" in page
+
+
+def test_summary_stats_and_today_tasks(app):
+    """Canva 第 11 頁：今天先完成哪一步＋五年累積、待處理、最近成果。"""
+    with app.test_request_context():
+        user = student()
+        db.session.add(Portfolio(student_id=user.id, title="迎新", category="activity", school_year=1, status="confirmed"))
+        db.session.add(Portfolio(student_id=user.id, title="資訊週志工", category="service", school_year=3))  # 草稿
+        db.session.commit()
+        view = journey_home(user)
+    # 走過專一到專三：3 年 × 6 類 = 18 格，有資料的是專一活動、專三服務 → 2/18
+    assert view["summary"]["percent"] == round(2 / 18 * 100)
+    assert view["summary"]["pending"] == 1
+    assert view["summary"]["latest"] == "資訊週志工"
+
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    page = client.get("/student/dashboard").get_data(as_text=True)
+    assert "今天先完成哪一步" in page
+    assert "五年累積" in page and "待處理" in page and "最近成果" in page

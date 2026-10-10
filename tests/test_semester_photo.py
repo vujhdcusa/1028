@@ -101,3 +101,10 @@ def test_without_photo_shows_illustration_and_upload_prompt(app):
     assert 'id="year-scene"' in page
     assert "最快樂的照片" in page
     assert "/student/photo/3/" not in page
+
+
+def test_photo_is_not_cached(app):
+    client = login(app)
+    client.post("/student/photo", data={"photo": (jpeg_with_gps(), "happy.jpg")}, content_type="multipart/form-data")
+    response = client.get(f"/student/photo/3/{current_semester(date.today())}")
+    assert response.headers["Cache-Control"] == "no-store"

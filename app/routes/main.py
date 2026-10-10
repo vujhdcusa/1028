@@ -213,7 +213,7 @@ def semester_photo(grade, semester):
     if semester not in (1, 2) or not path.is_file():
         abort(404)
     response = send_file(path, mimetype="image/jpeg")
-    response.headers["Cache-Control"] = "private, max-age=86400"
+    response.headers["Cache-Control"] = "no-store"  # 共用電腦登出後，按上一頁也不會留下照片（會議室 GPT #10）
     return response
 
 

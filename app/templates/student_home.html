@@ -185,7 +185,16 @@
     </form>
   </section>
 
-  {{ guide_deck(guide) }}
+  {# 今天先完成哪一步（Canva 第 11 頁）：最多三件事＋一行概況 #}
+  <section class="today" aria-labelledby="today-title">
+    <h2 id="today-title" class="today__title">今天先完成哪一步</h2>
+    <p class="today__stats">
+      <span>五年累積 <b>{{ home.summary.percent }}%</b></span>
+      <span>待處理 <b>{{ home.summary.pending }}</b></span>
+      <span>最近成果 <b>{{ home.summary.latest or "還沒有" }}</b></span>
+    </p>
+    {{ guide_deck(guide) }}
+  </section>
 
   {# 五年資料夾：收起來，點路線上的節點才打開 #}
   <details class="folders-drawer" id="folders" data-folders-drawer>

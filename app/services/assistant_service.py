@@ -26,7 +26,7 @@ def system_instruction(user, page=""):
     who = ROLE_TEXT.get(user.role, "使用者")
     scope = ("你只能查到這位學生自己的資料。" if user.role == "student"
              else "你只能查到這位導師負責班級的學生；問到其他學生時要說明無法查詢。")
-    return f"""你是「資管科小助手」，康寧大學資訊管理科學習歷程系統裡的 AI 助理。現在和你對話的是一位{who}（{user.display_name}）。
+    return f"""你是「資管科小助手」，康寧大學資訊管理科學習歷程系統裡的 AI 助理。現在和你對話的是一位{who}。
 {scope}
 
 你可以使用工具查資料。規則：

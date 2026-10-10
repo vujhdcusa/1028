@@ -97,8 +97,6 @@ def _prompt(student, program, facts, answers):
 5. 分成 4 段：學習動機、學習歷程與具體經驗、困難與成長、未來規劃。總長約 600～900 字。
 6. 每段的 sources 列出這段用到的學生資料編號（例如 F2）；只用到學生回答就給空陣列。
 
-學生：{student.display_name}
-
 學生資料（只能引用這些）：
 {fact_lines}
 
