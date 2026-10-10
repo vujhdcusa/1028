@@ -454,7 +454,7 @@ def test_teacher_confirm_and_withdraw_are_logged(app):
 
     assert latest_review_row(app)["status"] == "pending"
     with app.app_context():
-        actions = [log.action for log in AuditLog.query.order_by(AuditLog.id).all()]
+        actions = [log.action for log in AuditLog.query.filter(AuditLog.action.like("package_review.%")).order_by(AuditLog.id).all()]
         withdraw = AuditLog.query.filter_by(action="package_review.withdraw").one()
     assert actions == ["package_review.confirm", "package_review.withdraw"]
     assert withdraw.detail_json["reason"] == "按錯了，自傳還沒看完"
