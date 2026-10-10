@@ -556,7 +556,15 @@ document.querySelectorAll("[data-board]").forEach((board) => {
       piece.classList.remove("is-dragging");
       piece.style.transform = "";
     });
-    loose.addEventListener("click", (event) => event.preventDefault());
+    // 拖到一半被系統打斷（來電、手勢）：放回原位
+    piece.addEventListener("pointercancel", () => {
+      start = null;
+      if (hole) hole.classList.remove("is-near");
+      piece.classList.remove("is-dragging");
+      piece.style.transform = "";
+    });
+    // 滑鼠或手指放開後瀏覽器還會送一次 click，交給上面處理；鍵盤 Enter 的 click（detail 為 0）照常換頁
+    loose.addEventListener("click", (event) => { if (event.detail !== 0) event.preventDefault(); });
   });
 
   // 回到首頁時：比對上次看到的拼圖，新拼上的那片跳一下，標題變成「又留下了一塊。」
