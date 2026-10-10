@@ -999,8 +999,7 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .status-chip--confirmed { color: #246b45; background: #e4f3e9; }
 .status-chip--pending-source { color: #785900; background: #fff0b8; }
 .status-chip--draft { color: #656970; background: transparent; border-style: dashed; }
-/* =========================================================
-   公開首頁：Canva Piece × Path × Archive 六幕故事（2026-10-10）
+/* ==================================================   公開首頁：Canva Piece × Path × Archive 六幕故事（2026-10-10）
    僅以 data-page 限定公開首頁，避免覆蓋學生端元件。
    ========================================================= */
 [data-page="public-home"] { overflow-x: clip; background: #f3efe6; }
@@ -1154,4 +1153,25 @@ body[data-page="student-welcome"] .assistant { display: none; }
   /* 手機：標語改上下兩行、夾著小人物，避免右邊被切掉 */
   [data-page="public-home"] .cover__title { grid-template-columns: 1fr; gap: 5.2rem; bottom: 12%; font-size: clamp(2rem, 10vw, 2.6rem); }
   [data-page="public-home"] .cover__title span:first-child, [data-page="public-home"] .cover__title span:last-child { text-align: center; }
+=======
+
+/* 缺件頁：送審版本與下載前提醒 */
+.readiness__note { display: block; max-width: 16rem; margin-top: .35rem; color: var(--muted); font-size: .78rem; line-height: 1.4; text-align: center; }
+.review-timeline, .download-checklist { display: grid; gap: .45rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.review-timeline li { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: .5rem; padding-bottom: .4rem; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.review-timeline time { color: var(--muted); }
+.review-timeline__status { font-weight: 700; }
+.review-timeline__status--confirmed { color: #246b45; }
+.review-timeline__status--needs_revision { color: #9b3d36; }
+.review-timeline__status--pending { color: #785900; }
+.download-checklist__item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .5rem; font-size: .88rem; }
+.download-checklist__state { font-weight: 800; white-space: nowrap; }
+.download-checklist__item.is-complete .download-checklist__state { color: #86d7aa; }
+.download-checklist__item.is-open .download-checklist__state, .download-checklist__item.is-open a { color: #ffd56a; }
+.download-checklist__item a { font-weight: 700; }
+@media (max-width: 520px) {
+  .review-timeline li { grid-template-columns: auto auto 1fr; }
+  .review-timeline .tag { grid-column: 3; justify-self: end; }
+  .download-checklist__item { grid-template-columns: auto 1fr; }
+  .download-checklist__item a { grid-column: 2; }
 }

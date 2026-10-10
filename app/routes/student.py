@@ -30,6 +30,7 @@ from app.services.learning_profile_docx_service import output_to_docx_bytes
 from app.services.learning_profile_service import generate_learning_profile_outputs
 from app.services.admission_service import published_programs
 from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
+from app.services.gap_checklist import download_checklist, review_timeline
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
@@ -578,15 +579,20 @@ def target_gap(program_id):
     program = _selected_target_or_404(user, program_id)
     journey = build_journey(user)
     targets = StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
+    gap = analyze_gap(user, program, journey)
+    review = latest_review(user, program)
+    autobiography = autobiography_service.latest_draft(user, program)
     return render_template(
         "student_gap.html",
         user=user,
         program=program,
-        gap=analyze_gap(user, program, journey),
+        gap=gap,
         chapters=chapter_order(program),
         targets=[t.program for t in targets],
-        review=latest_review(user, program),
-        autobiography=autobiography_service.latest_draft(user, program),
+        review=review,
+        review_timeline=review_timeline(user, program),
+        autobiography=autobiography,
+        download_checklist=download_checklist(user, program, gap, review, autobiography),
         labels=ALL_LABELS,
     )
 
