@@ -176,3 +176,20 @@ def test_form_offers_own_key_field_without_autocomplete(app):
     assert 'name="own_api_key"' in html
     assert 'type="password"' in html
     assert 'autocomplete="off"' in html
+
+
+def test_draft_page_shows_review_evidence_and_ai_limits(app):
+    client = login(app)
+    choose_target(app, client)
+    client.post("/student/autobiography/generate", data={"program_id": program(app), **ANSWERS})
+
+    html = client.get("/student/autobiography").get_data(as_text=True)
+
+    assert "主張" in html
+    assert "證據" in html
+    assert "競賽：校園黑客松" in html
+    assert "三人一組完成報名網站" in html
+    assert "這題還沒回答" in html
+    assert "AI 不能做的事" in html
+    assert "給分" in html and "退件" in html and "核定資格" in html and "發布招生規則" in html
+    assert "送出前要你自己確認" in html

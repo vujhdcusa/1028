@@ -26,6 +26,12 @@
   </nav>
   {% endif %}
 
+  <aside class="ai-boundary mb-1" aria-labelledby="ai-boundary-title">
+    <h2 class="h3" id="ai-boundary-title">🚫 AI 不能做的事</h2>
+    <p>給分、退件、核定資格、發布招生規則。</p>
+    <p class="ai-boundary__confirm">✓ 送出前要你自己確認</p>
+  </aside>
+
   {% if asking %}
   {# 第一步：回答問題。有 JavaScript 時一次顯示一題 #}
   <div class="split">
@@ -101,13 +107,31 @@
       </div>
     </div>
     {% for paragraph in content.paragraphs %}
+    {% set review = paragraph_reviews[loop.index0] %}
     <section class="draft__paragraph">
       <h2 class="h3">{{ paragraph.title }}</h2>
+      <p class="review-label">主張</p>
       <textarea name="paragraph_{{ loop.index0 }}" rows="6" data-autosize data-char aria-label="{{ paragraph.title }}">{{ paragraph.text }}</textarea>
       {% if paragraph.teacher_comment %}<blockquote class="teacher-comment"><b>導師意見：</b>{{ paragraph.teacher_comment }}</blockquote>{% endif %}
-      {% if paragraph.sources %}
-      <p class="draft__sources small">依據：{% for s in paragraph.sources %}<span class="tag" title="{{ fact_text.get(s, '') }}">{{ fact_text.get(s, s)|truncate(24, True, "…") }}</span>{% endfor %}</p>
-      {% endif %}
+      <div class="paragraph-review">
+        <section class="paragraph-review__evidence" aria-label="證據">
+          <h3>證據</h3>
+          {% for evidence in review.evidence %}
+          <details class="evidence-item">
+            <summary><span class="mono">{{ evidence.id }}</span> {{ evidence.title }}</summary>
+            <p>{{ evidence.text }}</p>
+          </details>
+          {% else %}<p class="small muted">○ 尚無引用資料</p>{% endfor %}
+        </section>
+        <section aria-label="疑點">
+          <h3>疑點</h3>
+          <p class="review-line"><span aria-hidden="true">{{ review.icon }}</span> {{ review.issue }}</p>
+        </section>
+        <section aria-label="建議">
+          <h3>建議</h3>
+          <p class="review-line">→ {{ review.suggestion }}</p>
+        </section>
+      </div>
     </section>
     {% endfor %}
     <div><button class="button" type="submit">儲存</button></div>
