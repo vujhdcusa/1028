@@ -1,5 +1,126 @@
 # 開發日誌
 
+## 2026-10-15 本機展示頁瀏覽器與完整套件驗收
+
+日期：2026-10-15（台灣時間）
+
+開發者：Codex
+
+目標：實際驗收 `ai-wt-story` 本機展示頁，重跑完整自動測試並更新交接狀態。
+
+- 修改檔案：`tests/test_student_navigation.py`、`docs/02_需求與設計/AI_V2需求追蹤與現況對照_2026-10-14.md`、`docs/05_交接與專案管理/AI_操作手冊與角色導覽_本機展示版.md`、`docs/05_交接與專案管理/handoff.md`、`docs/05_交接與專案管理/待辦清單.md`、本開發日誌。
+- 瀏覽器實測：Codex 內建瀏覽器實際開啟 `http://127.0.0.1:5013/proposal-preview`，標題與頁面內容均為工作樹的「五年，不只是五個學年」展示頁，畫面明示假資料及「Google Drive 尚未設定」。桌面視窗截圖為 1111×729；鍵盤 `Tab` 依序聚焦略過主要內容、首頁及區塊導覽，按 `Enter` 導到 `#journey`，實際看到四步資料流程。再以四組合成帳號實際登入成功，分別到達學生、教師、科辦、管理員工作台；學生及管理員導覽可啟動、按方向鍵前進、按 `Esc` 關閉。管理員「怎麼操作」的重播按鈕會返回工作台並啟動導覽。未把 5000 埠計入本次驗收。
+- 窄版與動態偏好：瀏覽器工具沒有 viewport 模擬介面；因此未實測 390px 手機尺寸或作業系統「減少動態效果」偏好。教師／科辦導覽細節未在瀏覽器逐一手測。靜態檢查確認 `proposal-preview.css` 有 `max-width: 640px` 版面規則及 `prefers-reduced-motion: reduce` 規則；這只能證明有對應樣式，不能代替實機驗收。
+- 完整測試第一次得到 `347 passed, 1 failed`。失敗是舊測試仍檢查早期 `DEMO_ACCOUNTS`／`teacher01` 契約；現行展示帳號為 `student_demo`、`teacher_demo`、`staff_demo`、`admin_demo`，並由 `LOCAL_DEMO_MODE` 控制。只更新 `tests/test_student_navigation.py` 使其檢查現行模式契約；針對測試 `1 passed in 1.19s`，完整套件重跑為 `348 passed in 253.24s`。
+- 靜態驗證：`python -m compileall -q app scripts tests` exit 0；`git diff --check` exit 0，只有 Git LF／CRLF 提醒。新增測試暫存目錄皆使用新的唯一路徑，未清除既有暫存資料。
+- 外部服務：工作樹沒有 `.env`，資料庫及 Google OAuth／Picker 環境變數皆未設定；沒有連接任何資料庫或 Google 帳號。隔離 MySQL 8.0.39、OAuth／Drive／Docs／Gemini 仍未實機驗收。
+- 操作：依[本機展示手冊](../05_交接與專案管理/AI_操作手冊與角色導覽_本機展示版.md)執行 `& D:\democase\ai\.venv\Scripts\python.exe scripts\run_local_demo.py`，使用瀏覽器開啟 5013 埠。展示帳密只在非正式本機展示模式列出。
+- 下一步：在可切換 390px viewport 與減少動態效果的瀏覽器補做手動驗收；取得隔離 MySQL 及核准的 Google 測試設定後，逐項完成真實服務驗收。V2 仍待組員與老師審查，不代表正式規格已變更。
+
+## 2026-10-14 V2 雲端增補篇整合診斷與開發前準備
+
+日期：2026-10-14
+開發者：Codex
+目標：檢視 V2 成果報告書後加的雲端提案，整理為可追溯、可決議和可分段驗收的開發準備文件。
+
+- 新增 `docs/02_需求與設計/AI_V2增補篇整合診斷與開發前規格_2026-10-14.md`，記錄原報告正文後接 15 節增補提案、需求優先級與架構提及不一致、功能編號缺口、現行程式基線、十項待決事項及附件來源首切片建議。
+- 新增 `docs/superpowers/plans/2026-10-14-v2-cloud-integration-preparation.md`，依需求校準、領域／資料設計、本機假服務契約、單一 Drive 用例、OCR／證據包接線及分層驗收安排標準流程；標明帳號、老師／組員決議和隔離 MySQL 為外部前置條件。
+- 檢查既有 Drive 路由後確認 `/proposal-preview/drive-file` 屬公開展示原型，沒有應用程式登入者或學生資料歸屬；新增 D-10，要求先定帳號連結與附件擁有者檢查，避免把公開展示路由直接改造成學生附件 API。
+- 更新 `docs/05_交接與專案管理/handoff.md` 與 `待辦清單.md`，加入本次 V2 整合分析入口、未決決策、執行閘門和後續可開始工作；保留原有交接內容。
+- 此次為文件準備，沒有修改功能程式、V2 Word 原檔、學校正式規格或其他專案，也沒有連接外部服務或資料庫。
+- 驗證：兩份新增文件的空白檢查與相對連結檢查通過，確認本節位於日誌最上方；`git diff --check` exit 0（只有 Git LF／CRLF 提醒）。本回合不重跑程式測試。既有工作樹修改及未追蹤測試暫存目錄全部保留。
+- 下一步：先按整合診斷整理 F 編號及現況資料模型對照；不依賴外部帳號的假服務契約可先做測試設計，Drive schema／OAuth／上傳流程須等相應待決事項有結論後實作。
+
+## 2026-10-14 登入頁展示文案與測試帳密
+
+日期：2026-10-14
+開發者：Codex
+目標：移除登入頁多餘說明，並在本機展示模式列出目前可用的合成測試帳密。
+
+- 修改檔案：`app/templates/login.html`、`tests/test_auth.py`、`tests/test_local_demo.py`。
+- 移除登入標題下方重複解釋登入用途的小字；本機展示模式登入頁列出學生、教師、科辦、管理員四組合成帳號及共用密碼 `demo2026`。一般登入頁不顯示帳密；正式環境即使誤開本機展示旗標也會隱藏。
+- 測試先行：新增 3 項測試，先觀察到 2 項失敗、1 項（正式環境隱藏）通過；完成模板後執行 `tests/test_auth.py tests/test_local_demo.py`，結果 `11 passed in 7.21s`。
+- 本機展示服務已重啟於 `127.0.0.1:5013` 以載入新模板。畫面截圖指向 `127.0.0.1:5000`，其登入文案與本工作樹模板不同；本次沒有改動其他專案，也未能從內建瀏覽器驗收 5013 的實際畫面。
+- 下一步：在 `http://127.0.0.1:5013/login` 看見展示帳密；正式環境部署前確認 `FLASK_ENV=production`，頁面不應顯示帳密。桌機／手機版面仍需於可連 localhost 的瀏覽器驗收。
+
+## 2026-10-14 V2 本機展示流程、證據追溯與角色導覽
+
+日期：2026-10-14
+開發者：Codex
+目標：依使用者指定的 V2 提案，補成本機可展示的 OCR 修正、證據引用、角色導覽及後續驗收交接。
+
+- 修改程式與測試：`app/demo.py`、`app/services/document_analysis_service.py`、`app/services/autobiography_service.py`、`app/services/autobiography_review.py`、`app/services/package_service.py`、`app/services/review_snapshot_service.py`、`app/routes/main.py`、`app/static/js/components.js`、`app/templates/dashboard.html`、`app/templates/admin_dashboard.html`、`app/templates/help.html`、`app/templates/learning_profile_upload.html`、`app/templates/learning_profile_review.html`、`app/templates/student_autobiography.html`、`scripts/run_local_demo.py`、`tests/test_document_analysis_demo.py`、`tests/test_local_demo.py`、`tests/test_autobiography.py`、`tests/test_autobiography_review.py`、`tests/test_help_and_tour.py`、`tests/test_package_docx.py`。
+- 已確認的課程、證照、經歷現在會建立穩定的 `evidence_id`；自傳來源顯示與導師送審快照保存該 ID。備審 Word 只包含已確認的課程、證照與經歷。
+- 新增 `DOCUMENT_ANALYSIS_PROVIDER=demo` 本機合成 OCR 範例，清楚標示假資料與不連外；加入只綁 `127.0.0.1:5013`、記憶體 SQLite 的展示啟動程式與四個本機合成角色帳號。停止程序後展示資料消失。
+- 「怎麼操作」的重播按鈕已依登入角色回到自己的工作台並啟動導覽；為學生、教師、科辦、管理員主頁補導覽步驟。
+- 新增 `docs/02_需求與設計/AI_V2需求追蹤與現況對照_2026-10-14.md` 及 `docs/05_交接與專案管理/AI_操作手冊與角色導覽_本機展示版.md`；更新本日誌、`handoff.md`、`待辦清單.md`。V2 仍是待老師／組員審查提案。
+- 階段測試：OCR 合成範例與確認 2 項通過；四角色本機展示及 OCR 相關 4 項通過；自傳、引用、Word 輸出及四角色導覽的階段套件 33 項通過。修正保留舊 `work-dashboard` 識別名稱後，完整測試 `343 passed in 163.32s`；`git diff --check` 無錯誤（PowerShell 顯示 LF／CRLF 提醒）。
+- 本機啟動驗證：`scripts/run_local_demo.py` 修正匯入路徑後可建立合成資料並啟動 Flask，顯示服務位址 `127.0.0.1:5013`；測試用戶端確認展示頁與四角色工作區回應正常。
+- 瀏覽器驗收受環境阻擋：沙盒 PowerShell loopback GET 回報「嘗試存取通訊端被拒絕，因為存取權限不足」；Codex 內建瀏覽器開啟 5013 回報 `net::ERR_CONNECTION_TIMED_OUT`。服務沒有連到 `ai-personal`，但桌機／手機版面、鍵盤實際操作與減少動態效果仍未驗收。
+- 安全補強：本機展示啟動器強制關閉外部 AI、清空本機設定載入的 AI 金鑰、隱藏並忽略自備金鑰輸入，避免使用者原有 `.env` 使合成資料送出外部。新增回歸測試，針對性套件 17 項通過；完整套件需再跑一次。
+- 畫面補強：本機模式把自傳按鈕改為「產生示範草稿」，隱藏金鑰欄位並說明不呼叫外部 AI；本機展示／自傳／導覽針對性測試 32 項通過。最終完整測試 `345 passed in 169.46s`；`git diff --check` 無錯誤（僅 LF／CRLF 提醒）。
+- 尚未驗收：隔離 MySQL 8.0.39；真實 OAuth／Drive／Docs／Gemini。SQLite、本機合成 OCR 不代表上述實機驗收。
+- 下一步：在可連本機服務的瀏覽器環境執行操作手冊驗收，再安排隔離 MySQL；外部 Google 服務要等測試帳號、雲端設定及審查決議。
+
+## 2026-10-14 驗收重跑
+
+- 依使用者要求重新執行完整自動測試：`python -m pytest -q --basetemp .pytest-live-acceptance-20261014-a`，結果 **345 passed in 175.45s**。
+- `git diff --check` 與 `python -m compileall -q app scripts tests` 均以 exit code 0 結束；Git 顯示的 LF／CRLF 訊息是行尾格式提醒。
+- 重新啟動本機展示服務，啟動器顯示 `http://127.0.0.1:5013/proposal-preview`；Codex 內建瀏覽器仍回報 `net::ERR_CONNECTION_TIMED_OUT`，PowerShell loopback GET 仍遭通訊端權限拒絕。此次未完成桌機、390px 手機、鍵盤或減少動態效果的實際畫面驗收。
+- 下一步：需在能連到此工作樹 localhost 的瀏覽器環境完成畫面驗收；MySQL 8.0.39 與 Google OAuth／Drive／Docs／Gemini 仍須各自實機驗收。
+
+## 2026-10-13 夜間接手：現況盤點與資料模型文件草稿
+
+日期：2026-10-13
+開發者：Codex
+目標：接續完成可展示、可驗收的畢業專題；整理新對話可直接執行的工作清單。
+
+- 修改文件：`docs/02_需求與設計/AI_資料字典_現行ORM草稿_2026-10-13.md`、`docs/04_圖表與介面/AI_ERD_現行ORM模型_2026-10-13.md`、`docs/04_圖表與介面/diagrams.md`、`docs/05_交接與專案管理/handoff.md`、`docs/05_交接與專案管理/待辦清單.md`、`docs/02_需求與設計/AI_專題審查需求對照與進度盤點_2026-10-13.md`、本開發日誌。
+- 資料字典／ERD 草稿由現行 SQLAlchemy ORM 中繼資料產生：42 張表、312 個欄位、60 個明確外鍵欄位。欄位中文用途是暫譯；尚未核對實際 MySQL，也不取代正式規格。規劃型 29 表 ERD 和現行實作 ERD 分開保留。
+- 新增估計八小時待辦清單，將瀏覽器實測、字典語意複核、MySQL 整合測試、畢業門檻缺口和展示流程分段排序。12／13 只作 MVP 項目證據，不宣稱整體完成率。
+- 完整測試基線（文件整理前執行）：`333 passed in 143.33s`；`git diff --check` 無差異格式錯誤。此次只改 Markdown 文件，沒有更動應用程式程式碼，未重跑完整測試。
+- 瀏覽器驗收未完成：Codex 內建瀏覽器的 5000 頁面內容對應 `ai-personal`；從工作樹啟動的 5013 頁面無法由 Codex 瀏覽器連線。未在 `ai-personal` 或其他專案操作，未設定 OAuth，未做 MySQL 遷移。
+- 下一步：依 `docs/05_交接與專案管理/待辦清單.md`，先讓正確工作樹的本機預覽能被瀏覽器存取；再複核資料文件及隔離 MySQL 驗收。若正式畢業條件或期中分母沒有依據，交由組員／老師確認，不自行發明。
+
+## 2026-10-13 新對話交接整合
+
+日期：2026-10-13
+開發者：Codex
+目標：將本輪長對話的專題決策、實作狀態與待驗收事項濃縮到接手文件。
+
+- 修改檔案：`docs/05_交接與專案管理/handoff.md`、本開發日誌。
+- 交接文件新增一頁現況、使用者最新優先順序、四種帳號角色與教師關係、正式規格與 Google 新構想的界線、學校審查要求、資料庫版本、目前原型限制、下一步及可直接貼到新對話的起始文字。
+- 明確記錄：新構想文件列出的完整 V1 與長篇展示流程仍是提案；目前只驗證單一 Drive 選檔原型。先前 `333` 項完整測試通過屬 2026-10-13 最近一次程式驗證，本次只改文件，沒有重跑程式測試。
+- 驗證：核對 `ai-wt-story` 分支為 `feat/journey-home`、HEAD `fcd50a7`；檢查交接內的關鍵來源路徑、設定名稱與待辦，並執行 `git diff --check`。既有未提交變更與測試暫存資料均保留。
+- 下一步：新對話先讀 `handoff.md` 並確認最新 Git 狀態，再選定一件優先任務；真實 Drive 授權、MySQL 8.0.39 和瀏覽器展示仍須實測。
+
+## 2026-10-13 期中要求盤點、角色收斂與轉學生抵免進度
+
+日期：2026-10-13
+開發者：Codex
+
+- 依學校系統組要求盤點文件和系統：需求、架構圖、ERD、分工、資料字典、資料表數量、使用者角色、正規化與防呆。新增審查需求對照文件，並把商業產品化分析限定為未來參考，不把多租戶、平台管理員或計費加入本期範圍。
+- 角色採四種帳號角色：學生、教師、科辦、管理員。「導師／專任教師／指導老師」屬教師工作關係與資料範圍，不另拆帳號角色；目前只實作導師與班級關係。
+- 新增學生「轉學生抵免進度」頁，可記錄人工追蹤狀態、日期、待補資料與備註；導師可確認受指派班級的學生。學生更新欄位後會清除舊確認。此功能不判斷校方抵免結果。
+- 新增 `transfer_credit_records` 資料模型與 Alembic 遷移 `a920261013tc`，未對既有或正式資料庫執行遷移。
+- 資料庫版本盤點：XAMPP 3.3.0 隨附 MariaDB 10.4.27，另有 MySQL 8.0.39 與 8.4.9。依正式專題規格以 MySQL 8.0.39 為標準；保留 XAMPP/MariaDB。隔離資料目錄初始化成功，但 Windows 沙箱拒絕本機 TCP 與命名管道連線，故真實 MySQL 遷移尚未驗收。
+- 測試先行：抵免表單、狀態驗證、教師班級權限、更新後清除確認與遷移測試先因功能缺少而失敗，再完成實作。最近局部測試 `26 passed in 21.16s`；完整測試 `333 passed in 150.76s`。Alembic 僅有一個 head：`a920261013tc`。
+- 尚待完成：欄位級資料字典、同步目前 ORM 資料表的 ERD、隔離 MySQL 8.0.39 整合驗收、畢業門檻提醒清單或經老師核准移出本期、分工與完成百分比確認、Drive OAuth 真實選檔及桌面／手機瀏覽器驗收。MVP 12/13 只代表所選 MVP 功能清單，不代表整個專題完成百分比。
+- 本次新增盤點與任務清單，並更新交接文件；保留 Google Drive 原型和工作樹既有變更，未碰主專案 `ai`、其他版本，未合併或推送。
+
+## 2026-10-13 Google Drive 雲端主線展示原型與新手交接
+
+日期：2026-10-13
+開發者：Codex
+
+- 在 `feat/journey-home` 新增公開 `/proposal-preview` 編輯式展示頁，以五年路徑、成果拼圖和數位檔案呈現「目標 → 成果證據 → 缺件 → 下一步」；學生、校系和成果資料皆為假資料，並清楚標示提案原型。
+- 加入本機 Google Identity Services、Google Picker 和 Drive `files.get` 中繼資料驗證流程。只在 OAuth 設定完整且非 production 時啟用；只向 Google 查詢使用者選取檔案的 ID、名稱、類型和原始檔連結。程式不下載內容、不呼叫 Drive 寫入、不保存 token 或檔案選取狀態。`drive.file` scope 仍包含 Google 層級的建立／修改能力，提案文件已說明此限制。
+- 新增會議用可行性評估、新手任務工作流程與 `handoff.md`，記錄提案界線、OAuth 設定步驟、隱私提醒、目前驗收和接手任務；不改正式規格或其他專案。
+- 測試先行：新增 13 項展示路由與 Drive 中繼資料測試，先確認功能缺少時會失敗，再完成實作。目標測試實際輸出：`13 passed in 0.91s`；`node --check app/static/js/proposal-preview-drive.js` 通過。
+- 完整 pytest 實際輸出：`322 passed, 6 failed in 156.30s`。6 項均為 Flask-Migrate CLI／migration 測試；目前 Python 環境沒有 `Flask-Migrate`，測試暫用的相容 shim 只略過應用初始化、不支援 migration 指令。安裝專案依賴後需重跑這 6 項及完整測試。
+- 視覺驗收限制：Flask 測試伺服器成功啟動於 5055，但沙箱拒絕瀏覽器工具連至本機通訊端；桌面／手機瀏覽器版面、鍵盤與減少動態效果尚未取得實際驗收證據。Google OAuth 尚未設定，真實帳號選檔也未驗證。
+- 後續：安裝專案依賴並完成完整測試；在可連本機伺服器的瀏覽器做桌面／手機驗收；由專案擁有人設定 OAuth 後，以無個資測試檔完成真實 Picker 流程，再帶給組員和指導老師決策。原型維持未提交、未合併、未推送。
+
 ## 2026-10-11（續 43）第三輪審查（會議 20261011-041330）必修修正（GPT 任務 07，Claude 審查後合併）
 
 - Claude 合併後驗收：完整測試 `315 passed, 1 warning in 299.42s`。瀏覽器（展示版學生 111534105，資料庫放一筆 200 天前的登入，用表單登入）：「好久不見」出現時焦點在「繼續 →」、`aria-modal="true"`；按 3 次 Tab 焦點仍在畫面內；等 5 秒沒有自動消失；Esc 關閉後焦點回到首頁標題 `route-title`；首頁顯示「五年累積 50% 只是累積比例，不是錄取機率」。
