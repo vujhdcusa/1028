@@ -685,7 +685,8 @@ def autobiography_generate():
         return _blocked(user, reason)
     answers = {key: request.form.get(key, "") for key, _, _ in autobiography_service.QUESTIONS}
     # 學生自己的金鑰：只放在這個函式的變數裡用一次，不存資料庫、不放 session、不放網址
-    own_key = request.form.get("own_api_key", "").strip() or None
+    own_key = "" if current_app.config.get("LOCAL_DEMO_MODE") else request.form.get("own_api_key", "").strip() or None
+    used_own_key = bool(own_key)
     try:
         # 學校金鑰每人每天有次數限制；先扣，AI 失敗時 rollback 就會退回
         if not own_key and ai_ready():
@@ -699,7 +700,7 @@ def autobiography_generate():
     finally:
         own_key = None
     return redirect(url_for("student.autobiography", program_id=program.id,
-                            used_own_key=1 if request.form.get("own_api_key", "").strip() else None))
+                            used_own_key=1 if used_own_key else None))
 
 
 @student_bp.post("/student/autobiography/<int:output_id>/save")

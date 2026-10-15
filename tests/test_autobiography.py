@@ -6,7 +6,8 @@ from docx import Document
 
 from app import create_app
 from app.extensions import db
-from app.models import AdmissionProgram, LearningProfileOutput, Portfolio, StudentProfile, StudentTarget, User
+from app.models import (AdmissionProgram, CredentialRecord, LearningCourseRecord, LearningProfileOutput,
+                        Portfolio, StudentProfile, StudentTarget, User)
 from app.services.admission_service import import_seed_programs
 from app.services.autobiography_service import build_facts, generate_draft
 
@@ -62,6 +63,42 @@ def test_facts_are_numbered_and_include_program_weights(app):
     assert facts["weights"]
 
 
+def test_facts_keep_stable_evidence_ids_for_confirmed_sources(app):
+    with app.app_context():
+        student = User.query.filter_by(username="stu").one()
+        program = AdmissionProgram.query.filter_by(program_code="208003").one()
+        course = LearningCourseRecord(student_id=student.id, course_name="資料庫管理", normalized_course_name="資料庫管理",
+                                      score=91, confirmation_status="confirmed")
+        unconfirmed = LearningCourseRecord(student_id=student.id, course_name="待確認課程", normalized_course_name="待確認課程",
+                                           score=99, confirmation_status="draft")
+        credential = CredentialRecord(student_id=student.id, credential_name="測試證照", confirmation_status="confirmed")
+        db.session.add_all([course, unconfirmed, credential])
+        db.session.commit()
+
+        facts = build_facts(student, program)["items"]
+
+    course_fact = next(fact for fact in facts if "資料庫管理" in fact["text"])
+    credential_fact = next(fact for fact in facts if "測試證照" in fact["text"])
+    assert course_fact["evidence_id"] == f"course:{course.id}"
+    assert credential_fact["evidence_id"] == f"credential:{credential.id}"
+    assert all("待確認課程" not in fact["text"] for fact in facts)
+
+
+def test_teacher_submission_snapshot_preserves_evidence_ids(app):
+    from app.services.review_snapshot_service import build_snapshot
+
+    with app.app_context():
+        student = User.query.filter_by(username="stu").one()
+        program = AdmissionProgram.query.filter_by(program_code="208003").one()
+        db.session.add(LearningCourseRecord(student_id=student.id, course_name="網頁設計", normalized_course_name="網頁設計",
+                                            score=90, confirmation_status="confirmed"))
+        db.session.commit()
+
+        snapshot = build_snapshot(student, program)
+
+    assert snapshot["facts"][0]["evidence_id"].startswith("course:")
+
+
 def test_generate_keeps_only_known_fact_ids(app):
     def fake_ai(prompt, schema):
         assert "專二做網頁設計" in prompt
@@ -76,6 +113,7 @@ def test_generate_keeps_only_known_fact_ids(app):
         assert output.output_type == "autobiography_ai"
         assert output.content_json["paragraphs"][0]["sources"] == ["F1"]
         assert output.content_json["provider"] == "gemini"
+        assert output.source_snapshot_json["evidence_package"]["items"][0]["evidence_id"].startswith("portfolio:")
 
 
 def test_without_api_key_uses_labelled_demo_draft(app):

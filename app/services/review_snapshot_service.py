@@ -17,8 +17,10 @@ from app.services.package_service import latest_review
 
 def build_snapshot(student, program):
     draft = autobiography_service.latest_draft(student, program)
+    evidence_package = autobiography_service.build_evidence_package(student, program)
     return {
-        "facts": autobiography_service.build_facts(student, program)["items"],
+        "facts": evidence_package["items"],
+        "evidence_package": evidence_package,
         "autobiography": ({"output_id": draft.id, "version": autobiography_service.version_of(draft)}
                           if draft else None),
         "readiness": analyze_gap(student, program)["readiness"],

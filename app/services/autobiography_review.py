@@ -37,7 +37,8 @@ def review_paragraphs(paragraphs, facts, answers):
         for source_id in paragraph.get("sources", []):
             fact = fact_by_id.get(source_id)
             if fact:
-                evidence.append({"id": source_id, "title": _short_title(fact["text"]), "text": fact["text"]})
+                evidence.append({"id": source_id, "evidence_id": fact.get("evidence_id"),
+                                 "title": _short_title(fact["text"]), "text": fact["text"]})
 
         question_key = _question_key(paragraph.get("title"), index)
         if question_key and not (answers.get(question_key) or "").strip():

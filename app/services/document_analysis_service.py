@@ -13,6 +13,27 @@ ALLOWED_DOCUMENT_TYPES = {"transcript", "credential"}
 def analyze_document(document_type, file_path, provider_name="fake"):
     if document_type not in ALLOWED_DOCUMENT_TYPES:
         raise ValueError("unsupported document type")
+    if provider_name == "demo":
+        warning = "本機模擬 OCR：這些是假辨識資料，請先修正欄位；不會連接外部服務。"
+        if document_type == "transcript":
+            return {
+                "document_type": document_type,
+                "courses": [{"school_year": 3, "semester": "上", "course_name": "模擬辨識課程",
+                             "credits": 3, "score": 88}],
+                "credentials": None,
+                "warnings": [warning],
+                "source_file_available": bool(file_path),
+                "simulation": True,
+            }
+        return {
+            "document_type": document_type,
+            "courses": None,
+            "credentials": [{"credential_name": "模擬辨識證照", "level": "丙級",
+                             "issuing_organization": "模擬發證單位", "issue_date": ""}],
+            "warnings": [warning],
+            "source_file_available": bool(file_path),
+            "simulation": True,
+        }
     if provider_name != "fake":
         raise RuntimeError("目前尚未設定可用的文件分析服務")
 

@@ -6,7 +6,7 @@ from docx import Document
 from docx.shared import Pt
 
 from app.models import CredentialRecord, LearningCourseRecord, PackageReview, Portfolio
-from app.services.autobiography_service import latest_draft
+from app.services.autobiography_service import CONFIRMED_PORTFOLIO_STATUSES, latest_draft
 from app.services.gap_service import analyze_gap, chapter_order
 
 REVIEW_TEXT = {
@@ -36,7 +36,7 @@ def _chapter_body(document, student, chapter, program):
         document.add_paragraph("請附上報名資格證明（依當年度簡章規定）。")
         return
     if "grades" in codes:
-        courses = LearningCourseRecord.query.filter_by(student_id=student.id).order_by(
+        courses = LearningCourseRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed").order_by(
             LearningCourseRecord.school_year, LearningCourseRecord.id).all()
         if not courses:
             document.add_paragraph("（尚未提供成績資料）")
@@ -55,7 +55,7 @@ def _chapter_body(document, student, chapter, program):
         document.add_paragraph("另附學校核發之歷年成績單正本。")
         return
     if "credential" in codes:
-        credentials = CredentialRecord.query.filter_by(student_id=student.id).order_by(CredentialRecord.issue_date).all()
+        credentials = CredentialRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed").order_by(CredentialRecord.issue_date).all()
         for credential in credentials:
             detail = "、".join(part for part in (credential.level, credential.issuing_organization,
                                                 credential.issue_date.isoformat() if credential.issue_date else None) if part)
@@ -80,7 +80,8 @@ def _chapter_body(document, student, chapter, program):
     if "project" in codes:
         document.add_paragraph("請附上專題或作品集，說明個人負責的部分與成果。")
         return
-    records = Portfolio.query.filter(Portfolio.student_id == student.id, Portfolio.category.in_(codes)).order_by(
+    records = Portfolio.query.filter(Portfolio.student_id == student.id, Portfolio.category.in_(codes),
+                                     Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES)).order_by(
         Portfolio.school_year, Portfolio.id).all()
     for record in records:
         when = _semester_text(record.school_year, record.semester)

@@ -48,18 +48,22 @@
       </label>
       {% endfor %}
       {# 學生自己的金鑰：不會存檔，送出後就丟掉。欄位不會回填，避免金鑰出現在頁面上。 #}
-      <details class="own-key"{% if error %} open{% endif %}>
+      {% if not config.LOCAL_DEMO_MODE %}<details class="own-key"{% if error %} open{% endif %}>
         <summary>用自己的 Gemini 金鑰（選填）</summary>
         <label class="field">Gemini API 金鑰
           <input type="password" name="own_api_key" autocomplete="off" spellcheck="false" placeholder="貼上金鑰，只用這一次">
         </label>
         <p class="small muted">系統<b>只在這一次產生草稿時使用</b>，不會儲存、不會寫進紀錄，也不會傳給 Google 以外的地方。用完後請到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a> 刪除這把金鑰。</p>
       </details>
+      {% else %}<p class="notice">本機展示模式不呼叫外部 AI；草稿只用合成資料在本機排列。</p>{% endif %}
       {% if school_turns is not none %}<p class="small muted">今天學校 AI 還能用 {{ school_turns }} 次（每人每天 {{ config.SCHOOL_AI_DAILY_LIMIT }} 次）；用自己的金鑰不限次數。</p>{% endif %}
       <div class="ask__nav">
         <button class="button button--line" type="button" data-step-prev>← 上一題</button>
         <button class="button button--line" type="button" data-step-next>下一題 →</button>
-        <button class="button" type="submit" data-step-submit data-busy-text="AI 正在寫草稿…（約 10～30 秒）">請 AI 寫草稿</button>
+        <button class="button" type="submit" data-step-submit
+                data-busy-text="{{ '正在整理本機示範草稿…' if config.LOCAL_DEMO_MODE else 'AI 正在寫草稿…（約 10～30 秒）' }}">
+          {{ "產生示範草稿" if config.LOCAL_DEMO_MODE else "請 AI 寫草稿" }}
+        </button>
       </div>
     </form>
 
@@ -71,7 +75,7 @@
       </ul>
       <p class="small muted">你已確認的資料（{{ facts["items"]|length }} 筆）：</p>
       <ul class="facts__list">
-        {% for fact in facts["items"] %}<li><span class="mono">{{ fact.id }}</span>{{ fact.text }}</li>{% else %}<li class="muted">還沒有資料，建議先到「成績與證照」「活動與經歷」補上。</li>{% endfor %}
+        {% for fact in facts["items"] %}<li><span class="mono">{{ fact.id }}</span>{{ fact.text }}{% if fact.evidence_id %}<small class="muted">（證據 {{ fact.evidence_id }}）</small>{% endif %}</li>{% else %}<li class="muted">還沒有資料，建議先到「成績與證照」「活動與經歷」補上。</li>{% endfor %}
       </ul>
     </aside>
   </div>
@@ -118,7 +122,7 @@
           <h3>證據</h3>
           {% for evidence in review.evidence %}
           <details class="evidence-item">
-            <summary><span class="mono">{{ evidence.id }}</span> {{ evidence.title }}</summary>
+          <summary><span class="mono">{{ evidence.id }}</span> {{ evidence.title }}{% if evidence.evidence_id %}<small class="muted">（{{ evidence.evidence_id }}）</small>{% endif %}</summary>
             <p>{{ evidence.text }}</p>
           </details>
           {% else %}<p class="small muted">○ 尚無引用資料</p>{% endfor %}

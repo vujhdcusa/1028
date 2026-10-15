@@ -12,6 +12,7 @@ def test_review_uses_short_evidence_title_and_keeps_full_text():
 
     assert reviews[0]["evidence"] == [{
         "id": "F1",
+        "evidence_id": None,
         "title": "競賽：校園黑客松",
         "text": "競賽：校園黑客松—三人一組完成報名網站",
     }]

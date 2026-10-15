@@ -64,23 +64,41 @@ def build_facts(student, program):
     for course in (LearningCourseRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed")
                    .order_by(LearningCourseRecord.id)):
         score = f"{course.score} 分" if course.score is not None else (course.status_mark or "")
-        lines.append(f"成績：{course.course_name}（{course.school_year or '?'} 年級，{score}）")
+        lines.append({
+            "text": f"成績：{course.course_name}（{course.school_year or '?'} 年級，{score}）",
+            "evidence_id": f"course:{course.id}",
+            "evidence_type": "course",
+        })
     for credential in (CredentialRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed")
                        .order_by(CredentialRecord.id)):
-        lines.append(f"證照：{credential.credential_name}" + (f"（{credential.level}）" if credential.level else ""))
+        lines.append({
+            "text": f"證照：{credential.credential_name}" + (f"（{credential.level}）" if credential.level else ""),
+            "evidence_id": f"credential:{credential.id}",
+            "evidence_type": "credential",
+        })
     for record in (Portfolio.query.filter_by(student_id=student.id)
                    .filter(Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES)).order_by(Portfolio.id)):
         label = CATEGORY_LABELS.get(record.category)
         if label:
             source = "" if record.source == "student" else f"（來源：{record.source_label}）"
-            lines.append(f"{label}：{record.title}" + (f"—{record.description}" if record.description else "") + source)
-    items = [{"id": f"F{index}", "text": text} for index, text in enumerate(lines, start=1)]
+            lines.append({
+                "text": f"{label}：{record.title}" + (f"—{record.description}" if record.description else "") + source,
+                "evidence_id": f"portfolio:{record.id}",
+                "evidence_type": "portfolio",
+            })
+    items = [{"id": f"F{index}", **item} for index, item in enumerate(lines, start=1)]
     weights = [{
         "name": item.source_item_name,
         "weight": item.weight_percent,
         "categories": "、".join(ALL_LABELS.get(key, key) for key in item.category_keys),
     } for item in sorted(program.items, key=lambda i: -i.weight_percent)]
     return {"items": items, "weights": weights}
+
+
+def build_evidence_package(student, program):
+    """為指定校系整理學生已確認、可追溯來源的最小證據包。"""
+    facts = build_facts(student, program)
+    return {"version": 1, "program_id": program.id, "items": facts["items"]}
 
 
 def _prompt(student, program, facts, answers):
@@ -128,6 +146,7 @@ def generate_draft(student, program, answers, generate=None, api_key=None):
     api_key：學生自己的 Gemini 金鑰，只在這次呼叫用，**不會**寫進資料庫或任何紀錄。
     """
     facts = build_facts(student, program)
+    evidence_package = {"version": 1, "program_id": program.id, "items": facts["items"]}
     previous = latest_draft(student, program)
     known = {fact["id"] for fact in facts["items"]}
     answers = {key: (answers.get(key) or "").strip()[:1000] for key, _, _ in QUESTIONS}
@@ -159,7 +178,8 @@ def generate_draft(student, program, answers, generate=None, api_key=None):
             "editor_role": "ai",
             "based_on": previous.id if previous else None,
         },
-        source_snapshot_json={"program_id": program.id, "fact_count": len(facts["items"]),
+    source_snapshot_json={"program_id": program.id, "fact_count": len(facts["items"]),
+                          "evidence_package": evidence_package,
                               "generated_at": datetime.now(timezone.utc).isoformat()},
     )
     db.session.add(output)

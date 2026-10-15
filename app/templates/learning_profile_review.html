@@ -12,6 +12,7 @@
 {{ page_band("確認上傳內容", [("成績與證照", url_for('student.learning_profile'))], note=document.display_name) }}
 <div class="page page--banded">
   <p class="muted mb-1">對照你的文件逐筆檢查；辨識不出來的欄位會留空，不會自己猜。</p>
+  {% if document.extraction and document.extraction.provider == "demo" %}<p class="notice mb-1">本機模擬 OCR：辨識結果是合成資料，請修正後再確認；這不代表真實 OCR 已完成。</p>{% endif %}
 
   {# 學生上傳的原始文件：放在最上面，邊看邊核對 #}
   {% set source_url = url_for('student.learning_profile_document_view', document_id=document.id) %}
