@@ -68,6 +68,23 @@ def test_admission_main_line_migration_upgrades_and_downgrades(tmp_path):
     assert "package_reviews" not in tables
 
 
+def test_transfer_credit_migration_creates_and_removes_its_table(tmp_path):
+    database_path = tmp_path / "transfer-credit-migration.db"
+    app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{database_path}", "TESTING": True})
+    runner = app.test_cli_runner()
+
+    assert runner.invoke(args=["db", "upgrade"]).exit_code == 0
+    with app.app_context():
+        columns = {column["name"] for column in inspect(db.engine).get_columns("transfer_credit_records")}
+    assert {"student_id", "status", "submitted_on", "missing_documents", "note",
+            "teacher_confirmed", "teacher_id", "teacher_confirmed_at"} <= columns
+
+    assert runner.invoke(args=["db", "downgrade", "fc61707846c7"]).exit_code == 0
+    with app.app_context():
+        db.engine.dispose()
+        assert not inspect(db.engine).has_table("transfer_credit_records")
+
+
 def test_portfolio_source_migration_adds_and_removes_columns(tmp_path):
     database_path = tmp_path / "portfolio-source.db"
     app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{database_path}", "TESTING": True})

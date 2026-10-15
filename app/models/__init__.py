@@ -40,6 +40,7 @@ from app.models.p0_workbench import (
     PublicSourceChange,
     PublicSourcePublication,
 )
+from app.models.transfer_credit import TransferCreditRecord
 
 __all__ = [
     "AiDailyUsage",
@@ -83,4 +84,5 @@ __all__ = [
     "StudentTarget",
     "ClassAdvisor",
     "PackageReview",
+    "TransferCreditRecord",
 ]

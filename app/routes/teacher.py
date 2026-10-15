@@ -11,6 +11,7 @@ from app.models import (
     PortfolioEvidence,
     SourceDocument,
     StudentTarget,
+    TransferCreditRecord,
     User,
 )
 from app.routes.main import get_current_user, role_required
@@ -76,6 +77,7 @@ def student_detail(student_id):
         journey=journey,
         journey_stops=journey_stops,
         targets=targets,
+        transfer_credit=TransferCreditRecord.query.filter_by(student_id=student.id).first(),
         documents=SourceDocument.query.filter_by(owner_id=student.id, status="confirmed")
                                       .order_by(SourceDocument.created_at).all(),
         records_with_evidence=[r for r in Portfolio.query.filter_by(student_id=student.id).order_by(Portfolio.id).all()
