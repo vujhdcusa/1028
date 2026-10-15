@@ -10,16 +10,16 @@
 {% block content %}
 {% if user.role == "teacher" %}
 <section class="work-shell work-shell--wide" data-work-role="teacher">
-  <header class="work-heading">
+  <header class="work-heading" data-tour="先看本班有哪些學生與待確認件數。" data-tour-order="1">
     <div><h1>{{ user.display_name }} 老師</h1><p>{% if classes %}負責班級：{{ classes|join("、") }}。{% endif %}點學生姓名查看資料，確認備審內容或留下修改建議。</p></div>
   </header>
   {% set pending_total = class_rows|sum(attribute="pending") %}
-  <div class="work-metrics">
+  <div class="work-metrics" data-tour="這裡整理班級人數、待確認送審和目標校系。" data-tour-order="2">
     <article class="work-metric"><span>本班學生</span><strong>{{ class_rows|length }}</strong><small>人</small></article>
     <article class="work-metric"><span>等待你確認</span><strong>{{ pending_total }}</strong><small>份備審資料</small></article>
     <article class="work-metric"><span>已選目標校系</span><strong>{{ class_rows|selectattr("targets")|list|length }}</strong><small>人</small></article>
   </div>
-  <section class="work-panel" data-class-roster>
+  <section class="work-panel" data-class-roster data-tour="只會列出分派給你的班級學生；點姓名查看。" data-tour-order="3">
     <div class="work-panel__head"><div><h2>本班學生</h2><p>數字是各類資料筆數，空格代表還沒有資料。</p></div></div>
     {% if class_rows %}
     <div class="table-wrap">
@@ -56,16 +56,16 @@
 </section>
 {% elif user.role == "staff" %}
 <section class="work-shell work-shell--wide" data-work-role="staff" data-work-queue>
-  <header class="work-heading">
+  <header class="work-heading" data-tour="科辦先從送件佇列處理已送審的成果。" data-tour-order="1">
     <div><h1>待處理送件</h1><p>已送審的成果會列在這裡。登錄共同結論時，請寫下學生看得懂的補正說明。</p></div>
     <span class="queue-badge queue-badge--strong">{{ staff_pending_submissions|length }} 件待處理</span>
   </header>
-  <div class="work-metrics">
+  <div class="work-metrics" data-tour="查看待處理送件與電子獎狀數量。" data-tour-order="2">
     <article class="work-metric"><span>待核准電子獎狀</span><strong>{{ staff_pending_certificates }}</strong><small><a href="{{ url_for('certificate.staff_list') }}">前往電子獎狀 →</a></small></article>
     <article class="work-metric"><span>待登錄結論</span><strong>{{ staff_pending_submissions|length }}</strong><small>目前狀態為已送審</small></article>
     
   </div>
-  <section class="work-panel">
+  <section class="work-panel" data-tour="逐件查看資料、教師意見，再登錄共同結論。" data-tour-order="3">
     <div class="work-panel__head"><div><h2>已送審成果</h2><p>提交共同結論後，系統會同步更新該筆送件狀態。</p></div></div>
     <div class="work-queue">
       {% for submission in staff_pending_submissions %}

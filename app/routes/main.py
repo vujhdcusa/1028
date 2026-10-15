@@ -195,7 +195,15 @@ def help_page():
     """❓ 怎麼操作：常見問題（不用 AI、不花額度）。內容在 app/content/help.py。"""
     from app.content.help import HELP
     user = get_current_user()
-    return render_template("help.html", user=user, sections=HELP.get(user.role, HELP["student"]))
+    tour_routes = {
+        "student": ("student-dashboard", "main.student_dashboard"),
+        "teacher": ("teacher-dashboard", "main.teacher_dashboard"),
+        "staff": ("staff-dashboard", "main.staff_dashboard"),
+        "admin": ("admin-dashboard", "main.admin_dashboard"),
+    }
+    tour_page, tour_endpoint = tour_routes[user.role]
+    return render_template("help.html", user=user, sections=HELP.get(user.role, HELP["student"]),
+                           tour_page=tour_page, tour_url=url_for(tour_endpoint, tour=1))
 
 
 @main_bp.post("/student/photo")

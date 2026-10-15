@@ -179,6 +179,35 @@ def test_masthead_links_to_help_and_tour(client):
     assert "data-tour-start" in page
 
 
+@pytest.mark.parametrize("role, dashboard, page_name", [
+    ("student", "/student/dashboard", "student-dashboard"),
+    ("teacher", "/teacher/dashboard", "work-dashboard"),
+    ("staff", "/staff/dashboard", "work-dashboard"),
+    ("admin", "/admin/dashboard", "admin-dashboard"),
+])
+def test_help_replays_the_current_role_tour(role, dashboard, page_name):
+    app = create_app({"SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:", "TESTING": True})
+    with app.app_context():
+        db.create_all()
+        user = User(username=f"{role}_user", display_name=role, role=role)
+        user.set_password("pw")
+        db.session.add(user)
+        db.session.commit()
+    client = app.test_client()
+    client.post("/login", data={"username": f"{role}_user", "password": "pw"})
+
+    help_page = client.get("/help").get_data(as_text=True)
+    tour_target = re.search(r'data-tour-replay-url="([^"]+)"', help_page)
+
+    assert tour_target is not None
+    assert tour_target.group(1) == f"{dashboard}?tour=1"
+    destination = client.get(tour_target.group(1)).get_data(as_text=True)
+    assert f'data-page="{page_name}"' in destination
+    if role in {"teacher", "staff"}:
+        assert f'data-work-role="{role}"' in destination
+    assert len(re.findall(r'data-tour="([^" ]*[^\"]*)"', destination)) > 0
+
+
 @pytest.mark.parametrize("close_action", ["escape", "button"])
 def test_return_scene_keyboard_and_focus_contract(close_action):
     result = run_components_scenario(f"return-{close_action}")

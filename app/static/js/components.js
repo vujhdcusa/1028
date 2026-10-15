@@ -728,10 +728,12 @@ document.querySelectorAll("[data-photo-form]").forEach((form) => {
   if (startButton) startButton.addEventListener("click", start);
   document.querySelectorAll("[data-tour-replay]").forEach((button) => button.addEventListener("click", () => {
     try { localStorage.removeItem(`tour-seen-${button.dataset.tourReplay}`); } catch (e) { /* 沒關係 */ }
-    window.location.href = "/student/dashboard";
+    window.location.href = button.dataset.tourReplayUrl || "/student/dashboard";
   }));
   // 首頁第一次來自動播；「好久不見」那一幕還在的話等它關掉，也等小人物走完
-  if (page === "student-dashboard") {
+  if (new URLSearchParams(window.location.search || "").get("tour") === "1") {
+    start();
+  } else if (page === "student-dashboard") {
     let seen = false;
     try { seen = localStorage.getItem(`tour-seen-${page}`) === "1"; } catch (e) { seen = true; }
     if (!seen) {

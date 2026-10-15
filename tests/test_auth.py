@@ -57,6 +57,14 @@ def test_login_rejects_wrong_password_without_creating_session():
     assert "帳號或密碼錯誤".encode("utf-8") in response.data
 
 
+def test_regular_login_page_has_no_redundant_caption_or_demo_credentials():
+    page = auth_app().test_client().get("/login").get_data(as_text=True)
+
+    assert "學生、導師與管理者都從這裡登入" not in page
+    assert "student_demo" not in page
+    assert "demo2026" not in page
+
+
 def test_student_cannot_open_admin_dashboard():
     client = auth_app().test_client()
     client.post(

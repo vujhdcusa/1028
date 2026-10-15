@@ -8,14 +8,14 @@
 
 {% block content %}
 <section class="work-shell work-shell--wide" data-work-role="admin" data-system-overview>
-  <header class="work-heading"><div><h1>系統總覽</h1><p>帳號數量、送件量與待處理資料。</p></div><span class="queue-badge queue-badge--strong">{{ pending_submission_count }} 件待處理</span></header>
-  <div class="work-metrics work-metrics--four">
+  <header class="work-heading" data-tour="先看帳號數與目前待處理件數。" data-tour-order="1"><div><h1>系統總覽</h1><p>帳號數量、送件量與待處理資料。</p></div><span class="queue-badge queue-badge--strong">{{ pending_submission_count }} 件待處理</span></header>
+  <div class="work-metrics work-metrics--four" data-tour="確認學生、教師與科辦帳號規模。" data-tour-order="2">
     <article class="work-metric"><span>啟用學生</span><strong>{{ student_count }}</strong><small>可建立與管理學習成果</small></article>
     <article class="work-metric"><span>教師帳號</span><strong>{{ teacher_count }}</strong><small>可查看指派的審查項目</small></article>
     <article class="work-metric"><span>科辦帳號</span><strong>{{ staff_count }}</strong><small>可登錄共同審查結論</small></article>
     <article class="work-metric"><span>全部送件</span><strong>{{ submission_count }}</strong><small>包含各版本的送審紀錄</small></article>
   </div>
-  <section class="work-panel">
+  <section class="work-panel" data-tour="最近送件只顯示流程摘要；帳號與規則從上方導覽管理。" data-tour-order="3">
     <div class="work-panel__head"><div><h2>最近送件動態</h2><p>快速確認目前有哪些成果正在系統內流動。</p></div></div>
     <ul class="work-list">
       {% for submission in recent_submissions %}

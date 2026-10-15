@@ -78,12 +78,16 @@ def test_evidence_upload_returns_to_edit_page(tmp_path):
     assert "photo.png" in edit_html
 
 
-def test_login_page_lists_demo_accounts_only_in_demo_mode(tmp_path):
+def test_login_page_lists_demo_accounts_only_in_local_demo_mode(tmp_path):
     app = records_app(tmp_path)
-    assert "teacher01" not in app.test_client().get("/login").get_data(as_text=True)
+    regular_page = app.test_client().get("/login").get_data(as_text=True)
+    assert "teacher_demo" not in regular_page
+    assert "demo2026" not in regular_page
 
-    app.config["DEMO_ACCOUNTS"] = True
-    assert "teacher01" in app.test_client().get("/login").get_data(as_text=True)
+    app.config["LOCAL_DEMO_MODE"] = True
+    demo_page = app.test_client().get("/login").get_data(as_text=True)
+    assert "teacher_demo" in demo_page
+    assert "demo2026" in demo_page
 
 
 def _record_with_evidence(app, client, filename, content=b"\x89PNG\r\n\x1a\nfake"):
