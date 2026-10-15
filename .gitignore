@@ -67,6 +67,8 @@ logs/
 
 # pytest 暫存
 tests/tmp/
+.pytest-*/
+.requirement-pdf-review/
 
 # Playwright 瀏覽器（只在本機測試用，刪除專案資料夾即移除）
 .playwright-browsers/
