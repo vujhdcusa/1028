@@ -32,6 +32,11 @@ class Config:
     AI_PROVIDER = os.getenv("AI_PROVIDER", "none").lower()
     AI_API_KEY = os.getenv("AI_API_KEY", "")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    # Google Drive 原型只在本機明確啟用，且 OAuth 與 Picker 設定齊全時開放。
+    GOOGLE_DRIVE_PREVIEW_ENABLED = os.getenv("GOOGLE_DRIVE_PREVIEW_ENABLED", "false").lower() == "true"
+    GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
+    GOOGLE_PICKER_API_KEY = os.getenv("GOOGLE_PICKER_API_KEY", "")
+    GOOGLE_CLOUD_PROJECT_NUMBER = os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER", "")
     # 小助手對話次數多，用較輕量的模型，和自傳、簡章擷取分開計算每日額度
     ASSISTANT_MODEL = os.getenv("ASSISTANT_MODEL", "gemini-flash-lite-latest")
     # 招生資料 Agent 只擷取科系名稱含這些字的校系（逗號分隔）
