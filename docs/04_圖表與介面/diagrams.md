@@ -262,7 +262,7 @@ flowchart TD
 
 ## 圖 7：學校資料匯入流程圖（2026-10-10 新增）
 
-依 `docs/02_需求與設計/AI_設計規格_學校資料匯入與官網資料來源_2026-10-10.md`：成績（網頁貼上＋紙本 OCR）、獎懲（截圖或貼上）、缺曠（只存合計、只有學生與班導看得到、不送 AI、備審預設不放）；畢業學分檢查依入學年度的修業科目表。
+依 `docs/02_需求與設計/02_設計規格/AI_設計規格_學校資料匯入與官網資料來源_2026-10-10.md`：成績（網頁貼上＋紙本 OCR）、獎懲（截圖或貼上）、缺曠（只存合計、只有學生與班導看得到、不送 AI、備審預設不放）；畢業學分檢查依入學年度的修業科目表。
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
@@ -382,7 +382,7 @@ flowchart TD
 
 ## 圖 10：科辦表單下載區流程圖
 
-依 `docs/02_需求與設計/AI_設計規格_科辦表單區_下載與收件_2026-10-08.md` 第十一點第 1 步（下載區）。收件（繳回系統、退件）2026-10-09 暫停，不在本版。舊的「行政表單數位化與申請追蹤流程圖」與舊圖 7「專題共同審查流程圖」和 10-10 的決定衝突，已搬到 `99_封存_歷史與待確認/03_舊版流程圖與圖片/`（`D-11-admin-forms-flow`、`D-03-group-project-review-flow`）。
+依 `docs/02_需求與設計/02_設計規格/AI_設計規格_科辦表單區_下載與收件_2026-10-08.md` 第十一點第 1 步（下載區）。收件（繳回系統、退件）2026-10-09 暫停，不在本版。舊的「行政表單數位化與申請追蹤流程圖」與舊圖 7「專題共同審查流程圖」和 10-10 的決定衝突，已搬到 `99_封存_歷史與待確認/03_舊版流程圖與圖片/`（`D-11-admin-forms-flow`、`D-03-group-project-review-flow`）。
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
@@ -482,7 +482,7 @@ flowchart TD
 
 ## 圖 12：二技招生公告與 AI 推薦校系流程圖
 
-依 `docs/02_需求與設計/AI_設計規格_二技公告與AI推薦校系_2026-10-10.md`。資料更新的前半段見圖 11。
+依 `docs/02_需求與設計/02_設計規格/AI_設計規格_二技公告與AI推薦校系_2026-10-10.md`。資料更新的前半段見圖 11。
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables': {'fontFamily':'Microsoft JhengHei, Noto Sans TC, Arial, sans-serif','primaryColor':'#F3F4F6','primaryTextColor':'#111827','primaryBorderColor':'#9CA3AF','lineColor':'#6B7280','edgeLabelBackground':'#FFFFFF'},'flowchart':{'wrappingWidth':400}}}%%
