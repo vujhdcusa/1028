@@ -116,7 +116,7 @@
 ### 【@GPT／Codex 回報】PPT-01 簡報與新版圖檔更新
 - **日期**：2026-10-08
 - **角色**：@GPT／Codex
-- **修改檔案**：`docs/08_簡報/AI_指導老師討論簡報_2026-10-07.pptx`、`scripts/build_teacher_presentation.py`、`docs/03_開發紀錄/AI_流程圖更新紀錄_2026-10-08.md`、`docs/05_交接與專案管理/AI_正式文件草稿_給組員_2026-10-08.md`。
+- **修改檔案**：`docs/08_簡報/AI_指導老師討論簡報_2026-10-07.pptx`、`scripts/build_teacher_presentation.py`、`docs/03_開發紀錄/02_流程與簡報紀錄/AI_流程圖更新紀錄_2026-10-08.md`、`docs/05_交接與專案管理/02_任務與檢查/AI_正式文件草稿_給組員_2026-10-08.md`。
 - **驗證方式與結果**：重新執行簡報產生腳本成功；簡報共 36 張投影片，PPTX ZIP 完整性檢查通過；腳本已移除舊版流程圖引用並改用新版角色圖與 `D-18-staff-service-record-flow.png`；PowerPoint 程序已關閉；`~$` 暫存檔未加入版本控制。
 - **本次內容修正**：科辦改為核准科上服務電子獎狀；學生從學校獎懲記錄勾選申請；固定外框、內文可編輯；電子獎狀不取代正式獎懲記錄。競賽報名頁已標為「後續擴充草稿／待問科助」，不列為已確認功能。
 - **風險／待確認**：競賽報名、科辦實際行政範圍與學校資料驗證方式仍需問科助；本次未修改 `app/`、`tests/`、規格書、`diagrams.md` 或 `development-log.md`。
@@ -265,7 +265,7 @@
 ### 【@GPT／Codex 回報】ROOM-02 修正清單與小助手多來源文件（2026-10-10）
 
 - **角色**：GPT／Codex
-- **修改檔案**：`ai-meeting-room/server.py`、`static/index.html`、`development_plan.json`、相關測試、`README.md`、`docs/操作手冊.md`；`ai/docs/09_AI會議室/瀏覽器驗收腳本/room_new_features.py`；`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/05_交接與專案管理/AI_檢查報告_系統完整性_2026-10-10.md`、`ai/docs/README.md`；並將兩份會議室規格／計畫歸位到 `docs/09_AI會議室/`。
+- **修改檔案**：`ai-meeting-room/server.py`、`static/index.html`、`development_plan.json`、相關測試、`README.md`、`docs/操作手冊.md`；`ai/docs/09_AI會議室/瀏覽器驗收腳本/room_new_features.py`；`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/05_交接與專案管理/02_任務與檢查/AI_檢查報告_系統完整性_2026-10-10.md`、`ai/docs/README.md`；並將兩份會議室規格／計畫歸位到 `docs/09_AI會議室/`。
 - **完成事項**：
   1. 修正 `/api/meetings` 讀取 `meta.json` 的路徑錯誤，抽出依建立時間排序的 `list_meetings()`。
   2. 專案文件保留子資料夾相對路徑；同名文件保留舊版並產生新版本；操作紀錄移到專案文件目錄外，避免 `history.jsonl` 覆蓋。

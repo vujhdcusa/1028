@@ -42,5 +42,5 @@ CR  Code Review
 - `docs/README.md`（文件總索引）
 - `docs/04_圖表與介面/diagrams.md`（Mermaid 圖表庫）
 - `docs/04_圖表與介面/diagram-style-guide.md`（圖表繪製指南）
-- `docs/03_開發紀錄/mysql-setup.md`（MySQL 設定說明）
+- `docs/03_開發紀錄/01_參考與環境設定/mysql-setup.md`（MySQL 設定說明）
 - `docs/03_開發紀錄/development-log.md`（開發日誌）
