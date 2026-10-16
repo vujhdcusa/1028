@@ -45,7 +45,7 @@ COVER = {
     "date": "中 華 民 國  116  年 06 月",
 }
 
-# 圖號 → 圖檔（與 docs/04_圖表與介面/diagrams.md、流程圖大全簡報一致）
+# 圖號 → 圖檔（與 docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md、流程圖大全簡報一致）
 FIGURES = {
     "1": "D-01-use-case-student.png", "2": "D-01-use-case-teacher.png", "3": "D-01-use-case-staff.png",
     "4": "D-01-use-case-admin.png", "5": "D-02-login-role-routing.png", "6": "D-10-main-line-flow.png",

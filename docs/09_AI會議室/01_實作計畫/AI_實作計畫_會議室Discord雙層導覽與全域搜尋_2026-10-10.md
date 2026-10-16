@@ -8,7 +8,7 @@
 
 **技術：** Python 3、內建 JSON／JSONL／`threading.Lock`、原生 HTML／CSS／JavaScript、既有 `pytest` 測試。
 
-**規格：** `ai/docs/09_AI會議室/AI_設計規格_會議室Discord雙層導覽與全域搜尋_2026-10-10.md`
+**規格：** `ai/docs/09_AI會議室/02_設計規格/AI_設計規格_會議室Discord雙層導覽與全域搜尋_2026-10-10.md`
 
 ## 全域硬性規則
 

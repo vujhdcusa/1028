@@ -30,7 +30,7 @@
 ### Task 1: 建立統一圖表視覺與角色規範
 
 **Files:**
-- Modify: `docs/04_圖表與介面/diagram-style-guide.md`
+- Modify: `docs/04_圖表與介面/03_檢查與圖表規範/diagram-style-guide.md`
 
 - [ ] 補充白底、細灰框、繁中字型、低飽和色彩與閱讀方向規則。
 - [ ] 更新圖表清單，將 D-02 定義為 P0 檔案分析主流程，新增人工檢核與補件圖。
@@ -39,7 +39,7 @@
 ### Task 2: 改寫主流程、人工檢核與資料流程圖
 
 **Files:**
-- Modify: `docs/04_圖表與介面/diagrams.md`
+- Modify: `docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md`
 - Modify: `docs/images/D-01-use-case-v2.mmd`
 - Modify: `docs/images/D-02-login-role-routing.mmd`
 - Modify: `docs/images/D-10-midterm-core-flow.mmd`

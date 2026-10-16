@@ -219,7 +219,7 @@ D-10-report-overview.png
 ### 9.1 產生 Mermaid 圖表
 
 ```text
-請依照 docs/04_圖表與介面/diagram-style-guide.md 的規範，為「資管科智慧學習歷程系統」產生 Mermaid 圖表。
+請依照 docs/04_圖表與介面/03_檢查與圖表規範/diagram-style-guide.md 的規範，為「資管科智慧學習歷程系統」產生 Mermaid 圖表。
 
 要求：
 1. 不要直接生成圖片。
@@ -234,7 +234,7 @@ D-10-report-overview.png
 ### 9.2 修正既有 Mermaid 圖表
 
 ```text
-請檢查 docs/04_圖表與介面/diagrams.md 與主規格書中的 Mermaid 圖表，依照 docs/04_圖表與介面/diagram-style-guide.md 統一以下項目：
+請檢查 docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md 與主規格書中的 Mermaid 圖表，依照 docs/04_圖表與介面/03_檢查與圖表規範/diagram-style-guide.md 統一以下項目：
 
 1. 角色名稱
 2. 模組名稱
@@ -256,7 +256,7 @@ D-10-report-overview.png
 3. 是否有角色名稱不一致。
 4. 是否有節點文字過長。
 5. 是否有箭頭交叉太多。
-6. 是否符合 docs/04_圖表與介面/diagram-style-guide.md。
+6. 是否符合 docs/04_圖表與介面/03_檢查與圖表規範/diagram-style-guide.md。
 
 檢查完成後，再依照圖片命名規則匯出到 docs/images/。
 ```

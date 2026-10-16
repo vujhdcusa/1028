@@ -27,12 +27,12 @@
 
 ## 修改範圍
 
-- `docs/04_圖表與介面/diagrams.md`
+- `docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md`
 - `docs/images/D-01-use-case-v2.mmd`
 - `docs/images/D-02-login-role-routing.mmd`
 - `docs/images/D-03-group-project-review-flow.mmd`
 - `docs/images/D-10-midterm-core-flow.mmd`
-- `docs/04_圖表與介面/diagram-style-guide.md`
+- `docs/04_圖表與介面/03_檢查與圖表規範/diagram-style-guide.md`
 - 所有仍以舊版「手動建立歷程／提交審查」作為 P0 主流程的規格或設計文件。
 
 ## 驗收

@@ -14,7 +14,7 @@ from build_teacher_presentation import IMG, ROOT, WHITE, add_text, base_slide, d
 
 OUT = ROOT / "docs" / "08_簡報" / "AI_流程圖彙整_2026-10-10.pptx"
 
-# 依 docs/04_圖表與介面/diagrams.md 的規格書圖號（2026-10-10 晚從頭重排）
+# 依 docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md 的規格書圖號（2026-10-10 晚從頭重排）
 DIAGRAMS = [
     ("D-01-use-case-student.png", "圖 1｜學生使用案例圖"),
     ("D-01-use-case-teacher.png", "圖 2｜老師使用案例圖（導師、專任教師、指導老師）"),
@@ -46,7 +46,7 @@ def make_deck():
     prs.slide_height = Inches(7.5)
     cover = base_slide(prs, "資管科智慧學習歷程系統", dark=True)
     add_text(cover, "流程圖彙整（2026-10-10 晚，圖號重排）", 0.82, 1.55, 11, 0.7, 32, WHITE, True)
-    add_text(cover, "依 10-10 定案的設計規格更新；圖號與 docs/04_圖表與介面/diagrams.md 一致。",
+    add_text(cover, "依 10-10 定案的設計規格更新；圖號與 docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md 一致。",
              0.86, 4.95, 11.5, 0.45, 16, WHITE)
     missing = []
     for filename, title in DIAGRAMS:

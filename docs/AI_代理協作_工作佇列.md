@@ -44,7 +44,7 @@
 
 - 狀態：**待使用者確認**（2026-10-10：三份歷屆報告已逐份讀完，本機補圖來源與雲端副本九章重整已完成；圖片輸出與公開分享仍待決定）
 - 認領：GPT／Codex（接手時先改成「進行中」）
-- 範圍：`docs/01_正式規格/` 規格書、`docs/04_圖表與介面/diagrams.md`、`docs/images/`；雲端只更新副本 <https://docs.google.com/document/d/1hi7GI-x_Ion__nDu4TTOUb8N2uVOqW3Q-Ia_7VGveqw/edit>，原始正式版不動。
+- 範圍：`docs/01_正式規格/` 規格書、`docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md`、`docs/images/`；雲端只更新副本 <https://docs.google.com/document/d/1hi7GI-x_Ion__nDu4TTOUb8N2uVOqW3Q-Ia_7VGveqw/edit>，原始正式版不動。
 - GPT 實際做過：逐份讀完三份歷屆報告；新增 D-23～D-30 八份 Mermaid 圖稿；更新本機規格書與圖表索引；將雲端副本保留封面並依招生平台九章格式重寫內文。雲端更新已由 Docs API 驗證 revision 與章節標題。
 - **Claude 查到 GPT 摘要和定案不符的 3 處（要修正）**：①「導師確認最新版本」→ 定案是**只能確認送審的那一版**，不同版要學生重新送審；②「不提供聊天框」→ 小助手 10.7 是**保留限定範圍的提問**＋引導卡片＋說明區；③「引導卡片模板可隱藏」→ 要隱藏的是**專題類型與需求模板**。
 - 尚待收尾：D-23～D-30 尚未能在目前 Windows Puppeteer 環境輸出 PNG／SVG；雲端副本目前保留「此處插入圖 N」佔位，是否將圖片上傳至公開網址待使用者決定。
@@ -55,7 +55,7 @@
 
 - 狀態：待使用者確認（GPT／Codex 已完成程式修正；瀏覽器驗收受本機環境阻塞）
 - 認領：GPT／Codex
-- 計畫：`docs/09_AI會議室/AI_實作計畫_會議室修正清單_Claude驗收_2026-10-10.md`（7 個必修、2 件要問使用者、文件整理、系統完整性報告更正）
+- 計畫：`docs/09_AI會議室/01_實作計畫/AI_實作計畫_會議室修正清單_Claude驗收_2026-10-10.md`（7 個必修、2 件要問使用者、文件整理、系統完整性報告更正）
 - 最優先：第 1 項「會議清單 API 讀錯檔案」，不修就不能重啟 8765。
 - 開工時先把目前未提交的修改照原樣提交一次；不推送；這段時間 Claude 不動 `ai-meeting-room`。
 
@@ -63,7 +63,7 @@
 
 - 狀態：**待使用者確認**（GPT 第一版 `743e415`；Claude 接手收尾並完成瀏覽器驗收與重新下載驗收，見代理回報最後一筆）。
 - 認領：GPT／Codex（約 5 小時）→ Claude Code 接手收尾
-- 計畫：`docs/09_AI會議室/AI_實作計畫_會議室版面整理_資料夾_編輯歷史_搜尋_2026-10-10.md`（**全部照這份做**，包含硬性規則與時間分配）
+- 計畫：`docs/09_AI會議室/01_實作計畫/AI_實作計畫_會議室版面整理_資料夾_編輯歷史_搜尋_2026-10-10.md`（**全部照這份做**，包含硬性規則與時間分配）
 - 範圍：只改 `D:\democase\ai-meeting-room`，以及在 `ai/docs` 寫日誌與回報；起點提交 `b603025`。
 - 重點限制：不做刪除功能、不改發言內容、改動要記錄學號、路徑一律相對、不花 AI 額度、不推送、只測修改過的地方但要真的開瀏覽器操作。
 - 驗收：計畫第四節的交代事項寫在本文件「代理回報」與開發日誌。
@@ -90,7 +90,7 @@
 - 建議認領：GPT／Codex
 - 輸入：`docs/03_開發紀錄/development-log.md` 的 2026-10-08 第七節（圖檔清單、舊圖清單、文字重點）；規格書「2026-10-08 功能確認總表」（科辦已改為「核准電子獎狀」，以日誌第八節為準）
 - 工作：更新 `docs/08_簡報/AI_指導老師討論簡報_2026-10-07.pptx`（GPT 原本產出；產生腳本 `scripts/build_teacher_presentation.py`），換上新圖、拿掉舊圖、修正科辦與競賽相關文字。需要時也可以修改流程圖。
-- 修改流程圖時請一起同步：改 `docs/images/*.mmd` → 重新匯出 PNG／SVG → 把原始碼貼回 `docs/04_圖表與介面/diagrams.md` → 內容有變就更新規格書 → 在開發日誌記下改了哪張、為什麼。
+- 修改流程圖時請一起同步：改 `docs/images/*.mmd` → 重新匯出 PNG／SVG → 把原始碼貼回 `docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md` → 內容有變就更新規格書 → 在開發日誌記下改了哪張、為什麼。
 - 協調：不要和 Claude Code 在同一個資料夾同時工作（10-08 上午兩邊同時匯出圖片，互相覆蓋）；開工前看 `git status`，有別人未 commit 的變更先問使用者。
 - 驗收：簡報中沒有「科辦核准競賽證明」「科助任務待確認」等舊說法；圖號與規格書一致；在本文件「代理回報」追加紀錄。
 
@@ -265,7 +265,7 @@
 ### 【@GPT／Codex 回報】ROOM-02 修正清單與小助手多來源文件（2026-10-10）
 
 - **角色**：GPT／Codex
-- **修改檔案**：`ai-meeting-room/server.py`、`static/index.html`、`development_plan.json`、相關測試、`README.md`、`docs/操作手冊.md`；`ai/docs/09_AI會議室/瀏覽器驗收腳本/room_new_features.py`；`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/05_交接與專案管理/02_任務與檢查/AI_檢查報告_系統完整性_2026-10-10.md`、`ai/docs/README.md`；並將兩份會議室規格／計畫歸位到 `docs/09_AI會議室/`。
+- **修改檔案**：`ai-meeting-room/server.py`、`static/index.html`、`development_plan.json`、相關測試、`README.md`、`docs/操作手冊.md`；`ai/docs/09_AI會議室/04_驗收與交接/瀏覽器驗收腳本/room_new_features.py`；`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/05_交接與專案管理/02_任務與檢查/AI_檢查報告_系統完整性_2026-10-10.md`、`ai/docs/README.md`；並將兩份會議室規格／計畫歸位到 `docs/09_AI會議室/`。
 - **完成事項**：
   1. 修正 `/api/meetings` 讀取 `meta.json` 的路徑錯誤，抽出依建立時間排序的 `list_meetings()`。
   2. 專案文件保留子資料夾相對路徑；同名文件保留舊版並產生新版本；操作紀錄移到專案文件目錄外，避免 `history.jsonl` 覆蓋。
@@ -283,7 +283,7 @@
 ### 【@GPT／Codex 回報】瀏覽器註解：標題列、進度小助手按鈕與完整檔案工作區（2026-10-10）
 
 - **角色**：GPT／Codex
-- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai-meeting-room/README.md`、`ai-meeting-room/docs/操作手冊.md`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/AI_開發紀錄_標題列與完整檔案工作區_2026-10-10.md`。
+- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai-meeting-room/README.md`、`ai-meeting-room/docs/操作手冊.md`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/03_開發紀錄/AI_開發紀錄_標題列與完整檔案工作區_2026-10-10.md`。
 - **完成事項**：小助手靠左、通知鈴鐺靠右；小助手的文件／資料夾／整理與產出按鈕分組並用不同顏色；檔案面板新增 Codex 式完整查看模式；加入「返回會議」、Esc 與醒目的「× 關閉檔案」；導覽與操作文件同步更新。
 - **額度與資料邊界**：完整查看模式只讀取既有本機檔案 API，不上傳到外部服務、不叫 AI 發言、不消耗額度；單檔、多檔、資料夾與貼上內容功能均保留。
 - **驗證方式與結果**：先新增三項版面／功能驗收測試，實作後版面測試 **19 項通過**；`git diff --check` 通過。瀏覽器驗收尚未宣稱通過，待可連線環境依 `docs/09_AI會議室/瀏覽器驗收腳本/` 補跑。
@@ -292,7 +292,7 @@
 ### 【@GPT／Codex 回報】瀏覽器註解：檔案圖示、AI 讀取位置與檢視切換（2026-10-10）
 
 - **角色**：GPT／Codex
-- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai-meeting-room/README.md`、`ai-meeting-room/docs/操作手冊.md`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/AI_開發紀錄_檔案圖示與讀取位置_2026-10-10.md`。
+- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai-meeting-room/README.md`、`ai-meeting-room/docs/操作手冊.md`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/03_開發紀錄/AI_開發紀錄_檔案圖示與讀取位置_2026-10-10.md`。
 - **完成事項**：檔案與匯出功能對調；檔案圖示統一為線條式圖示；固定可收合的 AI 讀取位置區塊；完整查看按鈕依模式切換放大／縮小圖示、顏色與無障礙狀態。
 - **驗證方式與結果**：先新增三項失敗驗收測試，實作後版面測試 **22 項通過**；`git diff --check` 通過。瀏覽器驗收尚未宣稱通過。
 - **待確認事項與下一步**：不重啟 `8765`；待使用者在瀏覽器確認檔案工具列、AI 讀取位置收合與完整模式切換。
@@ -300,7 +300,7 @@
 ### 【@GPT／Codex 回報】瀏覽器註解：全介面簡約線條圖示（2026-10-10）
 
 - **角色**：GPT／Codex
-- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai-meeting-room/README.md`、`ai-meeting-room/docs/操作手冊.md`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/AI_開發紀錄_全介面簡約圖示_2026-10-10.md`。
+- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai-meeting-room/README.md`、`ai-meeting-room/docs/操作手冊.md`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/03_開發紀錄/AI_開發紀錄_全介面簡約圖示_2026-10-10.md`。
 - **完成事項**：修正完整檢視按鈕為真正的放大／縮小切換；建立共用線條圖示並套用到標題、資料夾、主持人、導覽、編輯、匯出、搜尋、語音與資料夾選擇；移除開新會議前的加號。
 - **驗證方式與結果**：先新增兩項失敗驗收測試，實作後版面測試 **24 項通過**；Python 編譯、內嵌 JavaScript 語法與 `git diff --check` 通過。
 - **待確認事項與下一步**：不重啟 `8765`；待使用者在瀏覽器確認簡約圖示顯示與完整檢視切換。
@@ -308,7 +308,7 @@
 ### 【@GPT／Codex 回報】瀏覽器註解：檔案目錄收合、圖示精簡與導覽同步（2026-10-10）
 
 - **角色**：GPT／Codex
-- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai-meeting-room/README.md`、`ai-meeting-room/docs/操作手冊.md`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/AI_開發紀錄_檔案目錄收合與圖示精簡_2026-10-10.md`。
+- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai-meeting-room/README.md`、`ai-meeting-room/docs/操作手冊.md`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/03_開發紀錄/AI_開發紀錄_檔案目錄收合與圖示精簡_2026-10-10.md`。
 - **完成事項**：拆分檔案目錄收合與完整檢視按鈕；修正返回會議流程；恢復小助手機器人圖示；統一 AI 讀取與空白提示圖示；資料夾圖示選項縮減為六個；同步更新導覽；保留通知紅色未讀圓點與數字。
 - **驗證方式與結果**：先新增三項失敗驗收測試，實作後版面測試 **26 項通過**；Python 編譯、內嵌 JavaScript 語法與 `git diff --check` 通過。
 - **待確認事項與下一步**：不重啟 `8765`；待使用者在瀏覽器確認資料夾欄收合、完整檢視返回與通知顯示。
@@ -316,7 +316,7 @@
 ### 【@GPT／Codex 回報】瀏覽器註解：主持人圖釘圖示微調（2026-10-10）
 
 - **角色**：GPT／Codex
-- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/AI_開發紀錄_主持人圖釘圖示_2026-10-10.md`。
+- **修改檔案**：`ai-meeting-room/static/index.html`、`ai-meeting-room/tests/test_layout_and_preview.py`、`ai/docs/03_開發紀錄/development-log.md`、`ai/docs/09_AI會議室/03_開發紀錄/AI_開發紀錄_主持人圖釘圖示_2026-10-10.md`。
 - **完成事項**：主持人區圖釘改為清楚的簡潔推針輪廓，其他功能不變。
 - **驗證方式與結果**：新增圖釘圖示驗收測試；非平行測試 **65 項通過**，Python 編譯、JavaScript 語法與差異檢查通過。
 - **待確認事項與下一步**：不重啟 `8765`；待使用者確認附圖風格符合期待。
@@ -348,10 +348,10 @@
 ### 【@GPT／Codex 回報】SPEC-01 接手收尾（2026-10-10）
 
 - **角色**：GPT／Codex
-- **已完成**：依序讀取 114 升學競賽、115 專題日與招生平台三份報告；在 `docs/images/` 新增 D-23～D-30 八份圖稿（功能架構、甘特圖、登入、資料上傳、目標推薦、送審、證明、資料來源維護）；同步更新本機規格書與 `docs/04_圖表與介面/diagrams.md`。
+- **已完成**：依序讀取 114 升學競賽、115 專題日與招生平台三份報告；在 `docs/images/` 新增 D-23～D-30 八份圖稿（功能架構、甘特圖、登入、資料上傳、目標推薦、送審、證明、資料來源維護）；同步更新本機規格書與 `docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md`。
 - **雲端副本**：第一次九章重整後，使用者指出內容遠短於本機規格與學長姐報告；已再次改寫 GPT 副本 <https://docs.google.com/document/d/1hi7GI-x_Ion__nDu4TTOUb8N2uVOqW3Q-Ia_7VGveqw/edit>，保留封面並完整帶入本機開發閱讀版的九章、附錄、需求表、流程、驗收、頁面／路由、資料字典與 AI 規範。原始正式版未修改。
 - **驗證結果**：三份報告逐份讀取完成；雲端最新 revision 已由 Docs API 讀回，正文約 52,000 字元、1,037 個段落，附錄與功能表存在；`git diff --check` 通過。Mermaid CLI 版本可用，但 Puppeteer 無法在目前 Windows 環境啟動瀏覽器，D-23～D-30 尚未輸出 PNG／SVG。
-- **修改檔案**：`docs/01_正式規格/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`、`docs/04_圖表與介面/diagrams.md`、`docs/images/D-23-function-architecture.mmd`～`D-30-admin-source-flow.mmd`、本工作佇列與 `docs/03_開發紀錄/development-log.md`。
+- **修改檔案**：`docs/01_正式規格/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md`、`docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md`、`docs/images/D-23-function-architecture.mmd`～`D-30-admin-source-flow.mmd`、本工作佇列與 `docs/03_開發紀錄/development-log.md`。
 - **待確認／下一步**：是否要將圖檔上傳到可公開網址並替換雲端副本的「此處插入圖 N」；待使用者確認後再做圖片處理。未推送 Git，未改原始正式版。
 
 ### 【@GPT／Codex 回報】流程圖大全簡報副本（2026-10-10）
@@ -362,7 +362,7 @@
 
 ### 【@GPT／Codex 回報】依既有資源補強流程圖（2026-10-10）
 
-- **修改檔案**：新增 `docs/images/D-31`～`D-44` 共 14 份 Mermaid 圖稿；更新 `docs/04_圖表與介面/diagrams.md`、本機規格書與流程圖大全副本產生腳本。
+- **修改檔案**：新增 `docs/images/D-31`～`D-44` 共 14 份 Mermaid 圖稿；更新 `docs/04_圖表與介面/03_檢查與圖表規範/diagrams.md`、本機規格書與流程圖大全副本產生腳本。
 - **補強內容**：四角色架構、角色／功能權限表、學生／教師／科辦／管理員細部流程、版本／歷史／下載流程，以及學生主工作台、資料確認、導師審查、管理員維護展示架構。
 - **範圍界線**：所有節點取自本機現有規格、頁面、API、資料表與已完成資源；學長姐專題只作為圖表拆分模板，不引入實習媒合、聊天室、WebAuthn、自動批改等外部領域功能。
 - **驗證**：流程圖大全副本重新產生為 44 張投影片，新增圖均有中文圖名；目前新圖尚無 PNG，簡報先保留可貼圖佔位頁。未修改程式、未上傳 Canva、未推送 Git。

@@ -23,7 +23,7 @@ def test_current_documents_use_moved_document_paths():
     current_documents = [
         PROJECT_ROOT / "docs/01_正式規格/資管科智慧學習歷程系統-系統規格設計書-開發閱讀版.md",
         PROJECT_ROOT / "docs/02_需求與設計/04_原始資料與參考/system-design-action-plan.md",
-        PROJECT_ROOT / "docs/04_圖表與介面/diagram-style-guide.md",
+        PROJECT_ROOT / "docs/04_圖表與介面/03_檢查與圖表規範/diagram-style-guide.md",
     ]
 
     for document in current_documents:
