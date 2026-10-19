@@ -84,7 +84,59 @@ def prepare_course_review_rows(courses):
             row["makeup_season"] = name_season or cell_season
         row["course_name"] = traditionalize_course_name(name_without_marker)
         prepared.append(row)
+    _link_retakes(prepared)
     return prepared
+
+
+def _course_position(row):
+    """修課先後順序：第一學期 → 寒修 → 第二學期 → 暑修，再到下一個年級；年級不明時回傳 None。"""
+    grade = _grade_key(row.get("grade_level"))
+    if grade == "unknown":
+        return None
+    season = row.get("makeup_season")
+    if season == "winter":
+        return int(grade) * 10 + 1.5
+    if season == "summer":
+        return int(grade) * 10 + 2.5
+    semester = {"第一學期": 1, "第二學期": 2}.get(_semester_label(row.get("semester")))
+    return int(grade) * 10 + semester if semester else None
+
+
+def _period_label(row):
+    grade = f"{_grade_key(row.get('grade_level'))}年級"
+    season = row.get("makeup_season")
+    if season in ("summer", "winter"):
+        return f"{grade} {'暑修' if season == 'summer' else '寒修'}"
+    return f"{grade}{_semester_label(row.get('semester'))}"
+
+
+def _link_retakes(rows):
+    """不及格的課程配對之後同名、及格的重補修（含暑修、寒修與之後學期重修），只做顯示標示。"""
+    def same_course(name):
+        return re.sub(r"\s+", "", traditionalize_course_name(str(name or "")))
+
+    def score_of(row):
+        score = row.get("score")
+        return score if type(score) is int and 0 <= score <= 100 else None
+
+    for failed_index, failed in enumerate(rows):
+        failed_score, failed_position = score_of(failed), _course_position(failed)
+        if failed_score is None or failed_score >= 60 or failed_position is None:
+            continue
+        later_passes = [
+            (position, index) for index, row in enumerate(rows)
+            if index != failed_index and same_course(row.get("course_name")) == same_course(failed.get("course_name"))
+            and (score_of(row) or 0) >= 60
+            and (position := _course_position(row)) is not None and position > failed_position
+        ]
+        if not later_passes:
+            continue
+        _position, retake_index = min(later_passes)
+        retake = rows[retake_index]
+        failed["retake"] = {"index": retake_index, "score": retake["score"],
+                            "label": f"{_period_label(retake)} {retake['score']} 分"}
+        retake.setdefault("retake_of", {"index": failed_index, "score": failed_score,
+                                        "label": f"{_period_label(failed)} {failed_score} 分"})
 
 
 def build_course_review_groups(courses):

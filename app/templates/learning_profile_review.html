@@ -163,6 +163,8 @@
   .credential-evidence dt { font-weight: 700; }
   .credential-evidence dd { margin: 0; }
   .credential-evidence small { display: block; margin-top: .15rem; }
+  .retake-done { display: block; color: #1b6b3a; font-weight: 700; }
+  .retake-of { display: block; color: #4c5361; }
   .credential-field-preview { display: block; max-width: min(100%, 22rem); max-height: 5.5rem; margin: .35rem 0; border: 1px solid #d6cdbb; border-radius: 4px; background: #fff; object-fit: contain; }
   .ocr-trace { max-width: 900px; margin: 1rem 0; padding: .9rem 1rem; border: 1px solid #d8dce5; border-radius: 10px; background: #f8fafc; }
   .ocr-trace summary { cursor: pointer; font-weight: 700; }
@@ -292,6 +294,8 @@
         {% endfor %}
         <td>
           {% if kind == 'failed' %}<small class="failed">不及格／待確認</small>{% endif %}
+          {% if course.get('retake') %}<small class="retake-done">✓ 已重補修：{{ course.retake.label }}（及格）</small>{% endif %}
+          {% if course.get('retake_of') %}<small class="retake-of">重補修：補 {{ course.retake_of.label }}</small>{% endif %}
           {% if course.get('makeup_season') %}<small>{{ '暑期' if course.makeup_season == 'summer' else '寒期' }}重補修</small>{% endif %}
           {% if course.get('status_mark') %}<small>課程狀態：{{ course.status_mark }}</small>{% endif %}
           {% if course.get('needs_confirmation') %}<small class="review-warning">需要人工確認</small>{% endif %}
