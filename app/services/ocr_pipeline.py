@@ -228,7 +228,8 @@ def parse_panel_words(words, size, region_index, *, body=None, columns=None,
 def grade_from_header(words):
     text = unicodedata.normalize("NFKC", "".join(w["text"] for w in words))
     text = re.sub(r"\s+", "", text)
-    match = re.search(r"(?:第([1-5一二三四五])學年|(?<!\d)([1-5一二三四五])年級)", text)
+    # RapidOCR 常把「學」讀成簡體「学」或形近字「举」；只在「第N_年」這個固定格式裡放寬
+    match = re.search(r"(?:第([1-5一二三四五])[學学举]年|(?<!\d)([1-5一二三四五])年[級级])", text)
     if not match:
         return None, None
     value = next(v for v in match.groups() if v)
@@ -317,6 +318,97 @@ def _recognize_crop(image, box, engine, *, scale=None):
     return words
 
 
+def _ink_without_rules(ink):
+    """移除直線框線：一整條 x 在表格本體超過一半高度都有墨水的就是框線（含掃描偏移、較粗的線）。"""
+    import numpy as np
+
+    rules = ink.mean(axis=0) > .5
+    rules[1:] |= rules[:-1]
+    rules[:-1] |= rules[1:]
+    cleaned = ink.copy()
+    cleaned[:, rules] = False
+    return cleaned
+
+
+def _text_row_bands(ink, columns):
+    """用墨水投影找出表格內每一列文字的上下範圍；不靠文字框偵測。
+
+    先移除直線框線，再只看各欄內部；整列幾乎塗滿的是橫線框線，不算文字。
+    同一個字內的空隙（例如「二」「三」）比列與列的間距小，依文字高度合併。
+    """
+    import numpy as np
+
+    ink = _ink_without_rules(ink)
+    interior = np.zeros(ink.shape[0], dtype=int)
+    for c_left, c_right in zip(columns, columns[1:]):
+        if c_right - c_left > 10:
+            interior += ink[:, c_left + 4:c_right - 4].sum(axis=1)
+    interior[ink.mean(axis=1) > .6] = 0
+    runs, start = [], None
+    for y, value in enumerate(interior >= 2):
+        if value and start is None:
+            start = y
+        elif not value and start is not None:
+            runs.append([start, y])
+            start = None
+    if start is not None:
+        runs.append([start, len(interior)])
+    if not runs:
+        return []
+    typical = float(np.percentile([b - a for a, b in runs], 75))
+    merged = [runs[0]]
+    for a, b in runs[1:]:
+        if a - merged[-1][1] < max(2, typical * .3):
+            merged[-1][1] = b
+        else:
+            merged.append([a, b])
+    return [(a, b) for a, b in merged if b - a >= max(4, typical * .35)]
+
+
+def _recognize_panel_cells(image, panel):
+    """RapidOCR 專用：逐列、逐格只做文字辨識，回傳與 recognize() 相同格式的文字框（原圖座標）。
+
+    窄小的學分／成績欄用文字框偵測時，兩位數會被拆成兩個框或漏掉一位數（例如 70 只剩 0），
+    伺服器版模型在又高又窄的欄位裁切上甚至偵測不到任何文字；整格直接辨識可避免這兩個問題。
+    """
+    import numpy as np
+    from app.services.ocr_engines import recognize_rapidocr_line
+
+    left, _, right, _ = panel["bbox"]
+    top, bottom = (int(v) for v in panel["body"])
+    columns = panel["columns"]
+    gray = np.asarray(image.convert("L"))
+    raw_ink = gray[top:bottom, int(left):int(right)] < 175
+    ink = _ink_without_rules(raw_ink)
+    words = []
+    for y1, y2 in _text_row_bands(raw_ink, columns):
+        height = y2 - y1
+        for c_left, c_right in zip(columns, columns[1:]):
+            x1, x2 = c_left + 4, c_right - 4
+            if x2 - x1 < 4:
+                continue
+            cell = ink[y1:y2, x1:x2]
+            if int(cell.sum()) < 8:
+                continue  # 空格：不辨識，避免把空白讀成「−」之類的符號
+            xs = np.flatnonzero(cell.any(axis=0))
+            pad = max(4, round(height * .25))
+            crop_box = (int(left) + x1 + max(0, xs[0] - pad), top + max(0, y1 - pad),
+                        int(left) + x1 + min(x2 - x1, xs[-1] + 1 + pad), top + min(ink.shape[0], y2 + pad))
+            crop = image.crop(crop_box).convert("RGB")
+            scale = max(1.0, 40 / max(1, crop.height))
+            if scale > 1:
+                crop = crop.resize((round(crop.width * scale), round(crop.height * scale)), Image.Resampling.LANCZOS)
+            recognized = recognize_rapidocr_line(ImageOps.expand(crop, border=8, fill="white"))
+            if recognized is None:
+                continue
+            text, confidence = recognized
+            if not any(char.isalnum() for char in text):
+                continue  # 掃描污點常被讀成「.」「−」，只有標點的不算文字
+            words.append({"text": text, "confidence": confidence,
+                          "bbox": [float(left + c_left + 3), float(top + y1), float(left + c_right - 3), float(top + y2)]})
+    return words
+
+
 def analyze(document_type, file_path, engine):
     from app.services.document_analysis_service import parse_ocr_text
     from app.services.credential_analysis import (
@@ -357,12 +449,16 @@ def analyze(document_type, file_path, engine):
                     words = []
                     from app.services.ocr_engines import LINE_LEVEL_ENGINES
                     paddle = engine in LINE_LEVEL_ENGINES
-                    for index, (c_left, c_right) in enumerate(zip(panel["columns"], panel["columns"][1:])):
-                        box = [left+c_left+2, top, left+c_right-2, bottom]
-                        # Keep high-resolution subject names; raw-size numeric
-                        # cells were at least as complete on the reference form.
-                        words.extend(_recognize_crop(image, box, engine,
-                                      scale=1 if paddle and index else None))
+                    if engine == "rapidocr":
+                        # 逐格只做文字辨識；見 _recognize_panel_cells 說明
+                        words = _recognize_panel_cells(image, panel)
+                    else:
+                        for index, (c_left, c_right) in enumerate(zip(panel["columns"], panel["columns"][1:])):
+                            box = [left+c_left+2, top, left+c_right-2, bottom]
+                            # Keep high-resolution subject names; raw-size numeric
+                            # cells were at least as complete on the reference form.
+                            words.extend(_recognize_crop(image, box, engine,
+                                          scale=1 if paddle and index else None))
                     if not words:
                         # Empty future-year panels still have printed headers.
                         # There is no course to assign that year to.

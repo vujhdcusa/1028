@@ -191,17 +191,43 @@ def configured_rapidocr_tier():
     return current_app.config.get("OCR_MODEL_TIER", "server") if has_app_context() else "server"
 
 
-def _recognize_rapidocr(image):
-    # 本機 RapidOCR（PP-OCRv5 ONNX 模型，與 PaddleOCR 伺服器版同一套模型），不需 PaddlePaddle。
-    # 每個等級每個程序只載入一次；鎖住推論，避免多執行緒共用同一個模型時互相干擾。
+def _rapidocr_engine():
+    """呼叫端須持有 _rapidocr_lock。每個模型等級每個程序只載入一次。"""
     from app.services.document_analysis_service import RapidOcrEngine
 
     tier = configured_rapidocr_tier()
+    if tier not in _rapidocr_engines:
+        _rapidocr_engines[tier] = RapidOcrEngine(tier=tier)._load()
+    return _rapidocr_engines[tier]
+
+
+def recognize_rapidocr_line(image):
+    """只做文字辨識（不偵測文字框），用於已切好的一格表格。回傳 (文字, 信心) 或 None。
+
+    窄小的數字欄用文字框偵測時，兩位數會被拆成兩個框或漏掉一位數；整格直接辨識可避免。
+    """
     with _rapidocr_lock:
-        if tier not in _rapidocr_engines:
-            _rapidocr_engines[tier] = RapidOcrEngine(tier=tier)._load()
         try:
-            output = _rapidocr_engines[tier](image.convert("RGB"))
+            output = _rapidocr_engine()(image.convert("RGB"), use_det=False, use_cls=False, use_rec=True)
+        except Exception:
+            raise RuntimeError(
+                "RapidOCR 文字辨識失敗。請確認 rapidocr、onnxruntime 套件與 instance/ocr-models 模型檔。"
+            ) from None
+    texts = list(output.txts or ())
+    if not texts or not texts[0].strip():
+        return None
+    scores = list(output.scores or ())
+    return texts[0].strip(), _confidence(scores[0]) if scores else None
+
+
+def _recognize_rapidocr(image):
+    # 本機 RapidOCR（PP-OCRv5 ONNX 模型，與 PaddleOCR 伺服器版同一套模型），不需 PaddlePaddle。
+    # 鎖住推論，避免多執行緒共用同一個模型時互相干擾。
+
+    with _rapidocr_lock:
+        try:
+            # 明確開啟偵測：rapidocr 會記住上一次呼叫的設定（逐格辨識時關掉了偵測）
+            output = _rapidocr_engine()(image.convert("RGB"), use_det=True, use_cls=True, use_rec=True)
         except Exception:
             raise RuntimeError(
                 "RapidOCR 文字辨識失敗。請確認 rapidocr、onnxruntime 套件與 instance/ocr-models 模型檔。"
