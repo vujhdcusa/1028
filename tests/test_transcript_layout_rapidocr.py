@@ -92,3 +92,28 @@ def test_panel_cells_skip_punctuation_only_specks(tmp_path, monkeypatch):
     monkeypatch.setattr(ocr_engines, "recognize_rapidocr_line", lambda crop: (".", 0.4))
 
     assert ocr_pipeline._recognize_panel_cells(image, panel) == []
+
+
+def test_rule_remnant_in_empty_cell_is_not_read_as_a_number(tmp_path, monkeypatch):
+    # 真實掃描檔：表頭底線的淡灰殘影落在第一列空白的第二學期格子裡，被讀成成績「1」（信心 27%），
+    # 多出一筆不及格的假課程。殘影只有 1～3 像素高，真正的字（連「1」）都會上下跨過一定高度。
+    from PIL import Image, ImageDraw
+
+    from app.services import ocr_engines, ocr_pipeline
+
+    image_path = tmp_path / "synthetic_transcript.png"
+    render(image_path)
+    image = Image.open(image_path).convert("RGB")
+    panel = ocr_pipeline.detect_transcript_panels(image)[0]
+    left = panel["bbox"][0]
+    top = panel["body"][0]
+    columns = panel["columns"]
+    # 第一年第四門「模擬音樂」只有第一學期；在它第二學期成績格畫一條 2 像素高的殘影
+    row_y = top + 14 + 3 * 46 - 2
+    ImageDraw.Draw(image).rectangle([left + columns[5] + 8, row_y, left + columns[6] - 8, row_y + 1], fill=(120, 120, 120))
+    monkeypatch.setattr(ocr_engines, "recognize_rapidocr_line", lambda crop: ("1", 0.27))
+
+    words = ocr_pipeline._recognize_panel_cells(image, panel)
+
+    second_score_column = [w for w in words if left + columns[5] <= (w["bbox"][0] + w["bbox"][2]) / 2 < left + columns[6]]
+    assert len(second_score_column) == 3   # 只有三門課真的有第二學期成績

@@ -390,6 +390,11 @@ def _recognize_panel_cells(image, panel):
             cell = ink[y1:y2, x1:x2]
             if int(cell.sum()) < 8:
                 continue  # 空格：不辨識，避免把空白讀成「−」之類的符號
+            ink_rows = np.flatnonzero(cell.any(axis=1))
+            if ink_rows[-1] - ink_rows[0] + 1 < max(6, height * .4):
+                # 框線殘影、污點只有幾個像素高；真正的字（連「1」）會上下跨過一定高度。
+                # 實例：表頭底線殘影落在空白成績格，被讀成「1」而多出一筆不及格的假課程。
+                continue
             xs = np.flatnonzero(cell.any(axis=0))
             pad = max(4, round(height * .25))
             crop_box = (int(left) + x1 + max(0, xs[0] - pad), top + max(0, y1 - pad),
