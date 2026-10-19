@@ -1,5 +1,32 @@
 # 開發日誌
 
+## 2026-10-19 OCR 改用顯示卡加速（DirectML，RTX 4060），可切回 CPU
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：使用者問「為什麼都用 CPU、沒用 GPU」，並指示改裝 `onnxruntime-directml` 讓 RapidOCR 用 RTX 4060，保留可切回 CPU 的設定，裝完比較速度。
+
+- 安裝：卸除 `onnxruntime`（CPU 版 1.31.0），從 PyPI 安裝 `onnxruntime-directml==1.24.4`（Microsoft 官方，含 CPU 執行）。兩者都提供 `onnxruntime` 模組，不能同時安裝。第一次安裝卡在下載，停掉後加上逾時設定重試成功。現在可用 `DmlExecutionProvider`、`CPUExecutionProvider`。切回方法寫在新增的 `requirements-directml.txt`；`requirements.txt` 仍維持 CPU 版，讓沒有顯示卡的電腦或伺服器照常安裝。
+- 發現兩件事：
+  1. `rapidocr` 3.10 把顯示卡設定以 OmegaConf 物件交給 onnxruntime，被拒絕後會**悄悄退回 CPU**（時間跟 CPU 一樣、顯示卡記憶體沒變）。已在本專案包一層轉成一般 dict（`_patch_rapidocr_directml_options`）。
+  2. 筆電有兩張顯示卡：DirectML 編號 0 是 AMD 內建顯示（只快約 2 倍），編號 1 才是 RTX 4060（`nvidia-smi` 顯示使用率 100%、記憶體 665→5388 MiB）。所以要能指定編號。
+- 修改檔案：`app/services/document_analysis_service.py`（`RapidOcrEngine` 新增 `device`、`dml_device_id` 與 `build_params()`）、`app/services/ocr_engines.py`（模型依「等級、裝置、編號」分別快取，新增 `configured_rapidocr_settings()`）、`app/config.py`（`OCR_DEVICE` 預設 `cpu`、`OCR_DML_DEVICE_ID` 預設 0）、`app/__init__.py`、`.env.example`、`scripts/run_local_demo.py`（新增 `--gpu 編號`）、新增 `requirements-directml.txt`、`tests/test_rapidocr_device.py`（6 項，先寫失敗測試再實作）。工作區 `D:\democase\.claude\launch.json` 新增「local-demo-ocr-gpu」（不在版本控制內）。
+- **實測（使用者提供的成績單，85 筆，同一套 DirectML 套件內切換）**：
+
+  | 組合 | 第一次（含載入） | 網站已在跑時 | 準確度 |
+  | --- | --- | --- | --- |
+  | 伺服器版＋CPU | 33.5 秒 | 31.6 秒 | 學分 84/84、成績 82 對 0 錯、年級 84/84 |
+  | **伺服器版＋RTX 4060** | **9.4 秒** | **5.9 秒** | **與 CPU 完全相同** |
+  | 輕量版＋CPU | 9.2 秒 | 8.5 秒 | 成績讀錯 3 筆、年級 58 |
+  | 輕量版＋RTX 4060 | 8.4 秒 | 6.3 秒 | 與輕量版 CPU 相同 |
+
+  伺服器版用 RTX 4060 比 CPU 快約 5.4 倍，結果一字不差；也比輕量版＋CPU 更快更準。經本機展示站實際上傳：9.7 秒完成（含第一次載入模型），顯示卡記憶體 665→3352 MiB，確認有用到 RTX 4060。今天同一份成績單從 467.5 秒（調整前）→ 46.7 秒（逐格辨識）→ 5.9 秒（顯示卡）。
+- 注意：顯示卡模式會佔用約 3～5 GB 顯示卡記憶體；正式多人使用時，每個網站服務程序各載一份模型，要依伺服器顯示卡記憶體決定程序數，或改成背景排隊處理。學校伺服器若沒有顯示卡，維持 `OCR_DEVICE=cpu` 即可。
+- 完整測試：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/device-full` → `562 passed, 2 skipped in 267.32s`；組員 JavaScript 測試 5/5。
+- 下一步：OCR 背景排隊處理；與組員分享版型調整與顯示卡設定。
+
 ## 2026-10-19 依學校成績單版型調整 RapidOCR：修正漏讀、年級失敗，速度 467 秒降到 47 秒
 
 日期：2026-10-19（台灣時間）

@@ -186,19 +186,29 @@ def _recognize_paddle(image):
 
 def configured_rapidocr_tier():
     """Flask 設定的模型等級（OCR_MODEL_TIER）；沒有應用程式環境時用伺服器版。"""
+    return configured_rapidocr_settings()[0]
+
+
+def configured_rapidocr_settings():
+    """回傳 (模型等級, 執行裝置, DirectML 顯示卡編號)；沒有應用程式環境時用伺服器版＋CPU。"""
     from flask import current_app, has_app_context
 
-    return current_app.config.get("OCR_MODEL_TIER", "server") if has_app_context() else "server"
+    if not has_app_context():
+        return "server", "cpu", 0
+    config = current_app.config
+    return (config.get("OCR_MODEL_TIER", "server"), config.get("OCR_DEVICE", "cpu"),
+            int(config.get("OCR_DML_DEVICE_ID", 0)))
 
 
 def _rapidocr_engine():
-    """呼叫端須持有 _rapidocr_lock。每個模型等級每個程序只載入一次。"""
+    """呼叫端須持有 _rapidocr_lock。每組（模型等級、裝置、顯示卡編號）每個程序只載入一次。"""
     from app.services.document_analysis_service import RapidOcrEngine
 
-    tier = configured_rapidocr_tier()
-    if tier not in _rapidocr_engines:
-        _rapidocr_engines[tier] = RapidOcrEngine(tier=tier)._load()
-    return _rapidocr_engines[tier]
+    settings = configured_rapidocr_settings()
+    if settings not in _rapidocr_engines:
+        tier, device, dml_device_id = settings
+        _rapidocr_engines[settings] = RapidOcrEngine(tier=tier, device=device, dml_device_id=dml_device_id)._load()
+    return _rapidocr_engines[settings]
 
 
 def recognize_rapidocr_line(image):

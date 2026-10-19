@@ -51,6 +51,10 @@ class Config:
     DOCUMENT_OCR_ENGINE = os.getenv("DOCUMENT_OCR_ENGINE", "")
     # 模型等級：server＝伺服器版（預設，較準、較慢）；mobile＝輕量版（較快、記憶體較少）
     OCR_MODEL_TIER = os.getenv("OCR_MODEL_TIER", "server")
+    # 執行裝置：cpu＝一般處理器（預設）；dml＝Windows DirectML 顯示卡加速（需安裝 onnxruntime-directml）
+    OCR_DEVICE = os.getenv("OCR_DEVICE", "cpu")
+    # DirectML 顯示卡編號：筆電的 0 多半是內建顯示，獨立顯示卡常是 1（開發用筆電的 RTX 4060 是 1）
+    OCR_DML_DEVICE_ID = int(os.getenv("OCR_DML_DEVICE_ID", "0"))
     CSRF_ENABLED = os.getenv("CSRF_ENABLED", "true").lower() == "true"
     ALLOWED_UPLOAD_EXTENSIONS = {
         value.strip().lower()

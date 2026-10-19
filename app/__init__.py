@@ -13,7 +13,11 @@ def create_app(config_overrides=None):
     if app.config.get("DOCUMENT_OCR_ENGINE") == "rapidocr" and app.config.get("OCR_ENGINE") is None:
         from app.services.document_analysis_service import RapidOcrEngine
 
-        app.config["OCR_ENGINE"] = RapidOcrEngine(tier=app.config.get("OCR_MODEL_TIER", "server"))
+        app.config["OCR_ENGINE"] = RapidOcrEngine(
+            tier=app.config.get("OCR_MODEL_TIER", "server"),
+            device=app.config.get("OCR_DEVICE", "cpu"),
+            dml_device_id=app.config.get("OCR_DML_DEVICE_ID", 0),
+        )
 
     db.init_app(app)
     migrate.init_app(app, db)

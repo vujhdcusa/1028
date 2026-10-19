@@ -27,6 +27,28 @@ OCR_MODEL_TIERS = {
         "Cls": "ch_ppocr_mobile_v2.0_cls_mobile.onnx",
     },
 }
+# cpu＝一般處理器（預設，任何電腦都能用）；dml＝Windows DirectML 顯示卡加速（需安裝 onnxruntime-directml）
+OCR_DEVICES = ("cpu", "dml")
+
+
+def _plain_dict_provider_options(method):
+    """把 rapidocr 傳給 onnxruntime 的顯示卡設定轉成一般 dict。"""
+    def wrapper(self):
+        return dict(method(self))
+
+    wrapper._plain_dict = True
+    return wrapper
+
+
+def _patch_rapidocr_directml_options():
+    """rapidocr 3.10 直接把 OmegaConf 設定物件交給 onnxruntime，被拒絕後會悄悄退回 CPU；轉成 dict 才會真的用顯示卡。"""
+    from rapidocr.inference_engine.onnxruntime import provider_config
+
+    current = provider_config.ProviderConfig.dml_ep_cfg
+    if not getattr(current, "_plain_dict", False):
+        provider_config.ProviderConfig.dml_ep_cfg = _plain_dict_provider_options(current)
+
+
 FIELD_LABELS = ("課程", "學分", "分數", "證照名稱", "等級", "發證單位", "日期")
 
 
@@ -36,26 +58,41 @@ class RapidOcrEngine:
     只讀本機模型檔，不會自動下載；模型由 scripts/download_ocr_models.py 預先下載並核對雜湊。
     """
 
-    def __init__(self, model_dir=None, tier="server"):
+    def __init__(self, model_dir=None, tier="server", device="cpu", dml_device_id=0):
         if tier not in OCR_MODEL_TIERS:
             raise ValueError(f"unsupported OCR model tier: {tier}")
+        if device not in OCR_DEVICES:
+            raise ValueError(f"unsupported OCR device: {device}")
         self.model_dir = Path(model_dir) if model_dir else DEFAULT_OCR_MODEL_DIR
         self.tier = tier
         self.model_files = OCR_MODEL_TIERS[tier]
+        self.device = device
+        self.dml_device_id = int(dml_device_id)
         self._ocr = None
 
+    def build_params(self):
+        from rapidocr import OCRVersion
+
+        params = {"Global.log_level": "error",
+                  "Det.ocr_version": OCRVersion.PPOCRV5, "Rec.ocr_version": OCRVersion.PPOCRV5,
+                  "EngineConfig.onnxruntime.use_dml": self.device == "dml"}
+        params.update({f"{stage}.model_path": str(self.model_dir / name) for stage, name in self.model_files.items()})
+        if self.device == "dml":
+            # 筆電常有內建與獨立兩張顯示卡；DirectML 編號 0 多半是內建顯示，要用獨立顯示卡須指定編號
+            params["EngineConfig.onnxruntime.dml_ep_cfg"] = {"device_id": self.dml_device_id}
+        return params
+
     def _load(self):
-        paths = {stage: self.model_dir / name for stage, name in self.model_files.items()}
-        missing = [path.name for path in paths.values() if not path.exists()]
+        params = self.build_params()
+        missing = [name for name in self.model_files.values() if not (self.model_dir / name).exists()]
         if missing:
             raise RuntimeError(
                 f"離線 OCR 模型檔不存在（{', '.join(missing)}）；請先執行 scripts/download_ocr_models.py"
             )
-        from rapidocr import OCRVersion, RapidOCR
+        from rapidocr import RapidOCR
 
-        params = {"Global.log_level": "error",
-                  "Det.ocr_version": OCRVersion.PPOCRV5, "Rec.ocr_version": OCRVersion.PPOCRV5}
-        params.update({f"{stage}.model_path": str(path) for stage, path in paths.items()})
+        if self.device == "dml":
+            _patch_rapidocr_directml_options()
         return RapidOCR(params=params)
 
     def recognize_text(self, image_path):
