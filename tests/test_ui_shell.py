@@ -31,7 +31,18 @@ def test_public_home_uses_the_shared_design_system_and_motion_shell():
     assert b"/static/js/motion.js" in response.data
     assert b"data-scatter" in response.data
     assert b'id="route"' in response.data
-    assert b'id="agent"' in response.data
+
+
+def test_public_home_no_longer_hardcodes_admission_program_weights():
+    # 首頁不放寫死某一學年度簡章的校系加權表；簡章每年會換，校系資料由管理員在後台維護
+    client = ui_app().test_client()
+
+    html = client.get("/").get_data(as_text=True)
+
+    assert 'id="agent"' not in html
+    assert "#agent" not in html
+    assert "備審加權" not in html
+    assert "簡章範例" not in html
 
 
 def test_public_home_tells_the_six_step_story_in_order():

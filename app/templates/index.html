@@ -126,41 +126,6 @@
   </div>
 </section>
 
-{# 保留既有測試與公開展示需要的校系資料、加權表。 #}
-<section class="chapter public-agent" id="agent" aria-labelledby="agent-title">
-  <div class="story-scene__inner">
-    <div>
-      <p class="story-eyebrow">校系資料</p>
-      <h2 id="agent-title">下一站的要求，也能一起整理</h2>
-      <p class="chapter__lead">簡章更新後，由管理者比對核准。</p>
-    </div>
-    <div class="agent-board">
-      {% if sample_programs %}
-      <div class="table-wrap table-wrap--bare">
-        <table class="program-table">
-          <thead><tr><th>代碼</th><th>學校／科系</th><th>備審加權（{{ sample_programs[0].year }}）</th></tr></thead>
-          <tbody>
-            {% set palette = ["#c9d4f6", "#f3dfb3", "#c4e3dd", "#f2c9bd"] %}
-            {% for program in sample_programs %}
-            <tr>
-              <td class="mono">{{ program.code }}</td>
-              <td><b>{{ program.school }}</b><br><span class="muted">{{ program.department }}</span></td>
-              <td>
-                <div class="weight-bar" role="img" aria-label="{% for item in program['items'] %}{{ item.name }} {{ item.weight }}%{% if not loop.last %}、{% endif %}{% endfor %}">
-                  {% for item in program["items"] %}<span style="width: {{ item.weight }}%; background: {{ palette[loop.index0 % 4] }};">{{ item.weight }}%</span>{% endfor %}
-                </div>
-                <p class="weight-names">{% for item in program["items"] %}{{ item.name }}{% if not loop.last %}／{% endif %}{% endfor %}</p>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% endif %}
-    </div>
-    <p class="muted small public-agent__note">115 學年度簡章範例，以當年度公告為準。</p>
-  </div>
-</section>
 {% endblock %}
 
 {% block footer %}{{ footer() }}{% endblock %}

@@ -246,20 +246,6 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .ticket::before { top: -11px; }
 .ticket::after { bottom: -11px; }
 
-/* 第五幕：Agent 每年更新（亮點） */
-.agent-board { margin-top: 2rem; border: 1.5px solid var(--sheet); }
-.agent-steps { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1.5px solid var(--sheet); }
-.agent-steps li { padding: 1rem; border-right: 1px solid rgb(255 255 255 / 25%); }
-.agent-steps li:last-child { border-right: 0; }
-.agent-steps .mono { font-size: .75rem; color: #b9bfcb; }
-.agent-steps b { display: block; margin-top: .2rem; }
-.program-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
-.program-table th, .program-table td { padding: .75rem 1rem; text-align: left; border-bottom: 1px solid rgb(255 255 255 / 18%); vertical-align: top; }
-.program-table th { font-family: var(--font-mono); font-weight: 400; font-size: .75rem; color: #b9bfcb; letter-spacing: .06em; }
-.weight-bar { display: flex; height: 22px; min-width: 220px; border: 1px solid var(--sheet); }
-.weight-bar span { display: grid; place-items: center; font-size: .7rem; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; border-right: 1px solid var(--ink); }
-.weight-bar span:last-child { border-right: 0; }
-.weight-names { font-size: .8rem; color: #d6dae2; margin-top: .3rem; }
 
 /* =========================================================
    學生端：我的五年
@@ -417,8 +403,7 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
   .chapter__inner { grid-template-columns: 1fr; gap: 1rem; }
   .slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .drawer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tickets, .agent-steps { grid-template-columns: 1fr; }
-  .agent-steps li { border-right: 0; border-bottom: 1px solid rgb(255 255 255 / 25%); }
+  .tickets { grid-template-columns: 1fr; }
   .sticky { position: static; }
   .work-metrics, .work-metrics--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .queue-row__form { grid-template-columns: 1fr; }
@@ -448,7 +433,6 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 
 /* 格線子元素可以縮小，寬的內容（資料夾分頁、表格）改在自己的區塊內左右捲動，不撐破整頁 */
 .split > *, .cover > *, .chapter__inner > *, .stack-demo > *, .folders { min-width: 0; }
-.agent-board .table-wrap { overflow-x: auto; }
 @media (max-width: 600px) {
   .scatter { min-height: 0; aspect-ratio: 1 / 1.15; }
   .chip { width: 30%; }
@@ -1023,12 +1007,10 @@ body[data-page="student-welcome"] .assistant { display: none; }
 [data-page="public-home"] main { overflow: hidden; }
 [data-page="public-home"] .story-scene { position: relative; border-top: 1px solid rgb(28 34 48 / 18%); }
 [data-page="public-home"] .story-scene:not(.story-scene--scatter) { min-height: clamp(580px, 100svh, 820px); display: grid; align-items: center; }
-[data-page="public-home"] .story-scene__inner,
-[data-page="public-home"] .public-agent .story-scene__inner { width: min(1160px, calc(100% - 2.5rem)); margin: 0 auto; padding: clamp(2.5rem, 6svh, 4.5rem) 0; }
+[data-page="public-home"] .story-scene__inner { width: min(1160px, calc(100% - 2.5rem)); margin: 0 auto; padding: clamp(2.5rem, 6svh, 4.5rem) 0; }
 [data-page="public-home"] .story-scene__inner { display: grid; gap: clamp(2rem, 4svh, 3.5rem); }
 [data-page="public-home"] .story-eyebrow { margin: 0 0 .8rem; font-family: var(--font-mono); font-size: .76rem; font-weight: 700; letter-spacing: .12em; color: #3158bd; text-transform: uppercase; }
-[data-page="public-home"] .story-scene h2,
-[data-page="public-home"] .public-agent h2 { max-width: 760px; margin: 0; font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 4.6rem); font-weight: 900; line-height: 1.08; letter-spacing: -.025em; }
+[data-page="public-home"] .story-scene h2 { max-width: 760px; margin: 0; font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 4.6rem); font-weight: 900; line-height: 1.08; letter-spacing: -.025em; }
 [data-page="public-home"] .story-scene__lead { max-width: 35rem; margin-top: 1rem; color: #4c5361; font-size: clamp(1rem, 1.8vw, 1.2rem); }
 
 /* 01：米白地面上的藍色資料夾海與小人物 */
@@ -1099,11 +1081,6 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .motion-ready [data-page="public-home"] .bundle-stack:not(.is-visible) span { left: 20%; top: 35%; opacity: .25; }
 
 /* 校系資料沿用原資料與表格，但回到米白視覺。 */
-[data-page="public-home"] .public-agent { color: #f8f5ee; background: #202737; }
-[data-page="public-home"] .public-agent .story-scene__inner { display: grid; grid-template-columns: minmax(240px, .65fr) minmax(0, 1.35fr); gap: clamp(2rem, 5vw, 5rem); }
-[data-page="public-home"] .public-agent .chapter__lead { color: #c7cbd3; }
-[data-page="public-home"] .agent-board { margin: 0; min-width: 0; }
-[data-page="public-home"] .public-agent__note { grid-column: 2; margin: -3.5rem 0 0; }
 
 /* 一般動效只做成路、聚焦、組合；進場幅度保持輕。 */
 .motion-ready [data-page="public-home"] [data-motion] { opacity: 0; transform: translateY(14px); transition: opacity .65s ease, transform .65s ease; }
@@ -1114,7 +1091,6 @@ body[data-page="student-welcome"] .assistant { display: none; }
 @media (max-width: 960px) {
   [data-page="public-home"] .cover.story-scene--scatter,
   [data-page="public-home"] .story-scene__inner--bundle,
-  [data-page="public-home"] .public-agent .story-scene__inner { grid-template-columns: 1fr; }
   [data-page="public-home"] .cover.story-scene--scatter { min-height: 580px; }
   [data-page="public-home"] .scatter { min-height: 480px; order: 2; }
   [data-page="public-home"] .route__stops { min-height: auto; grid-template-columns: repeat(5, minmax(140px, 1fr)); overflow-x: auto; padding: 2rem 1rem 3rem; }
@@ -1124,12 +1100,10 @@ body[data-page="student-welcome"] .assistant { display: none; }
   [data-page="public-home"] .tickets::before { left: .75rem; top: 0; bottom: 0; width: 3px; height: auto; }
   [data-page="public-home"] .tickets::after { display: none; }
   [data-page="public-home"] .ticket__branch { left: auto; right: 100%; top: 50%; bottom: auto; width: 2rem; height: 3px; }
-  [data-page="public-home"] .public-agent__note { grid-column: auto; margin: -1rem 0 0; }
 }
 
 @media (max-width: 600px) {
   [data-page="public-home"] .story-scene__inner,
-  [data-page="public-home"] .public-agent .story-scene__inner,
   [data-page="public-home"] .cover.story-scene--scatter { width: min(100% - 2rem, 1160px); }
   [data-page="public-home"] .story-scene .story-scene__inner { padding: 2rem 0; gap: 1.5rem; }
   [data-page="public-home"] .cover.story-scene--scatter { height: calc(100svh - 125px); min-height: 560px; max-height: 720px; padding: 0; }
@@ -1152,7 +1126,6 @@ body[data-page="student-welcome"] .assistant { display: none; }
   [data-page="public-home"] .story-scene__inner--bundle { min-height: auto; }
   [data-page="public-home"] .bundle-stack { min-height: 300px; }
   [data-page="public-home"] .bundle-stack span { width: 74%; }
-  [data-page="public-home"] .agent-board .table-wrap { max-width: 100%; }
 }
 
 /* 減少動態效果：六幕維持最終靜態排列，只做短暫淡入。 */

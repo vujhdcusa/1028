@@ -1,5 +1,19 @@
 # 開發日誌
 
+## 2026-10-19 首頁拿掉寫死的「校系資料」加權表
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：使用者指出公開首頁的「校系資料」區塊（115 學年度簡章範例的備審加權表）是寫死在前端的，明年簡章一換就又要改程式，要求拿掉。
+
+- 拿掉：`app/templates/index.html` 的 `#agent` 區塊、`app/templates/partials/nav.html` 未登入導覽列的「校系資料」連結、`app/routes/main.py` 首頁不再讀範例校系資料、`app/static/css/design-system.css` 只給這個區塊用的樣式（`agent-board`、`agent-steps`、`program-table`、`weight-bar`、`weight-names`、`public-agent`）。清樣式時曾誤刪一行同時含 `.tickets` 的規則，已補回（首頁仍在用）。
+- 保留：系統管理員的「校系資料」管理頁、學生的「目標校系」與其他使用 `load_sample_programs()` 的地方；這些資料存在資料庫，簡章更新時由管理員維護，不用改程式。
+- 測試：`tests/test_ui_shell.py` 原本檢查首頁要有 `#agent`，改為新增測試檢查首頁**不再**出現校系區塊、連結、「備審加權」與「簡章範例」；先確認失敗再修改。
+- 瀏覽器確認：首頁導覽只剩「五年路徑」「登入」，最後一段「五年，組成一份能出發的資料包」直接接頁尾；伺服器無錯誤。
+- 完整測試：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/home-full` → `572 passed, 2 skipped in 264.98s`。
+
 ## 2026-10-19 修正空白格被讀成數字（多出不及格假課程）
 
 日期：2026-10-19（台灣時間）

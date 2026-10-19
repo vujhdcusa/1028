@@ -48,7 +48,6 @@ def index():
         "index.html",
         plan=FIVE_YEAR_PLAN,
         next_stops=NEXT_STOPS,
-        sample_programs=load_sample_programs(),
     )
 
 
