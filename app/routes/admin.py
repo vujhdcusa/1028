@@ -406,3 +406,32 @@ def class_delete(advisor_id):
         db.session.delete(advisor)
         db.session.commit()
     return redirect(url_for("admin.classes"))
+
+
+@admin_bp.get("/admin/ocr")
+@admin_bp.post("/admin/ocr")
+@role_required("admin")
+def ocr_settings_page():
+    """切換 OCR 用 CPU 或顯示卡（DirectML）辨識；設定存在資料庫，切換後不用重開網站。"""
+    from app.services import ocr_settings
+
+    error = None
+    if request.method == "POST":
+        try:
+            ocr_settings.save_device(request.form.get("device", ""),
+                                     request.form.get("dml_device_id", type=int, default=-1),
+                                     get_current_user())
+            return redirect(url_for("admin.ocr_settings_page"))
+        except ValueError as exc:
+            error = str(exc)
+    device, dml_device_id = ocr_settings.current_device()
+    return render_template(
+        "admin_ocr.html",
+        user=get_current_user(),
+        device=device,
+        dml_device_id=dml_device_id,
+        device_labels=ocr_settings.DEVICE_LABELS,
+        gpu_available=ocr_settings.directml_available(),
+        provider=current_app.config.get("DOCUMENT_ANALYSIS_PROVIDER"),
+        error=error,
+    ), (400 if error else 200)

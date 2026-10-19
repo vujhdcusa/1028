@@ -195,9 +195,11 @@ def configured_rapidocr_settings():
 
     if not has_app_context():
         return "server", "cpu", 0
-    config = current_app.config
-    return (config.get("OCR_MODEL_TIER", "server"), config.get("OCR_DEVICE", "cpu"),
-            int(config.get("OCR_DML_DEVICE_ID", 0)))
+    from app.services.ocr_settings import current_device
+
+    # 裝置以系統管理員在網站上的設定為準，沒有設定時用設定檔
+    device, dml_device_id = current_device()
+    return current_app.config.get("OCR_MODEL_TIER", "server"), device, dml_device_id
 
 
 def _rapidocr_engine():

@@ -1,5 +1,25 @@
 # 開發日誌
 
+## 2026-10-19 系統管理員可在網站切換 OCR 用 CPU 或顯示卡
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：使用者要求在系統管理員那裡增加切換，選擇 OCR 要用 CPU 還是顯示卡辨識，並重開系統讓使用者測試。
+
+- 修改檔案：
+  - 新增資料表 `system_settings`（鍵／值、修改者、修改時間）：`app/models/system_setting.py`、遷移 `migrations/versions/f3a8c2d61b07_add_system_settings.py`（接在 `e4d7a9c1b602` 之後）。**尚未在 MySQL 執行**，上線前要先備份再升級。
+  - 新增 `app/services/ocr_settings.py`：讀取時資料庫設定優先，沒有就用設定檔 `OCR_DEVICE`／`OCR_DML_DEVICE_ID`；OCR 每一格都會讀設定，所以快取 10 秒，管理員儲存時清除本程序快取（其他程序最慢 10 秒後跟上）；資料表不存在（例如離線腳本）時沿用設定檔，不讓 OCR 失敗。寫入時檢查：只接受 CPU／顯示卡、編號 0～15，**這台電腦沒裝顯示卡加速套件時不能切到顯示卡**（避免「看起來開了 GPU、其實悄悄用 CPU」）；每次切換寫入稽核紀錄 `system.ocr_device_changed`。
+  - `app/services/ocr_engines.py`：`configured_rapidocr_settings()` 改讀上述設定，切換後不用重開網站。
+  - `app/routes/admin.py`、新增 `app/templates/admin_ocr.html`、`app/templates/partials/nav.html`：管理員新頁面「OCR 辨識設定」（`/admin/ocr`），顯示目前裝置、這台電腦能否使用顯示卡加速、切換與顯示卡編號；只有管理員能看與修改。
+  - 新增 `tests/test_admin_ocr_device.py`（8 項，先寫失敗測試再實作）。
+- 限制：舊的簡易提供者 `offline_ocr` 在網站啟動時就建立引擎，不受這個切換影響；建議使用的 `rapidocr`（組員流程＋RapidOCR）會即時生效。
+- 驗證：
+  - 完整測試：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/admin-ocr-full` → `570 passed, 2 skipped in 283.54s`；組員 JavaScript 測試 5/5。
+  - 瀏覽器實測（本機展示站）：管理員登入 → 導覽列「OCR 辨識設定」→ 切到 CPU（頁面顯示「目前使用：CPU」）→ 學生上傳合成成績單 9.8 秒、8.8 秒 → 不重開網站切回顯示卡 → 4.1 秒（含載入顯示卡模型）、2.0 秒；四次都辨識到 19 門課，結果相同；伺服器無錯誤。測試時我的上傳小工具曾把 PNG 誤標成 PDF（兩筆辨識失敗），是工具錯誤，修正後重測。
+- 下一步：OCR 背景排隊處理；MySQL 實機驗收時一併執行本次遷移。
+
 ## 2026-10-19 OCR 改用顯示卡加速（DirectML，RTX 4060），可切回 CPU
 
 日期：2026-10-19（台灣時間）
