@@ -90,3 +90,39 @@ def test_local_autobiography_page_labels_the_draft_as_local_simulation():
     assert "本機展示模式不呼叫外部 AI" in page
     assert 'name="own_api_key"' not in page
     assert "產生示範草稿" in page
+
+
+def test_demo_app_handles_one_request_at_a_time():
+    # 展示站把資料庫放在記憶體、所有執行緒共用同一條連線；同時處理多個請求時，
+    # 實測 36 個同時請求有 1 個被誤判為未登入、3 個被誤回 404。請求必須一次處理一個。
+    import threading
+    import time
+
+    from app.demo import SerializedWSGI
+
+    active, peak, lock = [0], [0], threading.Lock()
+
+    def slow_app(environ, start_response):
+        with lock:
+            active[0] += 1
+            peak[0] = max(peak[0], active[0])
+        time.sleep(0.02)
+        with lock:
+            active[0] -= 1
+        start_response("200 OK", [("Content-Type", "text/plain")])
+        return [b"ok"]
+
+    wrapped = SerializedWSGI(slow_app)
+    threads = [threading.Thread(target=lambda: list(wrapped({}, lambda *args: None))) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert peak[0] == 1
+
+
+def test_local_demo_app_is_wrapped_to_serialize_requests():
+    from app.demo import SerializedWSGI, create_local_demo_app
+
+    assert isinstance(create_local_demo_app().wsgi_app, SerializedWSGI)

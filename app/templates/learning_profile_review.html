@@ -163,6 +163,7 @@
   .credential-evidence dt { font-weight: 700; }
   .credential-evidence dd { margin: 0; }
   .credential-evidence small { display: block; margin-top: .15rem; }
+  .credential-field-preview { display: block; max-width: min(100%, 22rem); max-height: 5.5rem; margin: .35rem 0; border: 1px solid #d6cdbb; border-radius: 4px; background: #fff; object-fit: contain; }
   .ocr-trace { max-width: 900px; margin: 1rem 0; padding: .9rem 1rem; border: 1px solid #d8dce5; border-radius: 10px; background: #f8fafc; }
   .ocr-trace summary { cursor: pointer; font-weight: 700; }
   .ocr-trace textarea { display: block; width: 100%; margin-top: .5rem; font: .9rem/1.5 monospace; }
@@ -330,6 +331,7 @@
 {% set analyses = result.get('credential_analyses') or ([result.get('credential_analysis')] if result.get('credential_analysis') else []) %}
 {% set first_analysis = analyses[0] if analyses else {} %}
 {% for analysis in analyses %}
+{% set analysis_index = loop.index0 %}
 {% if analysis.get('document_kind') %}
 <section class="credential-editor" aria-label="證照 OCR 判斷">
   <h2>OCR 判斷：{% if analysis.get('source_page') %}第 {{ analysis.source_page }} 頁・{% endif %}{{ analysis.get('document_label', '證照類型未辨識') }}</h2>
@@ -346,7 +348,7 @@
     <dd>
       <strong>{{ (field.get('value') or '未辨識')|traditional_text }}</strong>
       {% if field.get('raw_text') %}<small>OCR 原文（繁體顯示）：{{ field.raw_text|traditional_text }}</small>{% endif %}
-      {% if field.get('page') and field.get('bbox') %}<small>第 {{ field.page }} 頁・原圖位置 {{ field.bbox|join(', ') }}</small>{% endif %}
+      {% if field.get('page') and field.get('bbox') %}<img class="credential-field-preview" src="{{ url_for('student.learning_profile_credential_field_source', document_id=document.id, analysis_index=analysis_index, field_key=key, revision=result.get('draft_revision')) }}" alt="原圖中「{{ label }}」的位置（第 {{ field.page }} 頁）" loading="lazy">{% endif %}
       {% if field.get('confidence') is not none %}<small>OCR 信心：{{ (field.confidence * 100)|round|int }}%</small>{% endif %}
       {% if field.get('reason') %}<small class="review-warning">{{ field.reason }}</small>{% endif %}
     </dd>

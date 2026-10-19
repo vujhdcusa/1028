@@ -366,6 +366,36 @@ def learning_profile_course_source(document_id, course_index):
             or type(rotation) not in (int, float) or not math.isfinite(rotation)
             or bbox[2] <= bbox[0] or bbox[3] <= bbox[1]):
         abort(400, description="原圖位置資料不完整。")
+    return _source_crop_response(document, page_number, bbox, rotation)
+
+
+@student_bp.get("/student/learning-profile/documents/<int:document_id>/credentials/<int:analysis_index>/fields/<field_key>/source")
+@role_required("student")
+def learning_profile_credential_field_source(document_id, analysis_index, field_key):
+    """證照確認頁每個欄位旁的預覽圖：原圖中辨識出這個欄位的那一塊。"""
+    document = _owned_source_document(document_id)
+    result = (document.extraction.result_json if document.extraction else None) or {}
+    if result.get("draft_revision") and request.args.get("revision") not in (None, result["draft_revision"]):
+        abort(409, description="草稿已更新，請重新開啟確認頁面。")
+    analyses = result.get("credential_analyses") or (
+        [result["credential_analysis"]] if result.get("credential_analysis") else [])
+    if analysis_index >= len(analyses):
+        abort(404)
+    field = ((analyses[analysis_index] or {}).get("fields") or {}).get(field_key)
+    if not field:
+        abort(404)
+    page_number, bbox = field.get("page"), field.get("bbox")
+    if (type(page_number) is not int or page_number < 1
+            or not isinstance(bbox, (list, tuple)) or len(bbox) != 4
+            or any(type(value) not in (int, float) or not math.isfinite(value) for value in bbox)
+            or bbox[2] <= bbox[0] or bbox[3] <= bbox[1]):
+        abort(404)
+    # 四周留一點邊，學生比較容易看出這塊在證照上的哪裡
+    return _source_crop_response(document, page_number, bbox, padding=max(6, (bbox[3] - bbox[1]) * .15))
+
+
+def _source_crop_response(document, page_number, bbox, rotation=0, padding=0):
+    """把原始檔第 page_number 頁的 bbox 區域（四周留 padding 像素）裁成 PNG 回傳；課程與證照欄位共用。"""
     from app.services.ocr_pipeline import load_document_pages
 
     pages = None
@@ -377,10 +407,10 @@ def learning_profile_course_source(document_id, course_index):
                     continue
                 oriented = page.rotate(rotation, expand=True) if rotation else page
                 try:
-                    left = max(0, math.floor(bbox[0]))
-                    top = max(0, math.floor(bbox[1]))
-                    right = min(oriented.width, math.ceil(bbox[2]))
-                    bottom = min(oriented.height, math.ceil(bbox[3]))
+                    left = max(0, math.floor(bbox[0] - padding))
+                    top = max(0, math.floor(bbox[1] - padding))
+                    right = min(oriented.width, math.ceil(bbox[2] + padding))
+                    bottom = min(oriented.height, math.ceil(bbox[3] + padding))
                     if right <= left or bottom <= top:
                         abort(400, description="原圖位置超出頁面。")
                     stream = BytesIO()

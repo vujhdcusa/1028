@@ -14,6 +14,30 @@ from app.services.journey_service import academic_year_of
 DEMO_PASSWORD = "demo2026"
 
 
+class SerializedWSGI:
+    """讓展示站一次只處理一個請求（網站仍可同時接受多條連線）。
+
+    展示站的資料庫在記憶體中，所有執行緒共用同一條 SQLite 連線（StaticPool）；
+    同時處理多個請求時查詢會互相干擾，實測會把已登入的人誤判為未登入、或誤回 404。
+    正式環境使用 MySQL 連線池，不需要這一層。
+    """
+
+    def __init__(self, app):
+        import threading
+
+        self.app = app
+        self.lock = threading.Lock()
+
+    def __call__(self, environ, start_response):
+        with self.lock:
+            response = self.app(environ, start_response)
+            try:
+                return list(response)  # 在鎖內讀完整個回應（含檔案下載）
+            finally:
+                if hasattr(response, "close"):
+                    response.close()
+
+
 def create_local_demo_app():
     """建立只在記憶體 SQLite 運作的合成資料展示站，絕不連到 .env 資料庫。"""
     app = create_app({
@@ -58,4 +82,5 @@ def create_local_demo_app():
         db.session.add(AuditLog(user_id=users["student"].id, action="student.welcome_done"))
         import_seed_programs()
         db.session.commit()
+    app.wsgi_app = SerializedWSGI(app.wsgi_app)
     return app
