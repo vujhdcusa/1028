@@ -131,15 +131,19 @@ def test_upload_with_offline_ocr_stores_candidates_only_until_student_confirms(t
         # 候選尚未經學生確認，正式課程資料必須是空的。
         assert LearningCourseRecord.query.count() == 0
         source_id = source.id
+        # 組員的確認流程要求送回草稿版本，避免舊分頁覆蓋較新的修正
+        draft_revision = extraction.result_json["draft_revision"]
 
     review_page = client.get(f"/student/learning-profile/documents/{source_id}/review")
     assert review_page.status_code == 200
 
-    client.post(f"/student/learning-profile/documents/{source_id}/review/confirm", data={
+    response = client.post(f"/student/learning-profile/documents/{source_id}/review/confirm", data={
+        "draft_revision": draft_revision,
         "courses_json": '[{"school_year": "3", "semester": "上", "course_name": "模擬資料結構", '
                         '"credits": "3", "score": "88"}]',
         "credentials_json": "[]",
     })
+    assert response.status_code == 302
     with app.app_context():
         assert LearningCourseRecord.query.count() == 1
         assert CredentialRecord.query.count() == 0

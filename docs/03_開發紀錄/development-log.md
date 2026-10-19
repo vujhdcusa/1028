@@ -1,5 +1,31 @@
 # 開發日誌
 
+## 2026-10-19 合併組員的 OCR 部分，並接上本機 RapidOCR
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：使用者指定「只把組員的 OCR 部分拉出來合併到我的系統」；使用者已確認組員 repo（https://github.com/111534107/smart-learning-portfolio.git）的提交 `3301a9b` 全部是組員 111534107 做的。以組員 OCR 流程為主，把本分支的 RapidOCR 接成其中一個引擎。
+
+- 分支：從 `feat/journey-home`（先提交伺服器版變更 `19a1c6b`）開新分支 `feat/teammate-ocr`；沒有合併到 `main`、沒有推送。
+- 合併方式：組員提交與本分支的共同祖先是 `056382f`。新檔直接從 `3301a9b` 取出；共用檔用三方合併（我們／共同祖先／組員），衝突逐處判斷。
+- **搬入（OCR）**：`ocr_engines.py`、`ocr_pipeline.py`、`credential_analysis.py`（技術士證判讀）、`course_review_presentation.py`、組員版 `document_analysis_service.py`（成績單版面解析、圖片校正、去表格線）、PDF 辨識（最多 10 頁）、簡轉繁、重新辨識、原圖下載與單課原圖裁切、組員的確認頁（分數鎖定、信心值、年級／學期分組、重補修標記）、課程紀錄新增 `grade_level`、`makeup_season` 兩個欄位與遷移、OCR 文件（`docs/ocr-setup.md`、`03_開發紀錄/ocr-development-log.md`、OCR 可靠度計畫）、速度測試腳本、7 個 OCR 測試檔與 1 個 JavaScript 測試。
+- **沒搬（非 OCR 或需決策）**：學生個人資料頁與 `user.py` 新欄位及其遷移、首頁五年級判斷、`audit_log` 主鍵型別、作品集與個人資料頁、`.codex` 掛鉤、組員的學習歷程頁改版（保留本分支頁面，只加上「重新辨識」按鈕）；**刪除上傳文件、清空已確認資料兩個功能**依規格 M10（刪除與保留政策待學校決定）暫不搬；`requirements-ocr.txt`、`start-ocr.ps1`（PaddleOCR 需 Python 3.12）不搬。
+- **接上 RapidOCR**：`ocr_engines.recognize()` 新增 `rapidocr` 引擎，回傳與組員相同的文字框格式；新增提供者 `DOCUMENT_ANALYSIS_PROVIDER=rapidocr`（組員流程＋RapidOCR，建議使用）；RapidOCR 與 PaddleOCR 同屬整行辨識，流程中原本只給 PaddleOCR 的處理改用 `LINE_LEVEL_ENGINES` 一併套用；模型等級跟隨 `OCR_MODEL_TIER`。Tesseract 不安裝：組員的數字與等級補辨識在沒有 Tesseract 時回傳空結果，已實測不會中斷。
+- 衝突處理重點：`student.py` 9 處（課程確認合併組員的嚴格檢查與本分支的年級規則檢查；證照日期採組員版；作品集兩處保留本分支）、確認頁採「本分支外框與原始文件預覽＋組員的確認介面」，辨識失敗時另外顯示本分支的表格手動輸入（M12），避免只剩組員的 JSON 手動輸入；兩個遷移改接在本分支最新遷移 `a920261013tc` 之後，維持單一遷移鏈。
+- 合併時修正：組員的上傳稽核紀錄遇到 `courses: None` 會出錯（本分支 demo／offline_ocr 提供者用 None），改為 `or []`；本分支原有錯誤：上傳檔預覽在相對路徑 `UPLOAD_FOLDER` 下 500（`send_file` 以 `app/` 為基準），改用絕對路徑並補測試。
+- 測試調整（如實記錄）：本分支 3 個測試檔改為新的確認流程規則（確認時要送回 `draft_revision`；修改 OCR 分數需先解鎖）；組員 1 個遷移測試的 stamp 版本改為新接點；2 個組員測試標為略過並寫明原因（頁面改版未搬、刪除功能待 M10）。
+- 新增 `tests/test_rapidocr_pipeline.py`（4 項，先寫失敗測試再實作）。
+- 套件：從 PyPI 安裝 `pytesseract==0.3.13`、`opencc-python-reimplemented==0.1.7`、`pypdfium2==4.30.0`，寫入 `requirements.txt`。
+- 驗證：
+  - 組員流程＋RapidOCR 實跑合成成績單：3 門課（課名、學分、分數）全部正確，5.6 秒。
+  - 組員的 JavaScript 測試 `node --test tests/test_review_grade_filter.cjs`：5/5 通過。
+  - 瀏覽器實測本機展示站（5013）：上傳合成圖片 → 確認頁（原圖預覽、組員確認介面）→ 確認並儲存 → 課程出現在「成績與學分」且狀態為已確認；修正後伺服器無錯誤。
+  - 完整測試：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/merge-final` → `542 passed, 2 skipped in 227.04s`（2 項略過即上述刻意略過的組員測試）。
+- 注意：組員的上傳稽核紀錄會把 OCR 全文（`raw_text`）存進 `audit_logs`；這是組員原設計，只存在本機資料庫，但成績單全文可能含個資，之後做 M14 去識別化時要一併決定是否保留。
+- 下一步：決定是否採用組員的學習歷程頁改版（上傳前預覽旋轉）；M10 決定後再評估刪除功能；用真實格式的合成成績單與證照圖片測組員版面解析＋RapidOCR 的準確度；OCR 背景排隊處理。
+
 ## 2026-10-19 OCR 預設改用 PP-OCRv5 伺服器版
 
 日期：2026-10-19（台灣時間）

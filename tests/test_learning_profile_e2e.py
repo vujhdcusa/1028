@@ -40,11 +40,16 @@ def test_anonymous_p0_demo_flow_from_upload_to_word_download(tmp_path):
     with app.app_context():
         transcript_id = SourceDocument.query.filter_by(document_type="transcript").one().id
         credential_id = SourceDocument.query.filter_by(document_type="credential").one().id
+        transcript_revision = db.session.get(SourceDocument, transcript_id).extraction.result_json["draft_revision"]
+        credential_revision = db.session.get(SourceDocument, credential_id).extraction.result_json["draft_revision"]
     assert client.post(f"/student/learning-profile/documents/{transcript_id}/review/confirm", data={
+        "draft_revision": transcript_revision,
+        "scores_unlocked": "1",
         "courses_json": json.dumps([{"course_name": "程式設計", "credits": 3, "score": 92}]),
         "credentials_json": "[]",
     }).status_code == 302
     assert client.post(f"/student/learning-profile/documents/{credential_id}/review/confirm", data={
+        "draft_revision": credential_revision,
         "courses_json": "[]",
         "credentials_json": json.dumps([{"credential_name": "資訊技術類測試證照", "level": "丙級"}]),
     }).status_code == 302

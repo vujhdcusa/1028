@@ -27,6 +27,7 @@ def inline_file(file_path, filename):
     """在瀏覽器直接顯示檔案；不能預覽或檔案不見了就回 404。"""
     if not preview_kind(filename) or not file_path or not Path(file_path).is_file():
         abort(404)
-    response = send_file(file_path, mimetype=PREVIEW_TYPES[extension(filename)])
+    # 轉成絕對路徑：send_file 會把相對路徑當成相對於 app/ 資料夾，而上傳檔是相對於專案資料夾
+    response = send_file(Path(file_path).resolve(), mimetype=PREVIEW_TYPES[extension(filename)])
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response

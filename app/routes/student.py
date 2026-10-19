@@ -1,15 +1,20 @@
 from pathlib import Path
 from hashlib import sha256
+from io import BytesIO
 import json
+import math
+import re
 from datetime import date, datetime, timezone
 from urllib.parse import urlparse
 from uuid import uuid4
+from urllib.parse import urlparse
 
 from flask import Blueprint, abort, current_app, redirect, render_template, request, send_file, url_for
 
 from app.extensions import db
 from app.models import (
     AdmissionProgram,
+    AuditLog,
     CredentialRecord,
     DocumentExtraction,
     LearningCourseRecord,
@@ -25,7 +30,7 @@ from app.routes.main import get_current_user, role_required
 from app.services.focus_service import focus_view
 from app.services.portfolio_service import owned_portfolio, create_submission_snapshot
 from app.security import validate_upload_filename
-from app.services.document_analysis_service import ALLOWED_DOCUMENT_TYPES, analyze_document
+from app.services.document_analysis_service import ALLOWED_DOCUMENT_TYPES, analyze_document, score_band
 from app.services.learning_profile_docx_service import output_to_docx_bytes
 from app.services.learning_profile_service import generate_learning_profile_outputs
 from app.services.admission_service import published_programs
@@ -37,6 +42,11 @@ from app.services.file_preview import inline_file
 from app.services.record_status import learning_profile_state, portfolio_state
 from app.services import ai_quota_service, autobiography_review, autobiography_service, review_snapshot_service, student_rules
 from app.services.gemini_client import AIUnavailable, ai_ready
+from app.services.course_review_presentation import (
+    build_course_review_groups,
+    prepare_course_review_rows,
+    traditionalize_course_name,
+)
 
 
 student_bp = Blueprint("student", __name__)
@@ -85,6 +95,7 @@ def learning_profile_document_upload():
                 current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],
                 ocr_engine=current_app.config.get("OCR_ENGINE"),
             )
+            result = {**result, "draft_revision": uuid4().hex}
             extraction = DocumentExtraction(
                 source_document_id=document.id,
                 provider=current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],
@@ -101,6 +112,25 @@ def learning_profile_document_upload():
             )
             document.status = "analysis_failed"
         db.session.add(extraction)
+        # 有些提供者以 None 表示「此類型沒有這一欄」，所以用 or [] 而不是預設值
+        parsed_count = len((result or {}).get("courses") or []) + len((result or {}).get("credentials") or []) if "result" in locals() else 0
+        processing_steps = (result or {}).get("processing_steps", []) if "result" in locals() else []
+        db.session.add(AuditLog(
+            user_id=user.id,
+            action=("learning_profile.ocr_completed" if extraction.status == "extracted" else "learning_profile.ocr_failed"),
+            target_type="source_document",
+            target_id=document.id,
+            detail_json={
+                "document_type": document_type,
+                "file_name": safe_name,
+                "provider": current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],
+                "status": extraction.status,
+                "parsed_count": parsed_count,
+                "processing_steps": processing_steps,
+                "raw_text": (result or {}).get("raw_text") if "result" in locals() else None,
+                "error_message": extraction.error_message,
+            },
+        ))
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -176,30 +206,22 @@ def learning_profile_document_review(document_id):
     user = get_current_user()
     if document.owner_id != user.id:
         abort(403)
-    result = (document.extraction.result_json or {}) if document.extraction else {}
-    saved_courses = LearningCourseRecord.query.filter_by(student_id=user.id, source_document_id=document.id).all()
-    saved_credentials = CredentialRecord.query.filter_by(student_id=user.id, source_document_id=document.id).all()
-    if saved_courses or saved_credentials:
-        courses = [{
-            "school_year": c.school_year or "", "semester": c.semester or "", "course_name": c.course_name,
-            "credits": "" if c.credits is None else c.credits, "score": "" if c.score is None else c.score,
-            "status_mark": c.status_mark or "",
-        } for c in saved_courses]
-        credentials = [{
-            "credential_name": c.credential_name, "level": c.level or "",
-            "issuing_organization": c.issuing_organization or "",
-            "issue_date": c.issue_date.isoformat() if c.issue_date else "",
-        } for c in saved_credentials]
+    result = document.extraction.result_json if document.extraction and document.extraction.result_json else {}
+    if document.document_type == "credential":
+        from app.services.credential_analysis import prepare_credential_review_result
+        review_result = prepare_credential_review_result(
+            result,
+            preserve_confirmed_credentials=bool(
+                document.extraction and document.extraction.status == "confirmed"),
+        )
     else:
-        courses = result.get("courses") or []
-        credentials = result.get("credentials") or []
+        review_result = result
+    review_courses = prepare_course_review_rows(result.get("courses") or [])
     return render_template(
-        "learning_profile_review.html",
-        user=user,
-        document=document,
-        courses=courses,
-        credentials=credentials,
-        warnings=result.get("warnings") or [],
+        "learning_profile_review.html", user=user, document=document,
+        review_result=review_result,
+        review_courses=review_courses,
+        review_groups=build_course_review_groups(review_courses),
     )
 
 
@@ -213,6 +235,172 @@ def learning_profile_document_view(document_id):
     if document.owner_id != get_current_user().id:
         abort(403)
     return inline_file(document.file_path, document.display_name)
+
+
+def _owned_source_document(document_id):
+    document = db.session.get(SourceDocument, document_id)
+    if not document:
+        abort(404)
+    if document.owner_id != get_current_user().id:
+        abort(403)
+    return document
+
+
+def _claim_extraction(extraction, expected_updated_at, expected_revision):
+    """Serialize draft replacement/confirmation without adding a DB column."""
+    changed = DocumentExtraction.query.filter_by(
+        id=extraction.id, updated_at=expected_updated_at,
+    ).filter(
+        DocumentExtraction.result_json["draft_revision"].as_string() == expected_revision,
+    ).update({"updated_at": datetime.now(timezone.utc)}, synchronize_session=False)
+    if changed != 1:
+        db.session.rollback()
+        abort(409, description="資料已更新，請重新開啟確認頁面。")
+
+
+@student_bp.post("/student/learning-profile/documents/<int:document_id>/reanalyze")
+@role_required("student")
+def learning_profile_document_reanalyze(document_id):
+    document = _owned_source_document(document_id)
+    extraction = document.extraction
+    # Capture both before slow OCR; a later writer must win even if the ORM
+    # instance is refreshed or the database truncates timestamp precision.
+    started_updated_at = extraction.updated_at if extraction else None
+    started_revision = (extraction.result_json or {}).get("draft_revision") if extraction else None
+    provider = current_app.config["DOCUMENT_ANALYSIS_PROVIDER"]
+    try:
+        source_path = Path(document.file_path)
+        if not source_path.is_file():
+            raise RuntimeError("source unavailable")
+        result = analyze_document(document.document_type, source_path, provider)
+        if not isinstance(result, dict) or any(
+            not isinstance(result.get(key, []), list)
+            or any(not isinstance(item, dict) for item in result.get(key, []))
+            for key in ("courses", "credentials")
+        ):
+            raise RuntimeError("invalid analysis result")
+    except (RuntimeError, OSError):
+        db.session.rollback()
+        previous_result = extraction.result_json if extraction and extraction.result_json else {}
+        if document.document_type == "credential":
+            from app.services.credential_analysis import prepare_credential_review_result
+            review_result = prepare_credential_review_result(
+                previous_result,
+                preserve_confirmed_credentials=bool(
+                    extraction and extraction.status == "confirmed"),
+            )
+        else:
+            review_result = previous_result
+        return render_template(
+            "learning_profile_review.html", document=document,
+            review_result=review_result,
+            review_courses=prepare_course_review_rows(previous_result.get("courses") or []),
+            review_groups=build_course_review_groups(
+                prepare_course_review_rows(previous_result.get("courses") or [])
+            ),
+            review_error="重新分析失敗。先前擷取資料與已確認紀錄均保留，請稍後再試。",
+        ), 503
+
+    previous = (extraction.result_json or {}) if extraction else {}
+    history = []
+    # Keep only five flat snapshots; never copy history into a snapshot.
+    for snapshot in previous.get("history", [])[-4:]:
+        history.append({**snapshot, "result": {
+            key: value for key, value in snapshot.get("result", {}).items() if key != "history"
+        }})
+    if extraction:
+        _claim_extraction(extraction, started_updated_at, started_revision)
+        history.append({
+            "result": {key: value for key, value in previous.items() if key != "history"},
+            "provider": extraction.provider,
+            "status": extraction.status,
+            "confirmed_at": extraction.confirmed_at.isoformat() if extraction.confirmed_at else None,
+            "confirmed_by_id": extraction.confirmed_by_id,
+            "saved_at": datetime.now(timezone.utc).isoformat(),
+        })
+    else:
+        extraction = DocumentExtraction(source_document_id=document.id)
+        db.session.add(extraction)
+    extraction.result_json = {**result, "draft_revision": uuid4().hex, "history": history}
+    extraction.provider = provider
+    extraction.status = document.status = "extracted"
+    extraction.error_message = None
+    extraction.confirmed_at = None
+    extraction.confirmed_by_id = None
+    db.session.commit()
+    return redirect(url_for("student.learning_profile_document_review", document_id=document.id))
+
+
+@student_bp.get("/student/learning-profile/documents/<int:document_id>/source")
+@role_required("student")
+def learning_profile_document_source(document_id):
+    document = _owned_source_document(document_id)
+    source_path = Path(document.file_path)
+    if not source_path.is_file():
+        abort(404)
+    response = send_file(source_path.resolve(), as_attachment=True, download_name=document.display_name)
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@student_bp.get("/student/learning-profile/documents/<int:document_id>/courses/<int:course_index>/source")
+@role_required("student")
+def learning_profile_course_source(document_id, course_index):
+    document = _owned_source_document(document_id)
+    result = document.extraction.result_json if document.extraction else None
+    result = result or {}
+    if result.get("draft_revision") and request.args.get("revision") not in (None, result["draft_revision"]):
+        abort(409, description="草稿已更新，請重新開啟確認頁面。")
+    courses = result.get("courses", [])
+    if course_index >= len(courses):
+        abort(404)
+    course = courses[course_index]
+    page_number = course.get("source_page")
+    bbox = course.get("source_bbox")
+    rotation = course.get("source_rotation", 0)
+    if (type(page_number) is not int or page_number < 1
+            or not isinstance(bbox, (list, tuple)) or len(bbox) != 4
+            or any(type(value) not in (int, float) or not math.isfinite(value) for value in bbox)
+            or type(rotation) not in (int, float) or not math.isfinite(rotation)
+            or bbox[2] <= bbox[0] or bbox[3] <= bbox[1]):
+        abort(400, description="原圖位置資料不完整。")
+    from app.services.ocr_pipeline import load_document_pages
+
+    pages = None
+    try:
+        pages = load_document_pages(document.file_path)
+        for number, page in enumerate(pages, start=1):
+            try:
+                if number != page_number:
+                    continue
+                oriented = page.rotate(rotation, expand=True) if rotation else page
+                try:
+                    left = max(0, math.floor(bbox[0]))
+                    top = max(0, math.floor(bbox[1]))
+                    right = min(oriented.width, math.ceil(bbox[2]))
+                    bottom = min(oriented.height, math.ceil(bbox[3]))
+                    if right <= left or bottom <= top:
+                        abort(400, description="原圖位置超出頁面。")
+                    stream = BytesIO()
+                    with oriented.crop((left, top, right, bottom)) as crop:
+                        crop.save(stream, format="PNG")
+                    stream.seek(0)
+                finally:
+                    if oriented is not page:
+                        oriented.close()
+                response = send_file(stream, mimetype="image/png")
+                response.headers["Cache-Control"] = "private, no-store"
+                response.headers["X-Content-Type-Options"] = "nosniff"
+                return response
+            finally:
+                page.close()
+    except RuntimeError:
+        abort(503, description="暫時無法讀取原圖，請稍後再試。")
+    finally:
+        if pages is not None and hasattr(pages, "close"):
+            pages.close()
+    abort(404)
 
 
 def _load_record_list(raw_value, field_name):
@@ -229,6 +417,17 @@ def _normalise_name(value):
     return "".join(str(value or "").split())
 
 
+def _course_integer(value, label, upper=None):
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool) or not re.fullmatch(r"\d+", str(value).strip()):
+        raise ValueError(f"{label}必須是零或正整數")
+    value = int(value)
+    if upper is not None and value > upper:
+        raise ValueError(f"{label}必須介於 0 至 {upper}")
+    return value
+
+
 @student_bp.post("/student/learning-profile/documents/<int:document_id>/review/confirm")
 @role_required("student")
 def learning_profile_document_confirm(document_id):
@@ -241,9 +440,67 @@ def learning_profile_document_confirm(document_id):
     extraction = document.extraction
     if not extraction:
         return "document extraction is required", 400
+    result = extraction.result_json or {}
+    revision = result.get("draft_revision")
+    started_updated_at = extraction.updated_at
+    if revision and request.form.get("draft_revision") != revision:
+        return "草稿已更新，請重新開啟確認頁面後再儲存。", 409
     try:
-        courses = _load_record_list(request.form.get("courses_json"), "courses_json")
-        credentials = _load_record_list(request.form.get("credentials_json"), "credentials_json")
+        scores_unlocked = request.form.get("scores_unlocked") == "1"
+        all_fields_locked = request.form.get("all_fields_locked") == "1"
+        if request.form.get("course_input_mode") == "fields":
+            courses = []
+            for index, original in enumerate(result.get("courses", [])):
+                item = dict(original)
+                for field in ("course_name", "credits", "score", "semester", "grade_level"):
+                    key = f"course_{index}_{field}"
+                    if key not in request.form:
+                        raise ValueError("課程欄位不完整，請重新開啟確認頁面")
+                    if all_fields_locked or (field == "score" and not scores_unlocked):
+                        item[field] = original.get("score")
+                    else:
+                        item[field] = request.form[key].strip()
+                courses.append(item)
+        else:
+            if revision and "courses_json" not in request.form:
+                raise ValueError("課程資料不完整，請重新開啟確認頁面")
+            courses = _load_record_list(request.form.get("courses_json"), "courses_json")
+        if not scores_unlocked:
+            original_courses = result.get("courses", [])
+            for index, item in enumerate(courses):
+                if isinstance(item, dict):
+                    item["score"] = (
+                        original_courses[index].get("score")
+                        if index < len(original_courses) else None
+                    )
+        if all_fields_locked:
+            original_courses = result.get("courses", [])
+            for index, item in enumerate(courses):
+                if isinstance(item, dict) and index < len(original_courses):
+                    for field in ("course_name", "credits", "score", "semester", "grade_level"):
+                        item[field] = original_courses[index].get(field)
+        credentials_json = request.form.get("credentials_json")
+        if (document.document_type == "credential"
+                and request.form.get("credential_input_mode") == "json"
+                and credentials_json is None):
+            raise ValueError("證照 JSON 資料不完整，請重新開啟確認頁面")
+        if revision and credentials_json is None and request.form.get("credential_name") is None:
+            raise ValueError("證照資料不完整，請重新開啟確認頁面")
+        if (document.document_type == "credential"
+                and request.form.get("credential_name") is not None
+                and request.form.get("credential_input_mode") != "json"):
+            original_credentials = result.get("credentials") or []
+            first = dict(original_credentials[0]) if original_credentials and isinstance(original_credentials[0], dict) else {}
+            first.update({
+                "credential_name": request.form.get("credential_name", ""),
+                "level": request.form.get("credential_level", ""),
+                "issuing_organization": request.form.get("credential_issuing_organization", ""),
+                "issue_date": request.form.get("credential_issue_date", ""),
+            })
+            first.pop("certificate_number", None)
+            credentials_json = json.dumps([first, *original_credentials[1:]])
+        credentials = _load_record_list(credentials_json, "credentials_json")
+        _claim_extraction(extraction, started_updated_at, revision)
         db.session.query(LearningCourseRecord).filter_by(
             student_id=user.id, source_document_id=document.id
         ).delete()
@@ -253,7 +510,7 @@ def learning_profile_document_confirm(document_id):
         for item in courses:
             if not isinstance(item, dict):
                 raise ValueError("課程資料格式錯誤")
-            course_name = str(item.get("course_name", "")).strip()
+            course_name = traditionalize_course_name(str(item.get("course_name") or "").strip())
             normalized_name = _normalise_name(course_name)
             if not normalized_name:
                 raise ValueError("課程名稱為必填")
@@ -263,14 +520,23 @@ def learning_profile_document_confirm(document_id):
             score = item.get("score")
             if status_mark:
                 score = None
-            elif score not in (None, ""):
-                score = int(score)
-                if not 0 <= score <= 100:
-                    raise ValueError("分數必須介於 0 至 100")
             else:
-                score = None
-            credits = item.get("credits")
-            credits = int(credits) if credits not in (None, "") else None
+                score = _course_integer(score, "分數", 100)
+            makeup_season = str(item.get("makeup_season") or "").strip() or None
+            if makeup_season not in {None, "summer", "winter"}:
+                raise ValueError("重補修類別只可使用暑期或寒期")
+            credits = _course_integer(item.get("credits"), "學分", 99)
+            grade_level = str(item.get("grade_level") or "").strip() or None
+            if grade_level in {"1", "2", "3", "4", "5"}:
+                grade_level += "年級"
+            if grade_level and grade_level not in {
+                "一年級", "二年級", "三年級", "四年級", "五年級",
+                "1年級", "2年級", "3年級", "4年級", "5年級",
+            }:
+                raise ValueError("修課年級只可使用 一年級 至 五年級（或 1 至 5年級）")
+            item.update(course_name=course_name, credits=credits, score=score,
+                        grade_level=grade_level, makeup_season=makeup_season,
+                        score_band=score_band(score))
             course_year = int(item["school_year"]) if item.get("school_year") else None
             if student_rules.grade_block_reason(user) is None:
                 student_rules.check_record_year(user, course_year)
@@ -279,26 +545,26 @@ def learning_profile_document_confirm(document_id):
                 source_document_id=document.id,
                 school_year=course_year,
                 semester=str(item.get("semester") or "").strip() or None,
+                grade_level=grade_level,
                 course_name=course_name,
                 normalized_course_name=normalized_name,
                 credits=credits,
                 score=score,
                 status_mark=status_mark,
+                makeup_season=makeup_season,
                 confirmation_status="confirmed",
             ))
         for item in credentials:
             if not isinstance(item, dict):
                 raise ValueError("證照資料格式錯誤")
-            credential_name = str(item.get("credential_name", "")).strip()
+            credential_name = str(item.get("credential_name") or "").strip()
             if not credential_name:
                 raise ValueError("證照名稱為必填")
-            issue_date = None
-            raw_date = str(item.get("issue_date") or "").strip()
-            if raw_date:
-                try:
-                    issue_date = date.fromisoformat(raw_date)
-                except ValueError as exc:
-                    raise ValueError("取得日期格式應為 YYYY-MM-DD") from exc
+            issue_date_text = str(item.get("issue_date") or "").strip()
+            try:
+                issue_date = date.fromisoformat(issue_date_text) if issue_date_text else None
+            except ValueError as exc:
+                raise ValueError("製發日期須為有效的西元日期（YYYY-MM-DD）") from exc
             db.session.add(CredentialRecord(
                 student_id=user.id,
                 source_document_id=document.id,
@@ -312,6 +578,11 @@ def learning_profile_document_confirm(document_id):
         extraction.status = "confirmed"
         extraction.confirmed_at = datetime.now(timezone.utc)
         extraction.confirmed_by_id = user.id
+        # Also version legacy drafts after their first confirmation, preventing
+        # an old unversioned form from overwriting that student's corrections.
+        extraction.result_json = {
+            **result, "courses": courses, "credentials": credentials, "draft_revision": uuid4().hex,
+        }
         document.status = "confirmed"
         db.session.commit()
     except (TypeError, ValueError) as exc:
@@ -430,6 +701,18 @@ def portfolio_confirm(portfolio_id):
     return redirect(url_for("student.portfolio_list", confirmed=1))
 
 
+@student_bp.post("/student/portfolio/<int:portfolio_id>/delete")
+@role_required("student")
+def portfolio_delete(portfolio_id):
+    portfolio = owned_portfolio(portfolio_id, get_current_user())
+    file_paths = [Path(item.file_path) for item in portfolio.evidence_items if item.file_path]
+    db.session.delete(portfolio)
+    db.session.commit()
+    for file_path in file_paths:
+        file_path.unlink(missing_ok=True)
+    return redirect(url_for("student.portfolio_list"))
+
+
 @student_bp.post("/student/portfolio/<int:portfolio_id>/submit")
 @role_required("student")
 def portfolio_submit(portfolio_id):
@@ -445,6 +728,20 @@ def portfolio_submit(portfolio_id):
 @role_required("student")
 def evidence_upload(portfolio_id):
     portfolio = owned_portfolio(portfolio_id, get_current_user())
+    external_url = request.form.get("external_url", "").strip()
+    if external_url:
+        parsed = urlparse(external_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            return "連結必須是 http 或 https 網址", 400
+        link_name = request.form.get("link_name", "").strip() or external_url
+        db.session.add(PortfolioEvidence(
+            portfolio_id=portfolio.id,
+            evidence_type="link",
+            display_name=link_name,
+            external_url=external_url,
+        ))
+        db.session.commit()
+        return redirect(url_for("student.portfolio_edit", portfolio_id=portfolio.id))
     uploaded = request.files.get("file")
     if not uploaded or not uploaded.filename:
         return "file is required", 400
@@ -466,6 +763,8 @@ def _owned_evidence_or_404(evidence_id):
     if not evidence:
         abort(404)
     owned_portfolio(evidence.portfolio_id, get_current_user())
+    if evidence.external_url:
+        return redirect(evidence.external_url)
     if not evidence.file_path or not Path(evidence.file_path).is_file():
         abort(404)
     return evidence

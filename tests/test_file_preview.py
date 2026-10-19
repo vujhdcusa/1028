@@ -139,3 +139,20 @@ def test_upload_field_offers_rotate_button(app):
     html = login(app, "stu").get("/student/learning-profile/upload").get_data(as_text=True)
 
     assert "data-rotate" in html
+
+
+def test_inline_file_serves_relative_upload_path_from_working_directory(app, tmp_path, monkeypatch):
+    # 預設 UPLOAD_FOLDER 是相對路徑 instance/uploads（相對於專案資料夾）；
+    # Flask 的 send_file 會把相對路徑當成相對於 app/ 資料夾，造成本機展示站預覽 500。
+    from app.services.file_preview import inline_file
+
+    monkeypatch.chdir(tmp_path)
+    relative = tmp_path / "instance" / "uploads" / "synthetic.png"
+    relative.parent.mkdir(parents=True)
+    relative.write_bytes(PNG)
+
+    with app.test_request_context():
+        response = inline_file("instance/uploads/synthetic.png", "synthetic.png")
+        response.direct_passthrough = False
+        assert response.status_code == 200
+        assert response.get_data() == PNG

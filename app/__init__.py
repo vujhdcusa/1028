@@ -19,6 +19,9 @@ def create_app(config_overrides=None):
     migrate.init_app(app, db)
     init_security(app)
 
+    from app.services.credential_analysis import traditional_text
+    app.add_template_filter(traditional_text, "traditional_text")
+
     from app.routes.main import main_bp
     from app.routes.admin import admin_bp
     from app.routes.student import student_bp

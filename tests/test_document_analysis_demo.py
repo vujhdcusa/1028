@@ -1,7 +1,6 @@
 import io
 import json
 import html
-import re
 
 from app import create_app
 from app.extensions import db
@@ -46,13 +45,16 @@ def test_student_can_correct_demo_ocr_before_confirming(tmp_path):
     with app.app_context():
         source = SourceDocument.query.one()
         source_id = source.id
+        # 組員的確認流程要求送回草稿版本，避免舊分頁覆蓋較新的修正
+        draft_revision = DocumentExtraction.query.one().result_json["draft_revision"]
     review_page = client.get(f"/student/learning-profile/documents/{source_id}/review").get_data(as_text=True)
 
     assert "本機模擬 OCR" in review_page
-    initial_attribute = re.search(r"data-initial=(['\"])(.*?)\1", review_page)
-    assert initial_attribute is not None
-    assert json.loads(html.unescape(initial_attribute.group(2)))[0]["course_name"] == "模擬辨識課程"
+    assert "模擬辨識課程" in html.unescape(review_page)
     response = client.post(f"/student/learning-profile/documents/{source_id}/review/confirm", data={
+        "draft_revision": draft_revision,
+        # 組員的確認頁預設鎖住 OCR 分數，學生按「解鎖」後才能修改分數
+        "scores_unlocked": "1",
         "courses_json": json.dumps([{
             "school_year": "3", "semester": "上", "course_name": "修正後課程", "credits": "3", "score": "93",
         }]),

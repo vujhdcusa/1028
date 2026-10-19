@@ -47,6 +47,7 @@ instance/
 # Environments
 .env
 .venv
+.venv-ocr/
 env/
 venv/
 ENV/
@@ -72,3 +73,6 @@ tests/tmp/
 
 # Playwright 瀏覽器（只在本機測試用，刪除專案資料夾即移除）
 .playwright-browsers/
+
+# 本機 OCR／測試產物可能含學生文件或截圖，不可提交
+/work/

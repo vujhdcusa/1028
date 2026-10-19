@@ -74,9 +74,13 @@ def test_credential_confirmation_keeps_issue_date(tmp_path):
         "document_type": "credential", "file": (io.BytesIO(b"demo"), "cert.pdf"),
     }, content_type="multipart/form-data")
     with app.app_context():
-        document_id = SourceDocument.query.one().id
+        document = SourceDocument.query.one()
+        document_id = document.id
+        # 組員的確認流程要求送回草稿版本，避免舊分頁覆蓋較新的修正
+        draft_revision = document.extraction.result_json["draft_revision"]
 
     response = client.post(f"/student/learning-profile/documents/{document_id}/review/confirm", data={
+        "draft_revision": draft_revision,
         "courses_json": "[]",
         "credentials_json": json.dumps([{"credential_name": "網頁設計丙級", "issue_date": "2024-03-02"}]),
     })
@@ -94,9 +98,13 @@ def test_credential_confirmation_rejects_bad_issue_date(tmp_path):
         "document_type": "credential", "file": (io.BytesIO(b"demo"), "cert.pdf"),
     }, content_type="multipart/form-data")
     with app.app_context():
-        document_id = SourceDocument.query.one().id
+        document = SourceDocument.query.one()
+        document_id = document.id
+        # 組員的確認流程要求送回草稿版本，避免舊分頁覆蓋較新的修正
+        draft_revision = document.extraction.result_json["draft_revision"]
 
     response = client.post(f"/student/learning-profile/documents/{document_id}/review/confirm", data={
+        "draft_revision": draft_revision,
         "courses_json": "[]",
         "credentials_json": json.dumps([{"credential_name": "證照", "issue_date": "2024/99/99"}]),
     })
@@ -128,7 +136,9 @@ def test_review_page_renders_editable_tables_and_real_csrf_token(tmp_path):
 
     html = client.get(f"/student/learning-profile/documents/{document_id}/review").get_data(as_text=True)
 
-    assert "data-record-table" in html
+    # 確認頁改用組員的版本：每門課的欄位都可編輯，並帶真正的 CSRF 權杖
+    assert 'name="course_0_course_name"' in html
+    assert 'name="draft_revision"' in html
     assert "<function" not in html
 
 
