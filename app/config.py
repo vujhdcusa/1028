@@ -49,6 +49,8 @@ class Config:
     DOCUMENT_ANALYSIS_PROVIDER = os.getenv("DOCUMENT_ANALYSIS_PROVIDER", "fake")
     # 離線 OCR 引擎：空白＝不啟用（上傳會標示 analysis_failed）；rapidocr＝本機 RapidOCR
     DOCUMENT_OCR_ENGINE = os.getenv("DOCUMENT_OCR_ENGINE", "")
+    # 模型等級：server＝伺服器版（預設，較準、較慢）；mobile＝輕量版（較快、記憶體較少）
+    OCR_MODEL_TIER = os.getenv("OCR_MODEL_TIER", "server")
     CSRF_ENABLED = os.getenv("CSRF_ENABLED", "true").lower() == "true"
     ALLOWED_UPLOAD_EXTENSIONS = {
         value.strip().lower()

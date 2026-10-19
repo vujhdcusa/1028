@@ -1,5 +1,30 @@
 # 開發日誌
 
+## 2026-10-19 OCR 預設改用 PP-OCRv5 伺服器版
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：使用者希望直接用伺服器版模型，為之後正式多人使用做準備；先確認使用者電腦跑得動。
+
+- 模型：`scripts/download_ocr_models.py` 新增伺服器版偵測（88 MB）與辨識（85 MB）模型，來源仍是 RapidAI 官方 ModelScope，SHA-256 均相符；輕量版保留作備用。
+- 實測（使用者電腦：AMD Ryzen 5 7535HS、6 核 12 執行緒、31 GB 記憶體；全部是合成圖片）：
+
+  | 項目 | 輕量版 | 伺服器版 |
+  | --- | --- | --- |
+  | 載入模型＋第一張 | 約 3 秒 | 約 12 秒 |
+  | A4 清楚整頁（40 行） | 2.2 秒，40/40 | 10.2 秒，40/40 |
+  | 模糊、傾斜 5 度、低對比的照片 | 2.2 秒，8/40 | 6.9 秒，20/40 |
+  | 記憶體高峰 | 約 0.7 GB | 約 2.0 GB |
+
+  結論：使用者電腦可以跑伺服器版；畫質差時伺服器版明顯較準（20/40 對 8/40），代價是慢約 3～4 倍、記憶體約 3 倍。極度模糊的圖片兩者都讀不出來（0/40），這種情況靠學生手動填寫（M12）。
+- 修改檔案：`app/services/document_analysis_service.py`（`OCR_MODEL_TIERS`，`RapidOcrEngine` 預設 `tier="server"`，可設 `mobile`）、`app/config.py`（新增 `OCR_MODEL_TIER`，預設 `server`）、`app/__init__.py`（建立引擎時帶入等級）、`.env.example`、`scripts/download_ocr_models.py`、`tests/test_document_ocr_candidates.py`（新增 4 項，真實辨識測試改用伺服器版模型）。
+- TDD：先寫測試，8 項失敗（紅燈）；補實作後 OCR 測試檔 16 項全通過。
+- 完整測試：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/tier-full` → `364 passed in 200.58s`。
+- 正式多人使用的注意事項（尚未處理）：每個網站服務程序（worker）各自載入一份模型，伺服器版每份約 2 GB；一張 A4 約 10 秒會佔住一個 worker。正式上線前要決定伺服器規格、worker 數量，以及是否把 OCR 改成背景排隊處理（上傳後先回應、辨識完成再通知），避免多人同時上傳時網頁卡住。
+- 下一步：OCR 背景排隊處理的設計（正式多人使用前必做）；合成證照圖片實測；M14 去識別化。
+
 ## 2026-10-19 換用 PP-OCRv5 模型，繁體中文辨識通過
 
 日期：2026-10-19（台灣時間）

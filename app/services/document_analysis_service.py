@@ -14,10 +14,19 @@ from pathlib import Path
 ALLOWED_DOCUMENT_TYPES = {"transcript", "credential"}
 CANDIDATE_WARNING = "此為 OCR 候選欄位；必須由學生逐項確認後才會成為正式資料。"
 DEFAULT_OCR_MODEL_DIR = Path(__file__).resolve().parents[2] / "instance" / "ocr-models"
-OCR_MODEL_FILES = {
-    "Det": "ch_PP-OCRv5_det_mobile.onnx",
-    "Rec": "ch_PP-OCRv5_rec_mobile.onnx",  # 簡體、繁體、英文、日文共用一個模型
-    "Cls": "ch_ppocr_mobile_v2.0_cls_mobile.onnx",
+# PP-OCRv5 中文辨識模型簡體、繁體、英文、日文共用。
+# 伺服器版（預設）對模糊、歪斜照片較準，但較慢、記憶體約 2 GB；輕量版約 0.7 GB。
+OCR_MODEL_TIERS = {
+    "server": {
+        "Det": "ch_PP-OCRv5_det_server.onnx",
+        "Rec": "ch_PP-OCRv5_rec_server.onnx",
+        "Cls": "ch_ppocr_mobile_v2.0_cls_mobile.onnx",
+    },
+    "mobile": {
+        "Det": "ch_PP-OCRv5_det_mobile.onnx",
+        "Rec": "ch_PP-OCRv5_rec_mobile.onnx",
+        "Cls": "ch_ppocr_mobile_v2.0_cls_mobile.onnx",
+    },
 }
 FIELD_LABELS = ("課程", "學分", "分數", "證照名稱", "等級", "發證單位", "日期")
 
@@ -28,12 +37,16 @@ class RapidOcrEngine:
     只讀本機模型檔，不會自動下載；模型由 scripts/download_ocr_models.py 預先下載並核對雜湊。
     """
 
-    def __init__(self, model_dir=None):
+    def __init__(self, model_dir=None, tier="server"):
+        if tier not in OCR_MODEL_TIERS:
+            raise ValueError(f"unsupported OCR model tier: {tier}")
         self.model_dir = Path(model_dir) if model_dir else DEFAULT_OCR_MODEL_DIR
+        self.tier = tier
+        self.model_files = OCR_MODEL_TIERS[tier]
         self._ocr = None
 
     def _load(self):
-        paths = {stage: self.model_dir / name for stage, name in OCR_MODEL_FILES.items()}
+        paths = {stage: self.model_dir / name for stage, name in self.model_files.items()}
         missing = [path.name for path in paths.values() if not path.exists()]
         if missing:
             raise RuntimeError(

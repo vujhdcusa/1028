@@ -189,11 +189,11 @@ def render_synthetic_transcript_png(path):
 
 
 def require_real_ocr():
-    from app.services.document_analysis_service import DEFAULT_OCR_MODEL_DIR, OCR_MODEL_FILES
+    from app.services.document_analysis_service import DEFAULT_OCR_MODEL_DIR, OCR_MODEL_TIERS
 
     if not Path(MSJH_FONT).exists():
         pytest.skip("找不到 msjh.ttc 中文字型，無法產生合成圖片")
-    if not all((DEFAULT_OCR_MODEL_DIR / name).exists() for name in OCR_MODEL_FILES.values()):
+    if not all((DEFAULT_OCR_MODEL_DIR / name).exists() for name in OCR_MODEL_TIERS["server"].values()):
         pytest.skip("尚未下載離線 OCR 模型；請先執行 scripts/download_ocr_models.py")
 
 
@@ -256,3 +256,37 @@ def test_create_app_wires_rapidocr_only_when_explicitly_enabled(tmp_path):
 
     assert default_app.config.get("OCR_ENGINE") is None
     assert isinstance(enabled_app.config["OCR_ENGINE"], RapidOcrEngine)
+    assert enabled_app.config["OCR_ENGINE"].tier == "server"
+
+
+def test_rapidocr_engine_defaults_to_server_models():
+    from app.services.document_analysis_service import RapidOcrEngine
+
+    engine = RapidOcrEngine()
+
+    assert engine.tier == "server"
+    assert engine.model_files["Det"] == "ch_PP-OCRv5_det_server.onnx"
+    assert engine.model_files["Rec"] == "ch_PP-OCRv5_rec_server.onnx"
+
+
+def test_rapidocr_engine_can_fall_back_to_mobile_models():
+    from app.services.document_analysis_service import RapidOcrEngine
+
+    engine = RapidOcrEngine(tier="mobile")
+
+    assert engine.model_files["Rec"] == "ch_PP-OCRv5_rec_mobile.onnx"
+
+
+def test_rapidocr_engine_rejects_unknown_model_tier():
+    from app.services.document_analysis_service import RapidOcrEngine
+
+    with pytest.raises(ValueError):
+        RapidOcrEngine(tier="huge")
+
+
+def test_create_app_passes_configured_model_tier(tmp_path):
+    app = create_app({"SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:", "TESTING": True,
+                      "UPLOAD_FOLDER": str(tmp_path), "DOCUMENT_OCR_ENGINE": "rapidocr",
+                      "OCR_MODEL_TIER": "mobile"})
+
+    assert app.config["OCR_ENGINE"].tier == "mobile"
