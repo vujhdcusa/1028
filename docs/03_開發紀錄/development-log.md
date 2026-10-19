@@ -1,5 +1,26 @@
 # 開發日誌
 
+## 2026-10-19 修正年級讀不到：列表與「我的五年」讀取組員確認頁的年級
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：瀏覽器實測發現，組員確認頁把學生填的年級存在新欄位 `grade_level`（例如「三年級」），但本分支的列表、「我的五年」、自傳證據、Word 匯出只讀舊欄位 `school_year`，所以列表顯示「—」、課程沒有放進對應年級。依使用者指示先寫測試再修正。
+
+- 修改檔案：
+  - `app/models/learning_profile.py`：新增 `grade_number()`（「三年級」「3年級」→ 3，看不懂回傳 None）與課程屬性 `year_for_placement`（先用 `school_year`，沒有才用 `grade_level`；不會自己補寫 `school_year`）。
+  - `app/services/journey_service.py`（「我的五年」放置）、`app/services/autobiography_service.py`（自傳證據文字）改用 `year_for_placement`。
+  - `app/templates/learning_profile.html`（列表）、`app/services/package_service.py`（Word 匯出）沒有 `school_year` 時顯示年級文字。
+  - `app/routes/student.py`：確認時的「不能填比現在高的年級」檢查，原本只看 `school_year`，組員確認頁只填年級時會漏檢；改為沒有 `school_year` 時用 `grade_level` 檢查。
+- 新增 `tests/test_course_grade_level.py`（5 項）：年級文字換算、`school_year` 優先、「我的五年」放進專三、列表顯示「三年級」、一年級學生填「五年級」會被擋（400，且不寫入）。先執行為 4 項失敗＋1 項（年級檢查）失敗，修正後全部通過。
+- 同日一併記錄（上一輪讓使用者測試時的修改）：`scripts/run_local_demo.py` 新增 `--ocr` 選項改用真實 RapidOCR（預設仍是模擬 OCR）；改成多執行緒（單執行緒時瀏覽器保留的連線會讓整站卡住）。工作區 `D:\democase\.claude\launch.json` 新增「local-demo-ocr」啟動項目（原有兩個項目未動，此檔不在本專案版本控制內）。
+- 驗證：
+  - 完整測試：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/grade-full` → `547 passed, 2 skipped in 225.35s`；組員 JavaScript 測試 5/5。
+  - 瀏覽器實測（本機展示站、真實 RapidOCR、合成成績單）：確認頁填「三年級」「四年級」→ 列表顯示三年級／四年級；「我的五年」專三有模擬資料結構、專四有模擬網頁設計；伺服器無錯誤。
+- 實測時另外觀察到（尚未處理，屬組員介面設計）：確認頁的鎖定按鈕是三段切換——預設只鎖分數，按第一下變成「全部鎖定」，按第二下才全部解鎖；學生想改分數要按兩下，第一下效果相反，容易誤會。
+- 下一步：與組員討論鎖定按鈕的操作方式；用真實格式的合成成績單測組員的版面解析。
+
 ## 2026-10-19 合併組員的 OCR 部分，並接上本機 RapidOCR
 
 日期：2026-10-19（台灣時間）

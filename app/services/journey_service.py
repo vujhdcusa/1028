@@ -64,7 +64,7 @@ def build_journey(student, today=None):
 
     courses = LearningCourseRecord.query.filter_by(student_id=student.id).order_by(LearningCourseRecord.id).all()
     for course in courses:
-        place(grade_for(course.school_year, admission_year), "grades", {
+        place(grade_for(course.year_for_placement, admission_year), "grades", {
             "title": course.course_name,
             "detail": " · ".join(part for part in (
                 f"{course.credits} 學分" if course.credits is not None else "",

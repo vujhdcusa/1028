@@ -30,6 +30,7 @@ from app.routes.main import get_current_user, role_required
 from app.services.focus_service import focus_view
 from app.services.portfolio_service import owned_portfolio, create_submission_snapshot
 from app.security import validate_upload_filename
+from app.models.learning_profile import grade_number
 from app.services.document_analysis_service import ALLOWED_DOCUMENT_TYPES, analyze_document, score_band
 from app.services.learning_profile_docx_service import output_to_docx_bytes
 from app.services.learning_profile_service import generate_learning_profile_outputs
@@ -539,7 +540,9 @@ def learning_profile_document_confirm(document_id):
                         score_band=score_band(score))
             course_year = int(item["school_year"]) if item.get("school_year") else None
             if student_rules.grade_block_reason(user) is None:
-                student_rules.check_record_year(user, course_year)
+                # 組員確認頁只填年級（grade_level）時，也要檢查不能填比現在高的年級
+                student_rules.check_record_year(
+                    user, course_year if course_year is not None else grade_number(grade_level))
             db.session.add(LearningCourseRecord(
                 student_id=user.id,
                 source_document_id=document.id,

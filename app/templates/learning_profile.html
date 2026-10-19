@@ -51,7 +51,7 @@
             <thead><tr><th>年級</th><th>學期</th><th>課程</th><th>學分</th><th>分數</th><th>狀態</th></tr></thead>
             <tbody>
               {% for course in courses %}
-              <tr><td>{{ course.school_year or "—" }}</td><td>{{ course.semester or "—" }}</td><td>{{ course.course_name }}</td><td>{{ course.credits if course.credits is not none else "—" }}</td><td>{{ course.score if course.score is not none else (course.status_mark or "—") }}</td><td>{{ status_chip(record_state(course)) }}</td></tr>
+              <tr><td>{{ course.school_year or course.grade_level or "—" }}</td><td>{{ course.semester or "—" }}</td><td>{{ course.course_name }}</td><td>{{ course.credits if course.credits is not none else "—" }}</td><td>{{ course.score if course.score is not none else (course.status_mark or "—") }}</td><td>{{ status_chip(record_state(course)) }}</td></tr>
               {% endfor %}
             </tbody>
           </table>

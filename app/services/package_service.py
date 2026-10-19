@@ -47,7 +47,7 @@ def _chapter_body(document, student, chapter, program):
             cell.text = text
         for course in courses:
             row = table.add_row().cells
-            row[0].text = str(course.school_year or "")
+            row[0].text = str(course.school_year or course.grade_level or "")
             row[1].text = course.semester or ""
             row[2].text = course.course_name
             row[3].text = "" if course.credits is None else str(course.credits)

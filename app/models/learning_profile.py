@@ -8,6 +8,17 @@ def _utcnow():
     return datetime.now(timezone.utc)
 
 
+_GRADE_NUMBERS = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5}
+
+
+def grade_number(grade_level):
+    """把組員確認頁的年級文字（「三年級」或「3年級」）換成 1～5；看不懂就回傳 None。"""
+    text = (grade_level or "").strip()
+    if text.endswith("年級") and len(text) == 3:
+        return _GRADE_NUMBERS.get(text[0])
+    return None
+
+
 class SourceDocument(db.Model):
     """A private source file supplied by a student for learning-profile analysis."""
 
@@ -88,6 +99,11 @@ class LearningCourseRecord(db.Model):
     @property
     def is_score(self):
         return self.score is not None
+
+    @property
+    def year_for_placement(self):
+        """放進「我的五年」用的年級或民國學年度：先用 school_year，沒有就用組員確認頁的 grade_level。"""
+        return self.school_year if self.school_year is not None else grade_number(self.grade_level)
 
     @property
     def acquisition_status(self):

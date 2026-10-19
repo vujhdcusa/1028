@@ -65,7 +65,7 @@ def build_facts(student, program):
                    .order_by(LearningCourseRecord.id)):
         score = f"{course.score} 分" if course.score is not None else (course.status_mark or "")
         lines.append({
-            "text": f"成績：{course.course_name}（{course.school_year or '?'} 年級，{score}）",
+            "text": f"成績：{course.course_name}（{course.year_for_placement or '?'} 年級，{score}）",
             "evidence_id": f"course:{course.id}",
             "evidence_type": "course",
         })
