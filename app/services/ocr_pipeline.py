@@ -487,20 +487,31 @@ def analyze(document_type, file_path, engine):
                               size=image.size, rotation=rotation), "credentials": []}
                     warnings.append(f"第 {page_number} 頁版型尚未確認，可能有未配對文字；請完整核對原始頁面。")
                 else:
-                    title_ratio = TECHNICIAN_REGIONS["title"]
-                    title_box = [title_ratio[0] * image.width, title_ratio[1] * image.height,
-                                 title_ratio[2] * image.width, title_ratio[3] * image.height]
-                    title_words = recognize_credential_region(image, title_box, engine)
-                    title_words.extend(word for word in page_words if "技術士證" in word["text"])
-                    regions = {"title": title_words}
-                    candidate = analyze_technician_regions(regions, page=page_number)
-                    if candidate is None:
-                        for key in ("certificate_number", "occupation", "issue_date"):
-                            ratio = TECHNICIAN_REGIONS[key]
-                            box = [ratio[0] * image.width, ratio[1] * image.height,
-                                   ratio[2] * image.width, ratio[3] * image.height]
-                            regions[key] = recognize_credential_region(image, box, engine)
+                    if engine == "rapidocr":
+                        # 整張辨識（不放大）後依標籤找欄位：學生上傳的證照邊界、比例不一，固定比例切區會錯開
+                        from app.services.credential_analysis import technician_regions_from_page_words
+                        from app.services.ocr_engines import recognize
+
+                        page_words = recognize(image, engine)
+                        raw = "\n".join(" ".join(w["text"] for w in sorted(row, key=lambda w: w["bbox"][0]))
+                                        for row in _rows(page_words))
+                        regions = technician_regions_from_page_words(page_words)
                         candidate = analyze_technician_regions(regions, page=page_number)
+                    else:
+                        title_ratio = TECHNICIAN_REGIONS["title"]
+                        title_box = [title_ratio[0] * image.width, title_ratio[1] * image.height,
+                                     title_ratio[2] * image.width, title_ratio[3] * image.height]
+                        title_words = recognize_credential_region(image, title_box, engine)
+                        title_words.extend(word for word in page_words if "技術士證" in word["text"])
+                        regions = {"title": title_words}
+                        candidate = analyze_technician_regions(regions, page=page_number)
+                        if candidate is None:
+                            for key in ("certificate_number", "occupation", "issue_date"):
+                                ratio = TECHNICIAN_REGIONS[key]
+                                box = [ratio[0] * image.width, ratio[1] * image.height,
+                                       ratio[2] * image.width, ratio[3] * image.height]
+                                regions[key] = recognize_credential_region(image, box, engine)
+                            candidate = analyze_technician_regions(regions, page=page_number)
                     if candidate:
                         for key, ratio in TECHNICIAN_REGIONS.items():
                             if key in regions:
@@ -535,7 +546,8 @@ def analyze(document_type, file_path, engine):
                             }]}
                         else:
                             parsed = {"courses": [], "credentials": []}
-                        page_words.extend(word for words in regions.values() for word in words)
+                        if engine != "rapidocr":  # RapidOCR 的整頁文字已包含各欄位
+                            page_words.extend(word for words in regions.values() for word in words)
                     else:
                         if not page_words:
                             page_words = _recognize_crop(

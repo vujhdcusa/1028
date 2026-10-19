@@ -56,7 +56,10 @@ def _issuer_value(text):
 def _issuer_candidate(text):
     """Keep the OCR reading visible while converting it to Traditional Chinese."""
     candidate = re.sub(r"\s+", "", traditional_text(text or ""))
-    return USER_CONFIRMED_ISSUER_READINGS.get(candidate, candidate) or None
+    if candidate in USER_CONFIRMED_ISSUER_READINGS:
+        return USER_CONFIRMED_ISSUER_READINGS[candidate]
+    # 證照上印的是「勞動部發」（由某單位核發），發證單位本身不含結尾的「發」
+    return re.sub(r"(?<=[部會署局])核?發$", "", candidate) or None
 
 
 def _issuer_has_manual_correction(text):
@@ -202,10 +205,22 @@ def _roc_date(text):
         return None
 
 
+def _reading_order(items):
+    """依位置排成閱讀順序（由上而下、同一列由左而右）；RapidOCR 回傳的順序不是閱讀順序。"""
+    boxed = [item for item in items if item.get("bbox") and len(item["bbox"]) == 4]
+    if len(boxed) != len(items) or not boxed:
+        return list(items)
+    heights = sorted(item["bbox"][3] - item["bbox"][1] for item in boxed)
+    row_height = max(1.0, heights[len(heights) // 2] * .8)
+    return sorted(boxed, key=lambda item: (int(((item["bbox"][1] + item["bbox"][3]) / 2) // row_height),
+                                           item["bbox"][0]))
+
+
 def analyze_technician_regions(regions, *, page):
     """Require a title or three independent field signals for a tentative match."""
+    regions = {key: _reading_order(items) for key, items in regions.items()}
     title = "".join(str(item.get("text") or "") for item in regions.get("title", []))
-    title_found = bool(re.search(r"技術\s*士\s*證", title))
+    title_found = bool(re.search(r"技[術术]\s*士\s*證", title))
 
     def text_for(key):
         return " ".join(str(item.get("text") or "") for item in regions.get(key, []))
@@ -263,6 +278,57 @@ def analyze_technician_regions(regions, *, page):
         "needs_review": bool(classification_reason) or any(field["reason"] for field in fields.values()),
         "steps": ["辨識證照標題", "依版面分區重讀欄位", "解析欄位並標示待確認原因"],
     }
+
+
+def technician_regions_from_page_words(words):
+    """把整張證照的辨識結果依「標籤＋同一列」分到各欄位，不靠固定比例切區。
+
+    學生上傳的證照圖片邊界、比例不一，固定比例切區會整個錯開（證號區切到出生日期）；
+    整張辨識的文字通常都讀得到，依標籤與內容格式找欄位比較穩。
+    """
+    words = [w for w in words if w.get("bbox") and len(w["bbox"]) == 4 and str(w.get("text") or "").strip()]
+
+    def center_y(item):
+        return (item["bbox"][1] + item["bbox"][3]) / 2
+
+    def height(item):
+        return item["bbox"][3] - item["bbox"][1]
+
+    def matching(pattern):
+        return [w for w in words if re.search(pattern, w["text"])]
+
+    def right_on_same_row(label, candidates):
+        row = [c for c in candidates if c is not label
+               and abs(center_y(c) - center_y(label)) <= max(height(c), height(label)) * .6
+               and c["bbox"][0] >= label["bbox"][2] - height(label) * .5]
+        return min(row, key=lambda c: c["bbox"][0] - label["bbox"][2]) if row else None
+
+    date_pattern = r"民國\s*\d{2,3}\s*年"
+    dates = matching(date_pattern)
+    regions = {key: [] for key in TECHNICIAN_REGIONS}
+    # 標題常被印章蓋住；左側的「技術士證總編號」標籤每張都有，也可作為技術士證的依據
+    top = min((w["bbox"][1] for w in words), default=0)
+    span = max((w["bbox"][3] for w in words), default=0) - top
+    regions["title"] = [w for w in words if w["bbox"][3] <= top + span * .2] + matching(r"技[術术]\s*士\s*證")
+    regions["certificate_number"] = matching(r"\d{2,4}\s*[-－]\s*\d{5,10}")
+    regions["level"] = [w for w in matching(r"[甲乙丙丁]\s*[級级]") if not re.search(r"[級级]\s*別", w["text"])]
+    regions["issuer"] = matching(r"勞動部|勞委會|勞工委員會|部\s*發")
+    for label in matching(r"職\s*類"):
+        if re.sub(r"職\s*類\s*[（(]?\s*項?\s*[）)]?", "", label["text"]).strip():
+            regions["occupation"] = [label]  # 標籤和職類名稱被辨識成同一段
+            break
+        others = [w for w in words if not re.search(date_pattern + r"|[甲乙丙丁]\s*[級级]", w["text"])]
+        value = right_on_same_row(label, others)
+        if value:
+            regions["occupation"] = [label, value]
+            break
+    for key, pattern in (("effective_date", r"生\s*效\s*日\s*期"), ("issue_date", r"[製制]\s*[發发]\s*日\s*期")):
+        for label in matching(pattern):
+            value = right_on_same_row(label, dates)
+            if value:
+                regions[key] = [value]
+                break
+    return regions
 
 
 def prepare_credential_review_result(result, *, preserve_confirmed_credentials=False):
