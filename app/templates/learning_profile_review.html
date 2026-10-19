@@ -114,7 +114,7 @@
   <a href="{{ url_for('student.learning_profile_document_source', document_id=document.id) }}">下載原始檔案</a>
   <form method="post" action="{{ url_for('student.learning_profile_document_reanalyze', document_id=document.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit">重新分析來源檔</button>
+    <button class="button button--small button--line" type="submit">重新分析來源檔</button>
   </form>
 </div>
 <p>重新分析會建立新草稿；已確認的課程與證照會保留，直到你明確確認並儲存新草稿。尚未儲存的修改不會帶入新分析。</p>
@@ -222,6 +222,57 @@
   .course-review-section th, .course-review-section td { padding: .7rem; border-bottom: 1px solid #d8dce5; text-align: left; vertical-align: top; }
   .course-review-section thead th { position: sticky; top: 0; z-index: 5; background: #f8fafc; }
   .course-review-section .highest-mark { display: inline-block; margin-left: .35rem; color: #365ac9; font-weight: 700; }
+
+  /* 課程確認表格版面：每門課一張橫向卡片——上排五個欄位，下排核對提示（不再擠在最右側窄欄） */
+  .course-review-section .course-editor { margin: 0; }
+  .course-review-section table,
+  .course-review-section thead,
+  .course-review-section tbody { display: block; width: 100%; min-width: 0; }
+  .course-review-section tr {
+    display: grid;
+    grid-template-columns: minmax(11rem, 2.6fr) minmax(4.25rem, .7fr) minmax(4.75rem, .8fr) minmax(6.5rem, 1.1fr) minmax(6rem, 1fr);
+    gap: .35rem .8rem; align-items: start;
+    padding: .8rem 1rem; border-bottom: 1px solid #edf0f4;
+  }
+  .course-review-section tr[hidden] { display: none; }
+  .course-review-section tbody tr:last-child { border-bottom: 0; }
+  .course-review-section th, .course-review-section td { padding: 0; border: 0; }
+  .course-review-section thead tr { padding: .55rem 1rem; background: #f8fafc; border-bottom: 1px solid #e7e9ef; }
+  .course-review-section thead th { position: static; background: none; color: #475467; font-size: .82rem; font-weight: 700; }
+  .course-review-section thead th:last-child { display: none; }
+  .course-review-section tr.needs-review { background: #fffdf7; box-shadow: inset 4px 0 0 #f2b33d; }
+  .course-review-section input {
+    width: 100%; min-width: 0; box-sizing: border-box; padding: .45rem .6rem;
+    border: 1px solid #cfd4dc; border-radius: 7px; background: #fff; font-size: .98rem;
+  }
+  .course-review-section td:first-child input { min-width: 0; font-weight: 700; }
+  .course-review-section input[type="number"] { text-align: center; }
+  .course-review-section input.value-pending { border: 1.5px dashed #d97706; background: #fffaf0; }
+  .course-review-section td.field-pending { background: none; }
+  .course-review-section td small[id^="confidence-"] { margin-top: .25rem; color: #98a2b3; font-size: .74rem; line-height: 1.35; }
+  .course-review-section td small.confidence-low,
+  .course-review-section td small.confidence-unknown { color: #b54708; }
+  .course-review-section .pending-badge { margin-top: .15rem; font-size: .74rem; }
+  .course-review-section td.course-notes-cell { grid-column: 1 / -1; }
+  .course-notes { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .5rem; padding-top: .2rem; font-size: .8rem; }
+  .course-notes small { display: inline-flex; margin: 0; }
+  .note-chip { align-items: center; padding: .12rem .6rem; border-radius: 999px; background: #eef2f6; color: #344054; font-weight: 700; }
+  .note-chip--failed { background: #fee4e2; color: #b42318; }
+  .note-chip--ok { background: #dcfae6; color: #1b6b3a; }
+  .note-chip--info { background: #e0eaff; color: #1d3a6f; }
+  .note-chip--warn { background: #fef0c7; color: #93370d; }
+  .note-text { color: #93370d; }
+  .note-text + .note-text::before { content: "・"; margin-right: .2rem; color: #d0d5dd; }
+  .note-source { margin-left: auto; color: #667085; }
+  .note-source a { margin-left: .15rem; font-weight: 700; }
+  @media (max-width: 720px) {
+    .course-review-section thead { display: none; }
+    .course-review-section tr { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem .7rem; padding: .75rem; }
+    .review-filter-bar { position: static; box-shadow: none; }
+    .course-review-section td:first-child { grid-column: 1 / -1; }
+    .course-review-section td[data-label]::before { content: attr(data-label); display: block; margin-bottom: .2rem; color: #475467; font-size: .76rem; font-weight: 700; }
+    .note-source { margin-left: 0; }
+  }
 </style>
 <form method="post" action="{{ url_for('student.learning_profile_document_confirm', document_id=document.id) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -243,6 +294,9 @@
 <h2>辨識到的課程（共 {{ courses|length }} 門）</h2>
 <p>可直接修改科目、學分、成績、學期與年級。空白表示缺漏／待確認，0 表示來源明確記載零值。</p>
 <p>OCR 信心是辨識引擎的分數，不代表正確率。低於 85% 或未知時請優先核對；修改欄位不會改變原 OCR 信心。</p>
+{% set layout = namespace(inferred=false) %}
+{% for course in courses %}{% if '學期依表格位置推定，請核對表頭。' in (course.get('review_reasons') or []) %}{% set layout.inferred = true %}{% endif %}{% endfor %}
+{% if layout.inferred %}<p class="review-warning">每門課的學期是依成績單表格位置推定的，請對照原圖的表頭（第一學期／第二學期）核對。</p>{% endif %}
 <div class="review-filter-bar" role="region" aria-label="課程篩選與成績鎖定">
   <label for="review-grade-filter">查看年級
     <select id="review-grade-filter" aria-controls="review-grade-groups">
@@ -285,23 +339,26 @@
           {% set certainty = confidence.get(field) %}
           {% set known = certainty is number and certainty is not sameas true and certainty is not sameas false and certainty >= 0 and certainty <= 1 %}
           {% set field_pending = value is none or value == '' or (value is string and '待確認' in value) %}
-          <td class="{{ 'field-pending' if field_pending else '' }}">
+          <td class="{{ 'field-pending' if field_pending else '' }}" data-label="{{ label }}">
             <input id="course-{{ index }}-{{ field }}" aria-label="第 {{ index + 1 }} 列{{ label }}" aria-describedby="confidence-{{ index }}-{{ field }}" name="course_{{ index }}_{{ field }}" value="{{ value if value is not none else '' }}" {% if field in ['credits', 'score'] %}type="number" min="0" step="1" {% if field == 'score' %}max="100"{% endif %}{% else %}type="text"{% endif %} {% if field == 'score' %}readonly class="score-locked{% if field_pending %} value-pending{% endif %}" title="成績目前已鎖定"{% elif field_pending %}class="value-pending"{% endif %} {% if field == 'course_name' %}required{% endif %} {% if field == 'grade_level' %}list="grade-options"{% endif %} placeholder="待確認">
             {% if field == 'course_name' and group.highest and group.highest.index == index %}<small class="highest-mark">最高成績</small>{% endif %}
-            <small id="confidence-{{ index }}-{{ field }}" class="{{ 'confidence-low' if known and certainty < 0.85 else ('confidence-unknown' if not known else '') }}">OCR 信心：{% if known %}{{ (certainty * 100)|round|int }}%{% if certainty < 0.85 %}（偏低，請核對）{% endif %}{% else %}未知，請核對{% endif %}</small>
+            <small id="confidence-{{ index }}-{{ field }}" class="{{ 'confidence-low' if known and certainty < 0.85 else ('confidence-unknown' if not known else '') }}" title="OCR 信心：{% if known %}{{ (certainty * 100)|round|int }}%{% else %}未知{% endif %}（不代表正確率{% if not known or certainty < 0.85 %}，請對照原圖核對{% endif %}）">信心 {% if known %}{{ (certainty * 100)|round|int }}%{% if certainty < 0.85 %}・偏低{% endif %}{% else %}未知{% endif %}</small>
             {% if field_pending %}<small class="pending-badge">⚠ 待確認</small>{% endif %}
           </td>
         {% endfor %}
-        <td>
-          {% if kind == 'failed' %}<small class="failed">不及格／待確認</small>{% endif %}
-          {% if course.get('retake') %}<small class="retake-done">✓ 已重補修：{{ course.retake.label }}（及格）</small>{% endif %}
-          {% if course.get('retake_of') %}<small class="retake-of">重補修：補 {{ course.retake_of.label }}</small>{% endif %}
-          {% if course.get('makeup_season') %}<small>{{ '暑期' if course.makeup_season == 'summer' else '寒期' }}重補修</small>{% endif %}
-          {% if course.get('status_mark') %}<small>課程狀態：{{ course.status_mark }}</small>{% endif %}
-          {% if course.get('needs_confirmation') %}<small class="review-warning">需要人工確認</small>{% endif %}
-          {% for reason in course.get('review_reasons', []) %}<small class="review-warning">{{ reason }}</small>{% endfor %}
-          {% if course.get('source_page') %}<small>第 {{ course.source_page }} 頁{% if course.get('source_line') %}・第 {{ course.source_line }} 列{% endif %}{% if course.get('source_region') %}・區域 {{ course.source_region }}{% endif %}</small>{% endif %}
-          {% if course.get('source_bbox') %}<a href="{{ url_for('student.learning_profile_course_source', document_id=document.id, course_index=index, revision=result.get('draft_revision')) }}" target="_blank" rel="noopener">查看原圖區域</a>{% else %}<small>無定位資訊，請下載原始檔核對。</small>{% endif %}
+        <td class="course-notes-cell">
+          <div class="course-notes">
+          {% if kind == 'failed' %}<small class="failed note-chip note-chip--failed">不及格／待確認</small>{% endif %}
+          {% if course.get('retake') %}<small class="retake-done note-chip note-chip--ok">✓ 已重補修：{{ course.retake.label }}（及格）</small>{% endif %}
+          {% if course.get('retake_of') %}<small class="retake-of note-chip">重補修：補 {{ course.retake_of.label }}</small>{% endif %}
+          {% if course.get('makeup_season') %}<small class="note-chip note-chip--info">{{ '暑期' if course.makeup_season == 'summer' else '寒期' }}重補修</small>{% endif %}
+          {% if course.get('status_mark') %}<small class="note-chip">課程狀態：{{ course.status_mark }}</small>{% endif %}
+          {# 「學期依表格位置推定」是整份成績單共通的提醒，已在課程清單上方說明一次，不在每門課重複 #}
+          {% set row_reasons = (course.get('review_reasons') or [])|reject('equalto', '學期依表格位置推定，請核對表頭。')|list %}
+          {% if course.get('needs_confirmation') and row_reasons %}<small class="review-warning note-chip note-chip--warn">需要人工確認</small>{% endif %}
+          {% for reason in row_reasons %}<small class="review-warning note-text">{{ reason }}</small>{% endfor %}
+          <small class="note-source">{% if course.get('source_page') %}第 {{ course.source_page }} 頁{% if course.get('source_line') %}・第 {{ course.source_line }} 列{% endif %}{% if course.get('source_region') %}・區域 {{ course.source_region }}{% endif %}・{% endif %}{% if course.get('source_bbox') %}<a href="{{ url_for('student.learning_profile_course_source', document_id=document.id, course_index=index, revision=result.get('draft_revision')) }}" target="_blank" rel="noopener">查看原圖區域</a>{% else %}無定位資訊，請下載原始檔核對。{% endif %}</small>
+          </div>
         </td>
       </tr>
       {% endfor %}
@@ -407,7 +464,7 @@
     <label>證照資料 JSON（進階）</label>
     <textarea name="credentials_json" rows="10">{{ credentials | tojson }}</textarea>
   </details>
-  <button type="submit" formnovalidate>確認並儲存</button>
+  <button class="button" type="submit" formnovalidate>確認並儲存</button>
 </form>
 {% endblock %}
 
