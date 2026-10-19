@@ -10,6 +10,10 @@ def create_app(config_overrides=None):
     app.config.from_object(Config)
     if config_overrides:
         app.config.update(config_overrides)
+    if app.config.get("DOCUMENT_OCR_ENGINE") == "rapidocr" and app.config.get("OCR_ENGINE") is None:
+        from app.services.document_analysis_service import RapidOcrEngine
+
+        app.config["OCR_ENGINE"] = RapidOcrEngine()
 
     db.init_app(app)
     migrate.init_app(app, db)

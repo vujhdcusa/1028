@@ -1,5 +1,56 @@
 # 開發日誌
 
+## 2026-10-19 換用 PP-OCRv5 模型，繁體中文辨識通過
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：使用者同意下載支援繁體中文的 RapidOCR 模型；換模型並重跑測試，把上一節的 2 項 xfail 改回正式測試。
+
+- 套件：從 PyPI 安裝 `rapidocr==3.10.0`（RapidAI 官方，與 `rapidocr_onnxruntime` 同一團隊），用 `--no-deps` 安裝以免和現有 `opencv-python` 重複安裝 `cv2`；另裝 `tqdm`、`omegaconf`、`requests`、`colorlog`。`pip check` 只提示缺 `opencv-python-headless`，實際由 `opencv-python` 提供，匯入正常。舊的 `rapidocr_onnxruntime` 仍在虛擬環境中，未移除、程式已不使用。`requirements.txt` 改為 `rapidocr==3.10.0`、`onnxruntime==1.31.0`。
+- 模型：新增 `scripts/download_ocr_models.py`，從 RapidAI 官方 ModelScope 下載 PP-OCRv5 偵測、PP-OCRv5 辨識（簡體／繁體／英文／日文共用）、方向分類 3 個模型到 `instance/ocr-models`（已被 `.gitignore` 忽略，不會提交），3 個檔案 SHA-256 全部與 rapidocr 3.10.0 官方清單相符。
+- 修改檔案：`app/services/document_analysis_service.py`（`RapidOcrEngine` 改用 rapidocr 3.x 與本機模型路徑，**不會自動下載**，模型不存在時明確失敗並提示執行下載腳本；欄位解析改為遇到空白或下一個標籤就停止）、`tests/test_document_ocr_candidates.py`、`requirements.txt`、`.env.example`（新增 `DOCUMENT_ANALYSIS_PROVIDER`、`DOCUMENT_OCR_ENGINE` 說明）、新增 `scripts/download_ocr_models.py`。
+- 實測（合成成績單圖片）：`課程：模擬資料結構`、`課程：模擬網頁設計` 全部正確，信心值 0.94～1.0。新發現：OCR 會把「學分：3  分數：88」黏成「學分：3分數：88」，已先寫失敗測試再修正解析規則。
+- 測試：上一節 2 項 xfail 已移除，改為正式斷言（兩門課的課名、學分、分數全部正確）；另新增「黏在一起的標籤」與「缺模型檔不下載、直接失敗」2 項。OCR 測試檔 12 項全通過。
+- 完整測試：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/v5-full` → `360 passed in 203.60s`（無 xfail、無略過）。
+- 限制：只驗證過電腦字型繪製的合成圖片；拍照、傾斜、掃描品質差的真實樣式尚未測。證照圖片的真實辨識也還沒測（目前證照只有測試替身）。
+- 下一步：用合成的證照圖片與手機拍照樣式做實測；接著做 M14 去識別化（送 AI 前移除姓名、學號、證號等）與 M5 欄位規則檢查。
+
+## 2026-10-19 接上 RapidOCR 離線辨識（M4，繁體字辨識待改善）
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：使用者選定 RapidOCR 離線辨識；安裝套件、接上 `OCR_ENGINE`，並用合成成績單圖片實測。
+
+- 安裝：從 PyPI 安裝 `rapidocr_onnxruntime==1.2.3`（連同 onnxruntime、opencv-python 等相依套件）到 `D:\democase\ai\.venv`（本專題共用的虛擬環境）；已寫入 `requirements.txt`。
+- 修改檔案：`app/services/document_analysis_service.py`（新增 `RapidOcrEngine`：本機執行、模型第一次辨識時才載入，依文字框座標分行、同行由左到右排序）、`app/config.py`（新增 `DOCUMENT_OCR_ENGINE`，空白＝不啟用，`rapidocr`＝啟用）、`app/__init__.py`（啟用時把 `RapidOcrEngine` 放進 `OCR_ENGINE`；若測試已傳入引擎則不覆蓋）、`requirements.txt`、`tests/test_document_ocr_candidates.py`（新增 5 項，其中 2 項標 xfail）。
+- 實測結果：合成圖片（繁體中文，系統字型 msjh.ttc 繪製，內容全是假資料）經 RapidOCR 辨識，**數字正確**（88、91、學分），**繁體中文名稱不正確**：`課程`→`程`、`模擬`→`模凝`、`資料結構`→`餐料结构`，`網頁`→`網真`。RapidOCR 1.2.3 預設模型偏簡體，對繁體字辨識不準。
+- 因此：兩項「課名應正確辨識」測試標為 `xfail` 並寫明原因，不放寬斷言；候選解析規則仍會把學生需要修正的內容交給學生確認。這是目前最大的品質缺口，不能宣稱 OCR 已可用於真實成績單。
+- 規則不變：候選只寫入抽取紀錄；學生確認前 `LearningCourseRecord` 為 0 筆；未啟用 OCR 時上傳標示 `analysis_failed`。
+- 測試結果：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/rapid-full` → `356 passed, 2 xfailed in 202.22s`。
+- 下一步（需使用者決定）：(1) 換用支援繁體中文的 RapidOCR 辨識模型（需下載模型檔，依規定須先取得你同意）；(2) 或先降低期待，只要求學生確認時逐字修正。完成後再把 2 個 xfail 改回正式測試。
+- 未做：M14 去識別化、M5 規則檢查；未接 Gemini。
+
+## 2026-10-19 M3／M4 離線 OCR 候選欄位骨架（合成資料，未接外部服務）
+
+日期：2026-10-19（台灣時間）
+
+開發者：Claude
+
+目標：把上傳證明後的寫死假資料，換成「OCR 文字 → 候選欄位」的真流程骨架；先不選定、不安裝正式 OCR 套件。
+
+- 修改檔案：`app/services/document_analysis_service.py`（新增 `offline_ocr` 提供者、`NotConfiguredOcrEngine`、`parse_candidates`；欄位以「標籤：值」規則解析，查不到就留空）、`app/routes/student.py`（把 `OCR_ENGINE` 設定傳入分析函式）、新增 `tests/test_document_ocr_candidates.py`（6 項）。
+- TDD：先寫測試，匯入 `parse_candidates` 失敗（紅燈）；補實作後 10 項相關測試通過（綠燈）。
+- 規則驗證：候選只寫進抽取紀錄；上傳後 `LearningCourseRecord` 筆數為 0，學生確認後才寫入正式課程；未設定 OCR 引擎時狀態為 `analysis_failed`，不猜測任何欄位。
+- 測試資料全部是合成資料：合成白底 PNG（只為讓檔案是真圖片）＋測試替身 OCR 引擎回傳固定文字。測試不讀像素，因此這**不是**真實 OCR 辨識率驗證。
+- 未做：沒有安裝 RapidOCR；沒有接 Gemini；原始圖片仍只存 `UPLOAD_FOLDER`。OCR 套件的選擇需使用者確認（規格 D7 已記載 RapidOCR 離線，但這次任務指示先問）。
+- 測試結果：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/ocr-full` → `354 passed in 205.90s`。
+- 注意：`docs/05_交接與專案管理/handoff.md` 有他人留下的未提交修改（21 行新增），本次沒有碰它、沒有提交。
+- 下一步：使用者確認 OCR 套件後，安裝並在 `OCR_ENGINE` 接真實 RapidOCR 引擎，用合成證照圖片做實測；再做 M14 去識別化與 M5 欄位規則檢查。
+
 ## 2026-10-16 整理 D:\democase 根目錄的測試暫存資料夾
 
 日期：2026-10-16（台灣時間）

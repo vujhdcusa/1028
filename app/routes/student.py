@@ -83,6 +83,7 @@ def learning_profile_document_upload():
                 document_type,
                 stored_path,
                 current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],
+                ocr_engine=current_app.config.get("OCR_ENGINE"),
             )
             extraction = DocumentExtraction(
                 source_document_id=document.id,

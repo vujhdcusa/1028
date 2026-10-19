@@ -47,6 +47,8 @@ class Config:
     SCHOOL_AI_DAILY_LIMIT = int(os.getenv("SCHOOL_AI_DAILY_LIMIT", "5"))
     MIN_REVIEW_GRADE = int(os.getenv("MIN_REVIEW_GRADE", "2"))
     DOCUMENT_ANALYSIS_PROVIDER = os.getenv("DOCUMENT_ANALYSIS_PROVIDER", "fake")
+    # 離線 OCR 引擎：空白＝不啟用（上傳會標示 analysis_failed）；rapidocr＝本機 RapidOCR
+    DOCUMENT_OCR_ENGINE = os.getenv("DOCUMENT_OCR_ENGINE", "")
     CSRF_ENABLED = os.getenv("CSRF_ENABLED", "true").lower() == "true"
     ALLOWED_UPLOAD_EXTENSIONS = {
         value.strip().lower()
