@@ -1198,3 +1198,8 @@ body[data-page="student-welcome"] .assistant { display: none; }
 
 /* GPT 任務 07：程式移入焦點時，繼續按鈕不可仍受進場延遲隱藏。 */
 .return__go:focus { animation: none; opacity: 1; }
+
+/* 做完一件事後的結果訊息（回到出發頁時顯示在最上方） */
+.flash-stack { width: min(1180px, calc(100% - 2rem)); margin: 1rem auto 0; display: grid; gap: .5rem; }
+.flash { margin: 0; padding: .8rem 1rem; border: 1px solid #abefc6; border-left: 5px solid #17b26a; border-radius: 10px; background: #ecfdf3; color: #054f31; font-weight: 700; }
+.flash span { color: #17b26a; }

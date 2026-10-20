@@ -100,6 +100,18 @@
     </nav>
   </section>
 
+  {# 今天先完成哪一步（Canva 第 11 頁；放在拼圖前面，登入就看得到下一步）：最多三件事＋一行概況 #}
+  <section class="today" aria-labelledby="today-title" data-tour="不知道做什麼？從這三件事開始。" data-tour-order="2">
+    <h2 id="today-title" class="today__title">今天先完成哪一步</h2>
+    <p class="today__stats">
+      <span>五年累積 <b>{{ home.summary.percent }}%</b> <small>只是累積比例，不是錄取機率</small></span>
+      <span>待處理 <b>{{ home.summary.pending }}</b></span>
+      <span>最近成果 <b>{{ home.summary.latest or "還沒有" }}</b></span>
+    </p>
+    {{ guide_deck(guide) }}
+    {% if not has_transfer_record %}<p class="today__transfer small"><a href="{{ url_for('transfer_credit.student_transfer_credit') }}">轉學生？填寫抵免進度 →</a></p>{% endif %}
+  </section>
+
   {# 今年的拼圖：一張插畫切成六片，每片是一類資料。有資料的拼在圖上，沒有的是洞，
      那一片散在旁邊，拖回洞裡就拼上並打開新增（直接點也可以）。 #}
   <section class="year-puzzle" aria-labelledby="puzzle-title">
@@ -185,16 +197,6 @@
     </form>
   </section>
 
-  {# 今天先完成哪一步（Canva 第 11 頁）：最多三件事＋一行概況 #}
-  <section class="today" aria-labelledby="today-title" data-tour="不知道做什麼？從這三件事開始。" data-tour-order="2">
-    <h2 id="today-title" class="today__title">今天先完成哪一步</h2>
-    <p class="today__stats">
-      <span>五年累積 <b>{{ home.summary.percent }}%</b> <small>只是累積比例，不是錄取機率</small></span>
-      <span>待處理 <b>{{ home.summary.pending }}</b></span>
-      <span>最近成果 <b>{{ home.summary.latest or "還沒有" }}</b></span>
-    </p>
-    {{ guide_deck(guide) }}
-  </section>
 
   {# 五年資料夾：收起來，點路線上的節點才打開 #}
   <details class="folders-drawer" id="folders" data-folders-drawer data-tour="五年所有資料都收在這裡。" data-tour-order="5">

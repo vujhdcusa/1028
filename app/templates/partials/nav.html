@@ -39,14 +39,15 @@
 {# 學生：參考臺大教務處網站，上方只留一排主選單，所在頁面加底線。 #}
 {% macro student_masthead(user, active="") %}
 {% set gap_href = url_for("student.target_gap", program_id=student_progress.program.id) if student_progress.program else url_for("student.target_list") %}
+{# 「目標校系」與「備審資料」合併：選了校系就直接進第一個校系的備審頁，還沒選就到選校系頁 #}
 {% set items = [
   ("我的五年", url_for("main.student_dashboard")),
   ("成績與證照", url_for("student.learning_profile")),
   ("活動與經歷", url_for("student.portfolio_list")),
-  ("目標校系", url_for("student.target_list")),
-  ("抵免進度", url_for("transfer_credit.student_transfer_credit")),
-  ("備審資料", gap_href),
+  ("目標與備審", gap_href),
 ] %}
+{% if has_transfer_record %}{% set items = items + [("抵免進度", url_for("transfer_credit.student_transfer_credit"))] %}{% endif %}
+{% set active = "目標與備審" if active in ("目標校系", "備審資料") else active %}
 <header class="masthead masthead--student">
   <div class="masthead__inner">
     <a class="brand" href="{{ url_for('main.student_dashboard') }}">

@@ -351,6 +351,9 @@ def inject_student_progress():
     """學生的每一頁都要顯示主線步驟列與「下一步」。"""
     user = get_current_user()
     if user and user.role == "student":
+        from app.models.transfer_credit import TransferCreditRecord
         from app.services.student_progress import student_progress
-        return {"student_progress": student_progress(user)}
+        # 「抵免進度」只給轉學生：目前以「已建立抵免紀錄」判斷，其他學生從「我的五年」的小連結進入
+        has_transfer = TransferCreditRecord.query.filter_by(student_id=user.id).first() is not None
+        return {"student_progress": student_progress(user), "has_transfer_record": has_transfer}
     return {}

@@ -14,6 +14,7 @@
   <section class="sheet">
     <form method="post" action="{{ url_for('student.learning_profile_document_upload') }}" enctype="multipart/form-data" class="form-stack">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if next_path %}<input type="hidden" name="next" value="{{ next_path }}">{% endif %}
       <fieldset class="field">
         <legend>這是什麼文件？</legend>
         <div class="choice-group">
@@ -23,7 +24,7 @@
       </fieldset>
       {{ upload_field(hint="PDF、PNG、JPG", accept="image/png,image/jpeg,.pdf") }}
       <div class="record-card__actions">
-        <button class="button" type="submit">上傳</button>
+        <button class="button" type="submit" data-busy-text="辨識中，約 10 秒…">上傳</button>
         <a class="button button--line" href="{{ url_for('student.learning_profile') }}">取消</a>
       </div>
       <p class="muted small">上傳後請逐筆確認。系統不會保存你的學校帳號密碼。</p>

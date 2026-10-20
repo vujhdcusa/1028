@@ -31,6 +31,7 @@ from app.services.focus_service import focus_view
 from app.services.portfolio_service import owned_portfolio, create_submission_snapshot
 from app.security import validate_upload_filename
 from app.models.learning_profile import grade_number
+from app.services.flow import flash_done, readiness, safe_next, target_program
 from app.services.document_analysis_service import ALLOWED_DOCUMENT_TYPES, analyze_document, score_band
 from app.services.learning_profile_docx_service import output_to_docx_bytes
 from app.services.learning_profile_service import generate_learning_profile_outputs
@@ -137,7 +138,9 @@ def learning_profile_document_upload():
         db.session.rollback()
         stored_path.unlink(missing_ok=True)
         raise
-    return redirect(url_for("student.learning_profile"))
+    # 上傳後直接進確認頁；從校系頁來的會帶著 next，確認後再回去
+    return redirect(url_for("student.learning_profile_document_review", document_id=document.id,
+                            next=safe_next(request.form.get("next"))))
 
 
 @student_bp.get("/student/learning-profile")
@@ -164,7 +167,8 @@ def learning_profile():
 @student_bp.get("/student/learning-profile/upload")
 @role_required("student")
 def learning_profile_upload_page():
-    return render_template("learning_profile_upload.html", user=get_current_user())
+    return render_template("learning_profile_upload.html", user=get_current_user(),
+                           next_path=safe_next(request.args.get("next")))
 
 
 @student_bp.post("/student/learning-profile/generate")
@@ -220,6 +224,7 @@ def learning_profile_document_review(document_id):
     review_courses = prepare_course_review_rows(result.get("courses") or [])
     return render_template(
         "learning_profile_review.html", user=user, document=document,
+        next_path=safe_next(request.args.get("next")),
         review_result=review_result,
         review_courses=review_courses,
         review_groups=build_course_review_groups(review_courses),
@@ -468,6 +473,9 @@ def learning_profile_document_confirm(document_id):
     user = get_current_user()
     if document.owner_id != user.id:
         abort(403)
+    next_path = safe_next(request.form.get("next"))
+    program = target_program(next_path)
+    before = readiness(user, program)
     extraction = document.extraction
     if not extraction:
         return "document extraction is required", 400
@@ -621,7 +629,9 @@ def learning_profile_document_confirm(document_id):
     except (TypeError, ValueError) as exc:
         db.session.rollback()
         return str(exc), 400
-    return redirect(url_for("student.learning_profile"))
+    saved = [f"{len(courses)} 門課程" if courses else "", f"{len(credentials)} 張證照" if credentials else ""]
+    flash_done("已儲存 " + ("、".join(part for part in saved if part) or "確認結果") + "。", user, program, before)
+    return redirect(next_path or url_for("student.learning_profile"))
 
 
 def _record_form_values(user):
@@ -658,7 +668,7 @@ def _record_status():
     return "confirmed" if request.form.get("confirm") else "draft"
 
 
-def _render_record_form(user, portfolio=None, values=None, error=None):
+def _render_record_form(user, portfolio=None, values=None, error=None, next_path=None):
     """新增與編輯共用同一個表單頁（student_portfolio_form.html）。"""
     return render_template(
         "student_portfolio_form.html",
@@ -668,6 +678,7 @@ def _render_record_form(user, portfolio=None, values=None, error=None):
         categories=EXPERIENCE_CATEGORIES,
         category_labels=CATEGORY_LABELS,
         error=error,
+        next_path=next_path,
     ), (400 if error else 200)
 
 
@@ -677,13 +688,17 @@ def _render_record_form(user, portfolio=None, values=None, error=None):
 def portfolio_list():
     user = get_current_user()
     if request.method == "POST":
+        next_path = safe_next(request.form.get("next"))
+        program = target_program(next_path)
+        before = readiness(user, program)
         try:
             values = _record_form_values(user)
         except ValueError as exc:
-            return _render_record_form(user, values=request.form, error=str(exc))
+            return _render_record_form(user, values=request.form, error=str(exc), next_path=next_path)
         db.session.add(Portfolio(student_id=user.id, status=_record_status(), **values))
         db.session.commit()
-        return redirect(url_for("student.portfolio_list", added=values["category"]))
+        flash_done(f"已新增「{values['title']}」。", user, program, before)
+        return redirect(next_path or url_for("student.portfolio_list", added=values["category"]))
     records = Portfolio.query.filter_by(student_id=user.id).order_by(Portfolio.created_at.desc()).all()
     return render_template(
         "student_portfolio.html",
@@ -700,7 +715,8 @@ def portfolio_list():
 @student_bp.get("/student/portfolio/new")
 @role_required("student")
 def portfolio_new():
-    return _render_record_form(get_current_user(), values={"category": request.args.get("category", "")})
+    return _render_record_form(get_current_user(), values={"category": request.args.get("category", "")},
+                               next_path=safe_next(request.args.get("next")))
 
 
 @student_bp.get("/student/portfolio/<int:portfolio_id>/edit")

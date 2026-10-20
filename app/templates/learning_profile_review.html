@@ -42,6 +42,7 @@
   </div>
   <form method="post" action="{{ url_for('student.learning_profile_document_confirm', document_id=document.id) }}" class="form-stack">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if next_path %}<input type="hidden" name="next" value="{{ next_path }}">{% endif %}
     <input type="hidden" name="courses_json" id="courses-json" value="[]">
     <input type="hidden" name="credentials_json" id="credentials-json" value="[]">
 
@@ -114,7 +115,7 @@
   <a href="{{ url_for('student.learning_profile_document_source', document_id=document.id) }}">下載原始檔案</a>
   <form method="post" action="{{ url_for('student.learning_profile_document_reanalyze', document_id=document.id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="button button--small button--line" type="submit">重新分析來源檔</button>
+    <button class="button button--small button--line" type="submit" data-busy-text="重新辨識中…">重新分析來源檔</button>
   </form>
 </div>
 <p>重新分析會建立新草稿；已確認的課程與證照會保留，直到你明確確認並儲存新草稿。尚未儲存的修改不會帶入新分析。</p>
@@ -277,6 +278,7 @@
 <form method="post" action="{{ url_for('student.learning_profile_document_confirm', document_id=document.id) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% if result.get('draft_revision') %}<input type="hidden" name="draft_revision" value="{{ result.draft_revision }}">{% endif %}
+  {% if next_path %}<input type="hidden" name="next" value="{{ next_path }}">{% endif %}
 {% if document.document_type == "transcript" %}
 {% if academic_summary %}
 <section class="academic-summary">

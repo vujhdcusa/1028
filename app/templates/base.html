@@ -15,6 +15,10 @@
     <a class="skip-link" href="#main-content">跳到主要內容</a>
     {% block navigation %}{% endblock %}
     <main id="main-content">
+      {# 做完一件事後的結果（例如「已儲存 3 門課程。準備度 20% → 45%」） #}
+      {% with messages = get_flashed_messages() %}{% if messages %}
+      <div class="flash-stack" role="status">{% for message in messages %}<p class="flash"><span aria-hidden="true">✓</span> {{ message }}</p>{% endfor %}</div>
+      {% endif %}{% endwith %}
       {% block content %}{% endblock %}
     </main>
     {% block footer %}{% endblock %}
