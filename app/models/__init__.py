@@ -42,6 +42,7 @@ from app.models.p0_workbench import (
 )
 from app.models.transfer_credit import TransferCreditRecord
 from app.models.system_setting import SystemSetting
+from app.models.google_doc import AutobiographyGoogleDoc
 
 __all__ = [
     "AiDailyUsage",
@@ -87,4 +88,5 @@ __all__ = [
     "PackageReview",
     "TransferCreditRecord",
     "SystemSetting",
+    "AutobiographyGoogleDoc",
 ]

@@ -17,6 +17,24 @@
 - 完整測試：排除另一工作階段做到一半的 `tests/test_autobiography_google_docs.py` 後，`599 passed, 6 failed`；6 項中 5 項（自傳、小助手版本）是對方同時在改自傳造成，單獨重跑已通過，另 1 項為上述 `test_record_status`，已依新需求修改並通過。
 - 注意：本次與「自傳改用 Google 文件編輯」工作階段共用同一個資料夾，對方已切到 `feat/google-docs-autobiography` 分支；本次只提交自己的檔案，對方的未提交修改與 handoff.md 都沒有動。
 
+## 2026-10-20 自傳可以在 Google 文件中編輯（示範版）
+
+日期：2026-10-20（台灣時間）
+
+開發者：Claude
+
+目標：使用者與指導老師決議讓自傳可以在 Google 文件中編輯；沒有學校 Workspace，用學生個人 Google 帳號示範。依 V2 提案（D1～D6）：Google 只當編輯工具，自傳版本仍存在 MySQL；只要 `drive.file`；權杖不長期保存。分支 `feat/google-docs-autobiography`（從 `feat/teammate-ocr` 的 `bab0a53` 開出）。
+
+- 後端 Google 授權（OAuth 授權碼流程）：新增 `app/routes/google_docs.py`（獨立 blueprint，沒有改 `student.py`）。`/student/google/connect` 產生隨機 state 後轉到 Google，只要 `https://www.googleapis.com/auth/drive.file`、`access_type=online`（不拿更新權杖）；`/student/google/callback` 核對 state（不符回 400）、拒絕授權時回自傳頁提示。權杖放在伺服器記憶體 `TokenStore`（`app/services/google_docs_service.py`），cookie 只存隨機編號，並綁定使用者 id，最多 1 小時過期；伺服器重啟就要重新授權。
+- 設定：`app/config.py` 新增 `GOOGLE_OAUTH_CLIENT_SECRET`、`GOOGLE_OAUTH_REDIRECT_URI`（用戶端 ID 沿用既有 `GOOGLE_OAUTH_CLIENT_ID`），`.env.example` 補說明。三個值缺一個時，自傳頁顯示停用的「Google 尚未設定」按鈕，其他功能照常。本機展示站預設仍完全不連 Google，`scripts/run_local_demo.py --google` 才讀 `.env` 的設定。
+- 在 Google 文件中編輯：自傳頁新增 Google 文件區塊。第一次按會把最新版草稿轉成純文字（每段 `## 標題 [來源 F1 F2]`），以 Drive API multipart 上傳並轉成 Google 文件，放在學生自己的 My Drive。新資料表 `autobiography_google_docs`（模型 `app/models/google_doc.py`、遷移 `a7c3e9d10f42`）記下文件 ID、連結、建立時間、對應的自傳版本與最後取回時間；同一位學生同一個校系只有一份，之後再按都開同一份。
+- 從 Google 文件取回：用 Drive API 匯出純文字，依 `## 標題` 拆段，存成新的一版（`autobiography_service.save_imported`，舊版不動，`origin` 記為 `google_docs`，導師意見依段落順序沿用）。來源標記重新檢查：只接受這份草稿事實清單裡、有 `evidence_id` 的編號，其他列入 `unknown_sources`，`autobiography_review` 在該段疑點顯示「引用了不存在的來源 F9…」。找不到任何 `## 標題` 時拒絕取回，系統內版本不變。送導師確認照舊用系統內的版本快照。
+- 錯誤處理：Google 逾時、5xx、格式不對 → 回自傳頁顯示「Google 暫時無法使用，請先在系統內編輯」；401／403 → 丟掉權杖並提示重新連結。學生隨時可以在系統內編輯與儲存，不卡主線。
+- 測試（先寫失敗測試再實作）：新增 `tests/test_autobiography_google_docs.py`（18 項），Google 全部用測試替身或替換 `urlopen`，不連網；涵蓋未設定、只要 drive.file、state 不符、權杖不在 cookie、未授權先轉登入、建立、重開同一份、取回存新版本與標記不存在來源、沒有標題時拒絕、別的學生 403、權杖只屬於授權的那個工作階段、Google 失敗回系統內編輯、授權過期、拒絕授權、文字格式往返、遷移升降級、HTTP 用戶端錯誤對應與文件 ID 檢查、展示站預設不開 Google。`tests/conftest.py` 新增自動擋掉 `.env` 真實 Google 設定。
+- 文件：新增 `docs/03_開發紀錄/01_參考與環境設定/Google文件自傳編輯_設定步驟.md`（建立專案、啟用 Drive API、OAuth 同意畫面測試模式加測試使用者、建立網頁用戶端與 localhost 重新導向網址、示範後移除權限）。
+- 完整測試：`pytest -q -p no:cacheprovider --basetemp=logs/test-runs/gdocs-full2` → `623 passed, 2 skipped in 254.38s`（含另一方同時提交的 `56a74f1` 成績單與證照分頁；第一次跑時它還在修改中，`test_record_status` 失敗 1 項，提交後重跑通過）。
+- 沒做到：沒有用真的 Google 帳號實測（需要使用者先完成 Google Cloud 設定）；也沒有開瀏覽器預覽（共用的 `.claude/launch.json` 修改被權限擋下，頁面行為由測試確認）。
+
 ## 2026-10-20 學生主線動線改善五項
 
 日期：2026-10-20（台灣時間）

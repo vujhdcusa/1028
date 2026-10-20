@@ -41,7 +41,12 @@ def review_paragraphs(paragraphs, facts, answers):
                                  "title": _short_title(fact["text"]), "text": fact["text"]})
 
         question_key = _question_key(paragraph.get("title"), index)
-        if question_key and not (answers.get(question_key) or "").strip():
+        unknown = paragraph.get("unknown_sources") or []
+        if unknown:
+            issue = f"引用了不存在的來源 {'、'.join(unknown)}，請刪掉或改成右側清單裡的編號"
+            suggestion = "來源編號只能用系統列出的資料（F1、F2…），不要自己編"
+            icon = "⚠"
+        elif question_key and not (answers.get(question_key) or "").strip():
             issue = "這題還沒回答"
             suggestion = QUESTION_SUGGESTIONS[question_key]
             icon = "⚠"

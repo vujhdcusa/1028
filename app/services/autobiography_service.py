@@ -271,6 +271,41 @@ def save_edits(output, texts, editor, comments=None):
     return new_version
 
 
+def save_imported(output, paragraphs, editor, origin):
+    """從外部編輯工具（例如 Google 文件）取回的段落存成**新的一版**，回傳新版本；舊版不動。
+
+    paragraphs：已檢查過來源的段落（title、text、sources，可能有 unknown_sources）。
+    導師意見依段落順序沿用上一版。
+    """
+    content = dict(output.content_json)
+    old = content.get("paragraphs", [])
+    new_paragraphs = []
+    for index, paragraph in enumerate(paragraphs):
+        item = dict(paragraph)
+        if index < len(old) and old[index].get("teacher_comment"):
+            item["teacher_comment"] = old[index]["teacher_comment"]
+        new_paragraphs.append(item)
+    content.update({
+        "paragraphs": new_paragraphs,
+        "edited": True,
+        "version": _next_version(output.student_id, content["program_id"]),
+        "editor_id": editor.id,
+        "editor_role": editor.role,
+        "based_on": output.id,
+        "origin": origin,
+    })
+    new_version = LearningProfileOutput(
+        student_id=output.student_id,
+        output_type=OUTPUT_TYPE,
+        content_json=content,
+        source_snapshot_json={**(output.source_snapshot_json or {}),
+                              "saved_at": datetime.now(timezone.utc).isoformat(), "origin": origin},
+    )
+    db.session.add(new_version)
+    db.session.commit()
+    return new_version
+
+
 def _diff_html(old, new):
     """逐字比較，刪掉的用 <del>、新增的用 <ins>。"""
     parts = []

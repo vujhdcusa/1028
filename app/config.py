@@ -35,6 +35,9 @@ class Config:
     # Google Drive 原型只在本機明確啟用，且 OAuth 與 Picker 設定齊全時開放。
     GOOGLE_DRIVE_PREVIEW_ENABLED = os.getenv("GOOGLE_DRIVE_PREVIEW_ENABLED", "false").lower() == "true"
     GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
+    # 自傳在 Google 文件中編輯（後端 OAuth，只要 drive.file）：三個值都填了才會開放；權杖只放伺服器記憶體
+    GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
+    GOOGLE_OAUTH_REDIRECT_URI = os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "")
     GOOGLE_PICKER_API_KEY = os.getenv("GOOGLE_PICKER_API_KEY", "")
     GOOGLE_CLOUD_PROJECT_NUMBER = os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER", "")
     # 小助手對話次數多，用較輕量的模型，和自傳、簡章擷取分開計算每日額度
