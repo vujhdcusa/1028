@@ -74,14 +74,14 @@ def guide_cards(user, snoozed=None, now=None):
                                url_for("student.learning_profile_upload_page")))
     elif grade == 2:
         if not totals["grades"]:
-            cards.append(_card("upload-grades", "學期成績出來了，上傳成績單。", "上傳成績單", url_for("student.learning_profile_upload_page")))
+            cards.append(_card("upload-grades", "學期成績出來了，上傳成績單。", "上傳成績單", url_for("student.learning_profile_upload_page", type="transcript")))
         if not year_records:
             cards.append(_card("each-term", "每學期留一份課程成果。", "新增成果", url_for("student.portfolio_new", category="activity")))
         if not totals["credential"]:
-            cards.append(_card("certificates", "有考到證照就先存起來。", "上傳證照", url_for("student.learning_profile_upload_page")))
+            cards.append(_card("certificates", "有考到證照就先存起來。", "上傳證照", url_for("student.learning_profile_upload_page", type="credential")))
     elif grade == 3:
         if not totals["credential"]:
-            cards.append(_card("certificates", "整理你的證照，備審用得到。", "上傳證照", url_for("student.learning_profile_upload_page")))
+            cards.append(_card("certificates", "整理你的證照，備審用得到。", "上傳證照", url_for("student.learning_profile_upload_page", type="credential")))
         if not totals["competition"]:
             cards.append(_card("competition", "參加過比賽嗎？記下來。", "新增競賽", url_for("student.portfolio_new", category="competition")))
         if not has_target:

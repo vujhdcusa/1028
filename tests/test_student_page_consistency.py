@@ -92,7 +92,7 @@ def test_review_failures_and_empty_table_offer_next_actions(consistency_app, tmp
     ).get_data(as_text=True)
 
     assert "這種檔案無法預覽" in html
-    assert 'href="/student/learning-profile/upload"' in html
+    assert 'href="/student/learning-profile/upload?type=transcript"' in html
     assert "重新上傳文件" in html
     assert "這份文件無法自動辨識" in html
     assert 'href="#course-table-title"' in html

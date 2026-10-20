@@ -78,7 +78,7 @@ def test_upload_goes_straight_to_review_page(client, app):
 def test_gap_page_add_links_remember_where_the_student_came_from(client, app):
     html = client.get(target_path(app)).get_data(as_text=True)
 
-    assert f"/student/learning-profile/upload?next=/student/targets/{app.config['SYN_PROGRAM_ID']}" in html
+    assert f"/student/learning-profile/upload?type=transcript&amp;next=/student/targets/{app.config['SYN_PROGRAM_ID']}" in html
 
 
 def test_upload_and_confirm_return_to_target_with_readiness_update(client, app):

@@ -18,19 +18,21 @@
     <form method="post" action="{{ url_for('student.learning_profile_document_upload') }}" enctype="multipart/form-data" class="form-stack">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if next_path %}<input type="hidden" name="next" value="{{ next_path }}">{% endif %}
-      <fieldset class="field">
-        <legend>這是什麼文件？</legend>
-        <div class="choice-group">
-          <label class="choice"><input type="radio" name="document_type" value="transcript"{% if document_type == "transcript" %} checked{% endif %}><span><b>成績單</b><small>從學校系統下載，建議用列印版</small></span></label>
-          <label class="choice"><input type="radio" name="document_type" value="credential"{% if document_type == "credential" %} checked{% endif %}><span><b>證照</b><small>證書正面的照片或 PDF</small></span></label>
-        </div>
-      </fieldset>
+      {# 成績單和證照分開上傳，不讓學生選類型，避免傳錯地方 #}
+      <input type="hidden" name="document_type" value="{{ document_type }}">
+      <p class="upload-kind">
+        {% if document_type == "transcript" %}<b>成績單</b>：從學校系統下載，建議用列印版。
+        {% else %}<b>證照</b>：證書正面的照片或 PDF。{% endif %}
+      </p>
       {{ upload_field(hint="PDF、PNG、JPG", accept="image/png,image/jpeg,.pdf") }}
       <div class="record-card__actions">
         <button class="button" type="submit" data-busy-text="辨識中，約 10 秒…">上傳</button>
         <a class="button button--line" href="{{ back_url }}">取消</a>
       </div>
-      <p class="muted small">上傳後請逐筆確認。系統不會保存你的學校帳號密碼。</p>
+      <p class="muted small">上傳後請逐筆確認。系統不會保存你的學校帳號密碼。
+        {% if document_type == "transcript" %}要上傳的是證照？<a href="{{ url_for('student.learning_profile_upload_page', type='credential', next=next_path) }}">改上傳證照</a>
+        {% else %}要上傳的是成績單？<a href="{{ url_for('student.learning_profile_upload_page', type='transcript', next=next_path) }}">改上傳成績單</a>{% endif %}
+      </p>
     </form>
   </section>
 </div>

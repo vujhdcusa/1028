@@ -2,7 +2,7 @@
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% set page_name = "student-gap" %}
 {% set status_text = {"complete": "已備齊", "partial": "還差一點", "missing": "還沒有資料", "prepare": "需自己準備"} %}
-{% set add_links = {"grades": url_for("student.learning_profile_upload_page", next=request.path), "credential": url_for("student.learning_profile_upload_page", next=request.path)} %}
+{% set add_links = {"grades": url_for("student.learning_profile_upload_page", type="transcript", next=request.path), "credential": url_for("student.learning_profile_upload_page", type="credential", next=request.path)} %}
 {% set review_text = {"pending": ("等待導師確認", "tag--warn"), "confirmed": ("導師已確認", "tag--ok"), "needs_revision": ("導師建議修改", "tag--danger")} %}
 
 {% block title %}{{ program.school_name }} {{ program.department_name }}｜缺件比對{% endblock %}

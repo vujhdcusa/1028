@@ -28,7 +28,7 @@
     {% else %}
     <p class="muted small">這種檔案無法預覽，請改用 PDF、PNG 或 JPG。</p>
     <div class="record-card__actions">
-      <a class="button button--small button--line" href="{{ url_for('student.learning_profile_upload_page') }}">重新上傳文件</a>
+      <a class="button button--small button--line" href="{{ url_for('student.learning_profile_upload_page', type=document.document_type) }}">重新上傳文件</a>
     </div>
     {% endif %}
   </details>

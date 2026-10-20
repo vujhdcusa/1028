@@ -68,11 +68,48 @@ def test_credential_page_shows_only_credentials(client):
     assert re.search(r'<a href="/student/learning-profile/credentials" aria-current="page">證照</a>', nav_html(html))
 
 
-@pytest.mark.parametrize("kind", ["transcript", "credential"])
-def test_upload_page_preselects_document_type(client, kind):
+@pytest.mark.parametrize("kind, label, other", [("transcript", "上傳成績單", "credential"),
+                                                ("credential", "上傳證照", "transcript")])
+def test_upload_page_is_fixed_to_one_document_type(client, kind, label, other):
+    """成績單和證照分開上傳：頁面不給選類型，避免傳錯地方。"""
     html = client.get(f"/student/learning-profile/upload?type={kind}").get_data(as_text=True)
 
-    assert re.search(rf'<input type="radio" name="document_type" value="{kind}" checked>', html)
+    assert f'<input type="hidden" name="document_type" value="{kind}">' in html
+    assert 'type="radio" name="document_type"' not in html
+    assert f"<h1>{label}</h1>" in html or f">{label}<" in html
+    # 真的傳錯頁時有一條小連結換過去
+    assert f'href="/student/learning-profile/upload?type={other}"' in html
+
+
+def test_upload_page_without_type_is_transcript(client):
+    html = client.get("/student/learning-profile/upload").get_data(as_text=True)
+    assert '<input type="hidden" name="document_type" value="transcript">' in html
+
+
+def test_every_upload_link_names_its_document_type(app):
+    """首頁、缺件、建議卡等所有「上傳成績／證照」連結都要帶類型，不會開到另一種。"""
+    from app.services import focus_service, journey_home, student_progress
+    with app.test_request_context():
+        for module in (focus_service, journey_home, student_progress):
+            assert module._add_link("grades") == "/student/learning-profile/upload?type=transcript"
+            assert module._add_link("credential") == "/student/learning-profile/upload?type=credential"
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1] / "app"
+    guide = root.joinpath("services", "guide_service.py").read_text(encoding="utf-8")
+    assert '"上傳成績單", url_for("student.learning_profile_upload_page", type="transcript")' in guide
+    assert guide.count('"上傳證照", url_for("student.learning_profile_upload_page", type="credential")') == 2
+    for name in ("student_home.html", "student_gap.html"):
+        template = root.joinpath("templates", name).read_text(encoding="utf-8")
+        assert 'learning_profile_upload_page", type="transcript"' in template
+        assert 'learning_profile_upload_page", type="credential"' in template
+
+
+def test_folder_tabs_have_no_vertical_scrollbar():
+    """首頁年級分頁：分頁往下壓 6 像素蓋住資料夾邊框，不可因此冒出上下捲軸。"""
+    from pathlib import Path
+    css = (Path(__file__).resolve().parents[1] / "app" / "static" / "css" / "design-system.css").read_text(encoding="utf-8")
+    rule = re.search(r"\.folder-tabs \{[^}]*\}", css).group(0)
+    assert "overflow-y: hidden" in rule
 
 
 def test_confirming_without_next_returns_to_the_page_of_that_document_type(client, app):

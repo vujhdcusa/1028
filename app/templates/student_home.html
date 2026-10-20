@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "partials/nav.html" import masthead, footer, guide_deck with context %}
 {% set page_name = "student-dashboard" %}
-{% set add_links = {"grades": url_for("student.learning_profile_upload_page"), "credential": url_for("student.learning_profile_upload_page")} %}
+{% set add_links = {"grades": url_for("student.learning_profile_upload_page", type="transcript"), "credential": url_for("student.learning_profile_upload_page", type="credential")} %}
 {% set piece_colors = {"grades": "var(--year-1)", "credential": "var(--year-2)", "activity": "var(--year-3)", "competition": "var(--year-4)", "service": "var(--year-2)", "leadership": "var(--year-5)"} %}
 {% set piece_path = "M0 0H100V35A15 15 0 1 1 100 65V100H0V65A15 15 0 0 0 0 35Z" %}
 {# 五個節點的位置（viewBox 0 0 1000 200），路線依序穿過 #}

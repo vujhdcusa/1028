@@ -270,7 +270,8 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 
 /* 五年資料夾 */
 .folders { margin-top: .5rem; }
-.folder-tabs { display: flex; align-items: flex-end; gap: 0; padding-left: .5rem; overflow-x: auto; }
+/* 分頁往下壓 6 像素蓋住資料夾邊框；只允許左右捲（手機），不冒出上下捲軸 */
+.folder-tabs { display: flex; align-items: flex-end; gap: 0; padding: 0 0 6px .5rem; margin-bottom: -6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 .folder-tab { position: relative; min-width: 110px; padding: .55rem 1rem .5rem; margin-right: -6px; border: 1.5px solid var(--ink); border-bottom: 0; border-radius: var(--radius-tab); background: var(--paper-deep); font-weight: 700; cursor: pointer; text-align: left; transform: translateY(6px); transition: transform .15s ease; }
 .folder-tab .mono { display: block; font-size: .75rem; color: var(--muted); font-weight: 400; }
 .folder-tab::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 4px; background: var(--year); border-radius: 0 0 3px 3px; }
@@ -936,6 +937,9 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .jig__loose:nth-child(even) { margin-top: .5rem; }
 .jig__loose span { margin-top: -.3rem; font-size: .8rem; }
 @media (max-width: 520px) { .jig__tray { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem 1rem; } }
+
+/* 上傳頁只上傳一種文件：說明這頁要放什麼 */
+.upload-kind { margin: 0; padding: .75rem 1rem; border-left: 4px solid var(--accent); background: var(--paper-deep); }
 
 /* 換成自己的照片 */
 .jig-photo { display: flex; align-items: center; justify-content: center; gap: .75rem; flex-wrap: wrap; margin-top: 1rem; }

@@ -1,5 +1,22 @@
 # 開發日誌
 
+## 2026-10-20 成績單和證照分開上傳；首頁年級分頁拿掉上下捲軸
+
+日期：2026-10-20（台灣時間）
+
+開發者：Claude
+
+目標：使用者指出上傳頁同時讓學生選「成績單／證照」，容易傳錯地方；首頁五年資料夾的年級分頁右邊多了一條上下捲軸。
+
+- 捲軸原因：`.folder-tabs` 設了 `overflow-x: auto`，瀏覽器會把上下方向也變成可捲；分頁用 `translateY(6px)` 往下壓住資料夾邊框，多出的 6 像素就冒出上下捲軸。
+- 修改：
+  - `design-system.css`：`.folder-tabs` 加 `overflow-y: hidden`，並用下方留白 6 像素、負邊距 6 像素保留分頁壓住邊框的樣子；左右仍可捲（手機）。
+  - `learning_profile_upload.html`：拿掉類型選項，改成固定的隱藏欄位，上方一行說明這頁要放什麼；真的走錯頁時，下方有「改上傳證照／改上傳成績單」小連結。沒帶類型時視為成績單。
+  - 所有上傳成績或證照的連結都帶類型：首頁資料夾與拼圖（`student_home.html`、`journey_home.py`）、缺件頁（`student_gap.html`）、建議卡（`guide_service.py`）、焦點與進度（`focus_service.py`、`student_progress.py`）、確認頁「重新上傳文件」（依該文件類型）。
+- 測試：`tests/test_transcript_credential_split.py` 原「上傳頁預選類型」改為「上傳頁固定一種類型、沒有選項」（需求改變），另新增沒帶類型視為成績單、所有連結帶類型、年級分頁沒有上下捲軸，先確認失敗再實作。`test_student_flow.py`、`test_student_page_consistency.py` 各有一處寫死不帶類型的網址，依新網址更新。
+- 瀏覽器確認：年級分頁 `scrollHeight` 等於 `clientHeight`（79），沒有捲軸，外觀不變；`?type=credential` 上傳頁只有證照說明與檔案欄位。
+- 完整測試：`629 passed, 2 skipped`。
+
 ## 2026-10-20 首頁：五年資料夾移到拼圖前面；散落的拼圖片縮小
 
 日期：2026-10-20（台灣時間）

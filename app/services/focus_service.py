@@ -28,7 +28,8 @@ MAX_PIECES = 60
 
 def _add_link(category):
     if category in ("grades", "credential"):
-        return url_for("student.learning_profile_upload_page")
+        return url_for("student.learning_profile_upload_page",
+                       type="transcript" if category == "grades" else "credential")
     return url_for("student.portfolio_new", category=category)
 
 
