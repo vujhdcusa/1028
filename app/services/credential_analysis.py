@@ -53,11 +53,19 @@ def _issuer_value(text):
     return "勞動部" if "勞動部" in traditional_text(text or "") else None
 
 
+def _issuer_is_partial(text):
+    """圖片下緣切到「勞動部發」時只讀到「勞動」加殘字（實測「勞动音」）。"""
+    candidate = re.sub(r"\s+", "", traditional_text(text or ""))
+    return bool(re.fullmatch(r"勞動(?!部).{0,2}", candidate))
+
+
 def _issuer_candidate(text):
     """Keep the OCR reading visible while converting it to Traditional Chinese."""
     candidate = re.sub(r"\s+", "", traditional_text(text or ""))
     if candidate in USER_CONFIRMED_ISSUER_READINGS:
         return USER_CONFIRMED_ISSUER_READINGS[candidate]
+    if _issuer_is_partial(candidate):
+        return "勞動部"
     # 證照上印的是「勞動部發」（由某單位核發），發證單位本身不含結尾的「發」
     return re.sub(r"(?<=[部會署局])核?發$", "", candidate) or None
 
@@ -225,7 +233,8 @@ def analyze_technician_regions(regions, *, page):
     def text_for(key):
         return " ".join(str(item.get("text") or "") for item in regions.get(key, []))
 
-    occupation_text = re.sub(r"職\s*類\s*[（(]?\s*項?\s*[）)]?|名\s*稱", " ", text_for("occupation"))
+    # OCR 有時把標籤讀成簡體（職类（项）），先轉繁體再去掉標籤
+    occupation_text = re.sub(r"職\s*類\s*[（(]?\s*項?\s*[）)]?|名\s*稱", " ", traditional_text(text_for("occupation")))
     occupation_text = re.sub(r"稱\s*$", "", occupation_text)
     occupation_text = re.sub(r"稱\s*$", "", occupation_text)
     occupation_text = re.sub(r"\s+", "", occupation_text)
@@ -256,6 +265,8 @@ def analyze_technician_regions(regions, *, page):
             fields[key]["reason"] = "總編號不完整；信心分數僅對已讀片段，請對照原圖"
         if key == "issuer" and value and value != "勞動部":
             fields[key]["reason"] = "OCR 辨識文字疑似有誤，請核對發證單位後再儲存"
+        elif key == "issuer" and value and _issuer_is_partial(raw):
+            fields[key]["reason"] = f"發證單位只讀到「{traditional_text(raw).strip()}」，推定為「勞動部」，請對照原圖確認"
         elif key == "issuer" and value and _issuer_has_manual_correction(raw):
             fields[key]["reason"] = "已依人工核對修正為「勞動部」，請確認後再儲存"
     title_evidence = _field(regions.get("title", []), page, title if title_found else None)
@@ -295,7 +306,8 @@ def technician_regions_from_page_words(words):
         return item["bbox"][3] - item["bbox"][1]
 
     def matching(pattern):
-        return [w for w in words if re.search(pattern, w["text"])]
+        # OCR 常把個別字讀成簡體（职类、动），比對前先轉成繁體；欄位保留原始辨識文字
+        return [w for w in words if re.search(pattern, traditional_text(w["text"]))]
 
     def right_on_same_row(label, candidates):
         row = [c for c in candidates if c is not label
@@ -312,9 +324,9 @@ def technician_regions_from_page_words(words):
     regions["title"] = [w for w in words if w["bbox"][3] <= top + span * .2] + matching(r"技[術术]\s*士\s*證")
     regions["certificate_number"] = matching(r"\d{2,4}\s*[-－]\s*\d{5,10}")
     regions["level"] = [w for w in matching(r"[甲乙丙丁]\s*[級级]") if not re.search(r"[級级]\s*別", w["text"])]
-    regions["issuer"] = matching(r"勞動部|勞委會|勞工委員會|部\s*發")
+    regions["issuer"] = matching(r"勞動部|勞委會|勞工委員會|部\s*發|勞\s*動")
     for label in matching(r"職\s*類"):
-        if re.sub(r"職\s*類\s*[（(]?\s*項?\s*[）)]?", "", label["text"]).strip():
+        if re.sub(r"職\s*類\s*[（(]?\s*項?\s*[）)]?", "", traditional_text(label["text"])).strip():
             regions["occupation"] = [label]  # 標籤和職類名稱被辨識成同一段
             break
         others = [w for w in words if not re.search(date_pattern + r"|[甲乙丙丁]\s*[級级]", w["text"])]

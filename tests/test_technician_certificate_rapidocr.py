@@ -106,3 +106,35 @@ def test_issuer_printed_as_issued_by_ministry_is_normalized():
 
     assert issuer["value"] == "勞動部"
     assert "疑似有誤" not in (issuer["reason"] or "")
+
+
+def _replace(words, old, new):
+    return [word(new, *w["bbox"], w["confidence"]) if w["text"] == old else w for w in words]
+
+
+def test_occupation_label_read_in_simplified_chinese_is_still_found():
+    # 實測（乙級證照）：標籤被讀成簡體「職类（项）」，職類名稱讀到了卻沒有放進欄位
+    words = _replace(SEPARATE_LABEL_WORDS, "職類（項）", "職类（项）")
+
+    result = analyze_technician_regions(technician_regions_from_page_words(words), page=1)
+
+    assert result["fields"]["occupation"]["value"] == "電腦硬體裝修"
+
+
+def test_issuer_read_in_simplified_or_cut_off_is_still_found():
+    # 實測：圖片下緣把「勞動部發」切掉一半，讀成「勞动音」；推定為勞動部，但要請學生核對
+    words = _replace(SEPARATE_LABEL_WORDS, "勞動部發", "勞动音")
+
+    issuer = analyze_technician_regions(technician_regions_from_page_words(words), page=1)["fields"]["issuer"]
+
+    assert issuer["value"] == "勞動部"
+    assert "請對照原圖" in issuer["reason"]
+    assert issuer["raw_text"] == "勞动音"
+
+
+def test_issuer_from_another_agency_is_not_forced_to_ministry_of_labor():
+    words = _replace(SEPARATE_LABEL_WORDS, "勞動部發", "勞工委員會")
+
+    issuer = analyze_technician_regions(technician_regions_from_page_words(words), page=1)["fields"]["issuer"]
+
+    assert issuer["value"] == "勞工委員會"
