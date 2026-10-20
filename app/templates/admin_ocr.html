@@ -25,6 +25,8 @@
     {% endif %}
   </section>
 
+  <p><a href="{{ url_for('main.ocr_acceptance') }}">看 OCR 實測結果（逐欄對照原圖的驗收紀錄）→</a></p>
+
   <section class="work-panel">
     <div class="work-panel__head"><div><h2>切換</h2></div></div>
     {% if error %}<p class="alert mb-1" role="alert">{{ error }}</p>{% endif %}

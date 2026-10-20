@@ -402,7 +402,7 @@
   <p><strong>{{ '需要人工確認' if analysis.get('needs_review') else '已辨識欄位，仍須人工確認' }}</strong>。此結果只供欄位核對，不代表證照真偽。</p>
   {% if analysis.get('classification_reason') %}<p class="review-warning">{{ analysis.classification_reason }}</p>{% endif %}
   <ol>{% for step in analysis.get('steps', []) %}<li>{{ step }}</li>{% endfor %}</ol>
-  <p>請對照 <a href="{{ url_for('student.learning_profile_document_source', document_id=document.id) }}">原始證照圖片</a> 核對每個欄位；OCR 信心分數不是正確率。</p>
+  <p>請對照 <a href="{{ url_for('student.learning_profile_document_source', document_id=document.id) }}">原始證照圖片</a> 核對每個欄位；OCR 信心分數不是正確率（<a href="{{ url_for('main.ocr_acceptance') }}">看實測結果</a>）。</p>
   {% if analysis.get('document_kind') in ('taiwan_technician_certificate', 'possible_taiwan_technician_certificate') %}
   {% set field_names = [('occupation', '職類（項）名稱'), ('level', '級別'), ('certificate_number', '技術士證總編號'), ('effective_date', '生效日期'), ('issue_date', '製發日期'), ('issuer', '發證單位')] %}
   <dl class="credential-evidence">

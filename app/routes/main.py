@@ -188,6 +188,14 @@ def student_welcome_done():
     return redirect(url_for(endpoint, category="activity") if choice == "activity" else url_for(endpoint))
 
 
+@main_bp.get("/ocr/acceptance")
+@role_required("student", "teacher", "staff", "admin")
+def ocr_acceptance():
+    """OCR 實測結果：逐欄對照原圖的驗收紀錄。內容在 app/content/ocr_acceptance.py。"""
+    from app.content.ocr_acceptance import ACCEPTANCE
+    return render_template("ocr_acceptance.html", user=get_current_user(), data=ACCEPTANCE)
+
+
 @main_bp.get("/help")
 @role_required("student", "teacher", "staff", "admin")
 def help_page():

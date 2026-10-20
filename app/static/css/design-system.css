@@ -1240,3 +1240,16 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .masthead--student .brand > span:not(.brand__mark) { display: none; }
   .masthead--student .masthead__help { padding: .3rem .35rem; }
 }
+
+/* OCR 實測結果頁 */
+.acceptance { max-width: 60rem; }
+.acceptance__lead { font-size: 1.05rem; }
+.acceptance h2 { font-family: var(--font-serif); margin: 2rem 0 .6rem; }
+.acceptance h3 { margin: 1.25rem 0 .5rem; }
+.acceptance__summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; margin: 0; }
+.acceptance__summary > div { border: 1.5px solid var(--line); background: var(--sheet); padding: .75rem 1rem; }
+.acceptance__summary dt { color: var(--muted); font-size: .85rem; }
+.acceptance__summary dd { margin: .2rem 0 0; display: grid; }
+.acceptance__summary b { font-size: 1.4rem; }
+.acceptance__summary small { color: var(--muted); }
+.acceptance__note td { color: var(--ink-soft); font-size: .85rem; background: var(--paper-deep); }
