@@ -1,5 +1,25 @@
 # 開發日誌
 
+## 2026-10-20 備份到 GitHub（個人與小組 repo）
+
+日期：2026-10-20（台灣時間）
+
+開發者：Claude
+
+目標：使用者要求先把目前進度推上 GitHub 備份。
+
+- 推送目標（使用者選「兩個都推」，用完整網址，不用預設遠端）：
+  - 個人：`https://github.com/LanyuLiu951127/smart-learning-portfolio-solo.git`
+  - 小組：`https://github.com/LanyuLiu951127/smart-learning-portfolio.git`
+- 推送分支：`feat/google-docs-autobiography`，兩邊都是新分支；沒有動任何一邊的 `main`，也沒有強制推送。
+- 內容：從兩邊已有的 `feat/main-line-3`（`9ebea0b`）之後的 73 個提交，再加上本節的提交。包含組員 OCR 合併、RapidOCR 改伺服器版與顯示卡加速、管理員切換 CPU／GPU、證照與成績單辨識修正、成績單與證照分頁與分開上傳、學生動線與頂端列、首頁拼圖與資料夾、自傳 Google 文件示範版、OCR 實測結果頁。
+- 推送前檢查：
+  - 金鑰：新增內容沒有真的金鑰，只有測試用假值 `public-picker-key`；`.env`、資料庫檔、上傳圖片都沒有被追蹤。
+  - 個資：只有證照範例假身分證號 `A123456789`，以及組員 `111534107` 的署名（組員自己的 GitHub 帳號）；OCR 測試用的真實成績單與證照圖片沒有進版本庫。
+- 沒有推送：`docs/05_交接與專案管理/handoff.md` 是其他人未提交的修改，不在這次提交內。
+- 完整測試（上一節）：`639 passed, 2 skipped`。
+- 下一步：`feat/teammate-ocr` 仍停在 `56a74f1`，要不要合併這條分支由使用者決定；兩邊的 `main` 都還沒有這些修改。
+
 ## 2026-10-20 OCR 實測結果放進系統（/ocr/acceptance）
 
 日期：2026-10-20（台灣時間）
