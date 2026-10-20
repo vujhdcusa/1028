@@ -2,19 +2,20 @@
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% from "partials/status.html" import status_chip %}
 {% set page_name = "learning-profile" %}
-{% set type_labels = {"transcript": "成績單", "credential": "證照"} %}
+{% set kind = kind|default("transcript") %}
+{% set page_label = "成績單" if kind == "transcript" else "證照" %}
 {% set output_labels = {"profile_summary": "學習摘要", "curriculum_gap": "課程缺漏", "autobiography": "自傳草稿", "study_plan": "讀書計畫草稿"} %}
 
-{% block title %}成績與證照｜資管科智慧學習歷程系統{% endblock %}
+{% block title %}{{ page_label }}｜資管科智慧學習歷程系統{% endblock %}
 
-{% block navigation %}{{ masthead(user, "成績與證照") }}{% endblock %}
+{% block navigation %}{{ masthead(user, page_label) }}{% endblock %}
 
 {% block content %}
-{{ page_band("成績與證照") }}
+{{ page_band(page_label) }}
 <div class="page page--banded">
   <div class="list-head">
-    <p class="muted">從學校系統下載成績單（或拍下證照）後上傳，確認內容就會放進「我的五年」。</p>
-    <a class="button" href="{{ url_for('student.learning_profile_upload_page') }}" data-tour="成績單、證照從這裡上傳。" data-tour-order="1">＋ 上傳成績單或證照</a>
+    <p class="muted">{% if kind == "transcript" %}從學校系統下載歷年成績單（PDF 或圖片）後上傳{% else %}拍下或掃描證照正面後上傳{% endif %}，確認內容就會放進「我的五年」。</p>
+    <a class="button" href="{{ url_for('student.learning_profile_upload_page', type=kind) }}" data-tour="{{ page_label }}從這裡上傳。" data-tour-order="1">＋ 上傳{{ page_label }}</a>
   </div>
 
     <div>
@@ -23,12 +24,11 @@
         {% if documents %}
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>檔案</th><th>類型</th><th>狀態</th><th>上傳時間</th><th><span class="visually-hidden">操作</span></th></tr></thead>
+            <thead><tr><th>檔案</th><th>狀態</th><th>上傳時間</th><th><span class="visually-hidden">操作</span></th></tr></thead>
             <tbody>
               {% for document in documents %}
               <tr>
                 <td>{{ document.display_name }}</td>
-                <td>{{ type_labels.get(document.document_type, document.document_type) }}</td>
                 <td>{{ status_chip(record_state(document)) }}</td>
                 <td class="mono small">{{ document.created_at.strftime("%Y-%m-%d") }}</td>
                 <td><a class="button button--small {{ 'button--line' if document.status == 'confirmed' else '' }}" href="{{ url_for('student.learning_profile_document_review', document_id=document.id) }}">{{ "修改" if document.status == "confirmed" else "確認" }}</a>
@@ -39,10 +39,11 @@
           </table>
         </div>
         {% else %}
-        <a class="paper-empty" href="{{ url_for('student.learning_profile_upload_page') }}">還沒有上傳文件。先從最新的一份成績單開始 →</a>
+        <a class="paper-empty" href="{{ url_for('student.learning_profile_upload_page', type=kind) }}">還沒有上傳{{ page_label }}。{% if kind == "transcript" %}先從最新的一份成績單開始{% else %}從最近考到的一張證照開始{% endif %} →</a>
         {% endif %}
       </section>
 
+      {% if kind == "transcript" %}
       <section class="record-group" style="--slot: var(--year-1);" aria-labelledby="courses-title">
         <div class="record-group__head"><h2 id="courses-title">成績與學分</h2><span class="muted small">{{ courses|length }} 門課</span></div>
         {% if courses %}
@@ -60,6 +61,7 @@
         <p class="paper-empty">確認成績單後，課程會列在這裡。</p>
         {% endif %}
       </section>
+      {% else %}
 
       <section class="record-group" style="--slot: var(--year-2);" aria-labelledby="credentials-title">
         <div class="record-group__head"><h2 id="credentials-title">證照</h2><span class="muted small">{{ credentials|length }} 張</span></div>
@@ -77,6 +79,7 @@
         <p class="paper-empty">確認證照後，會列在這裡。</p>
         {% endif %}
       </section>
+      {% endif %}
 
     </div>
 </div>

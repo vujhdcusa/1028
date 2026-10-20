@@ -143,19 +143,27 @@ def learning_profile_document_upload():
                             next=safe_next(request.form.get("next"))))
 
 
-@student_bp.get("/student/learning-profile")
-@role_required("student")
-def learning_profile():
+# 成績單與證照分成兩頁：各自只列自己的文件與資料
+PROFILE_PAGES = {"transcript": "student.learning_profile", "credential": "student.learning_profile_credentials"}
+
+
+def _profile_page_url(document_type):
+    return url_for(PROFILE_PAGES.get(document_type, "student.learning_profile"))
+
+
+def _learning_profile_page(kind):
     user = get_current_user()
-    documents = SourceDocument.query.filter_by(owner_id=user.id).filter(
-        SourceDocument.document_type.in_(ALLOWED_DOCUMENT_TYPES)).order_by(SourceDocument.created_at.desc()).all()
-    outputs = LearningProfileOutput.query.filter_by(student_id=user.id).order_by(LearningProfileOutput.created_at.desc()).all()
+    documents = SourceDocument.query.filter_by(owner_id=user.id, document_type=kind).order_by(
+        SourceDocument.created_at.desc()).all()
     courses = LearningCourseRecord.query.filter_by(student_id=user.id).order_by(
-        LearningCourseRecord.school_year, LearningCourseRecord.id).all()
-    credentials = CredentialRecord.query.filter_by(student_id=user.id).order_by(CredentialRecord.id).all()
+        LearningCourseRecord.school_year, LearningCourseRecord.id).all() if kind == "transcript" else []
+    credentials = CredentialRecord.query.filter_by(student_id=user.id).order_by(
+        CredentialRecord.id).all() if kind == "credential" else []
+    outputs = LearningProfileOutput.query.filter_by(student_id=user.id).order_by(LearningProfileOutput.created_at.desc()).all()
     return render_template(
         "learning_profile.html",
         user=user,
+        kind=kind,
         documents=documents,
         outputs=outputs,
         courses=courses,
@@ -164,10 +172,24 @@ def learning_profile():
     )
 
 
+@student_bp.get("/student/learning-profile")
+@role_required("student")
+def learning_profile():
+    return _learning_profile_page("transcript")
+
+
+@student_bp.get("/student/learning-profile/credentials")
+@role_required("student")
+def learning_profile_credentials():
+    return _learning_profile_page("credential")
+
+
 @student_bp.get("/student/learning-profile/upload")
 @role_required("student")
 def learning_profile_upload_page():
+    document_type = request.args.get("type")
     return render_template("learning_profile_upload.html", user=get_current_user(),
+                           document_type=document_type if document_type in ALLOWED_DOCUMENT_TYPES else "transcript",
                            next_path=safe_next(request.args.get("next")))
 
 
@@ -631,7 +653,7 @@ def learning_profile_document_confirm(document_id):
         return str(exc), 400
     saved = [f"{len(courses)} 門課程" if courses else "", f"{len(credentials)} 張證照" if credentials else ""]
     flash_done("已儲存 " + ("、".join(part for part in saved if part) or "確認結果") + "。", user, program, before)
-    return redirect(next_path or url_for("student.learning_profile"))
+    return redirect(next_path or _profile_page_url(document.document_type))
 
 
 def _record_form_values(user):

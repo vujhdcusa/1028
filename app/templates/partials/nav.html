@@ -2,7 +2,7 @@
 {% macro masthead(user=None, active="") %}
 {% if user and user.role == "student" and student_progress is defined %}{{ student_masthead(user, active) }}{% else %}
 {% set links = {
-  "student": [("我的五年", url_for("main.student_dashboard")), ("成績與證照", url_for("student.learning_profile")), ("活動與經歷", url_for("student.portfolio_list")), ("目標校系", url_for("student.target_list"))],
+  "student": [("我的五年", url_for("main.student_dashboard")), ("成績單", url_for("student.learning_profile")), ("證照", url_for("student.learning_profile_credentials")), ("活動與經歷", url_for("student.portfolio_list")), ("目標校系", url_for("student.target_list"))],
   "teacher": [("工作台", url_for("main.teacher_dashboard")), ("我的審查", url_for("review.teacher_reviews"))],
   "staff": [("電子獎狀", url_for("certificate.staff_list")), ("待處理送件", url_for("main.staff_dashboard"))],
   "admin": [("系統總覽", url_for("main.admin_dashboard")), ("帳號管理", url_for("admin.accounts")), ("專題規則", url_for("admin.project_types")), ("課程規則", url_for("admin.course_rules")), ("校系資料", url_for("admin.programs")), ("招生資料 Agent", url_for("admin.agent_home")), ("導師班級", url_for("admin.classes")), ("OCR 辨識設定", url_for("admin.ocr_settings_page"))],
@@ -42,7 +42,8 @@
 {# 「目標校系」與「備審資料」合併：選了校系就直接進第一個校系的備審頁，還沒選就到選校系頁 #}
 {% set items = [
   ("我的五年", url_for("main.student_dashboard")),
-  ("成績與證照", url_for("student.learning_profile")),
+  ("成績單", url_for("student.learning_profile")),
+  ("證照", url_for("student.learning_profile_credentials")),
   ("活動與經歷", url_for("student.portfolio_list")),
   ("目標與備審", gap_href),
 ] %}

@@ -1203,3 +1203,32 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .flash-stack { width: min(1180px, calc(100% - 2rem)); margin: 1rem auto 0; display: grid; gap: .5rem; }
 .flash { margin: 0; padding: .8rem 1rem; border: 1px solid #abefc6; border-left: 5px solid #17b26a; border-radius: 10px; background: #ecfdf3; color: #054f31; font-weight: 700; }
 .flash span { color: #17b26a; }
+
+/* 學生頂端列：中等寬度時文字不折行，空間不夠就先收起帳號名稱、再把網站名稱縮成圖示 */
+.masthead--student .brand,
+.masthead--student .mainnav a,
+.masthead--student .masthead__links,
+.masthead--student .masthead__links > * { white-space: nowrap; }
+.masthead--student .masthead__inner { gap: 1rem; }
+.masthead--student .mainnav { margin-left: 1rem; }
+.masthead--student .mainnav a { padding: 0 .85rem; }
+.masthead--student .masthead__links { flex-wrap: nowrap; gap: .1rem; }
+@media (max-width: 1180px) {
+  .masthead--student .masthead__user { display: none; }
+  .masthead--student .mainnav a { padding: 0 .65rem; }
+}
+@media (max-width: 1040px) {
+  .masthead--student .brand > span:not(.brand__mark) { display: none; }
+  .masthead--student .mainnav { margin-left: .25rem; }
+}
+@media (max-width: 900px) {
+  .masthead--student .brand > span:not(.brand__mark) { display: inline; }
+  .masthead--student .masthead__links { margin-left: auto; }
+  .masthead--student .mainnav a { padding: .6rem .75rem; }
+}
+@media (max-width: 520px) {
+  .masthead--student .mainnav { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .masthead--student .mainnav a { white-space: normal; padding: .6rem .15rem; }
+  .masthead--student .brand > span:not(.brand__mark) { display: none; }
+  .masthead--student .masthead__help { padding: .3rem .35rem; }
+}

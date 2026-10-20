@@ -6,10 +6,11 @@
 
 {% block title %}確認上傳內容｜資管科智慧學習歷程系統{% endblock %}
 
-{% block navigation %}{{ masthead(user, "成績與證照") }}{% endblock %}
+{% set page_label = "成績單" if document.document_type == "transcript" else "證照" %}
+{% block navigation %}{{ masthead(user, page_label) }}{% endblock %}
 
 {% block content %}
-{{ page_band("確認上傳內容", [("成績與證照", url_for('student.learning_profile'))], note=document.display_name) }}
+{{ page_band("確認上傳內容", [(page_label, url_for('student.learning_profile') if document.document_type == "transcript" else url_for('student.learning_profile_credentials'))], note=document.display_name) }}
 <div class="page page--banded ocr-review">
   {% if document.extraction and document.extraction.provider == "demo" %}<p class="notice mb-1">本機模擬 OCR：辨識結果是合成資料，請修正後再確認；這不代表真實 OCR 已完成。</p>{% endif %}
 

@@ -2,13 +2,16 @@
 {% from "partials/nav.html" import masthead, footer, page_band with context %}
 {% from "partials/files.html" import upload_field with context %}
 {% set page_name = "learning-profile-upload" %}
+{% set document_type = document_type|default("transcript") %}
+{% set page_label = "成績單" if document_type == "transcript" else "證照" %}
+{% set back_url = url_for("student.learning_profile") if document_type == "transcript" else url_for("student.learning_profile_credentials") %}
 
-{% block title %}上傳文件｜資管科智慧學習歷程系統{% endblock %}
+{% block title %}上傳{{ page_label }}｜資管科智慧學習歷程系統{% endblock %}
 
-{% block navigation %}{{ masthead(user, "成績與證照") }}{% endblock %}
+{% block navigation %}{{ masthead(user, page_label) }}{% endblock %}
 
 {% block content %}
-{{ page_band("上傳文件", [("成績與證照", url_for('student.learning_profile'))]) }}
+{{ page_band("上傳" ~ page_label, [(page_label, back_url)]) }}
 <div class="page narrow page--banded">
   {% if config.DOCUMENT_ANALYSIS_PROVIDER == "demo" %}<p class="notice mb-1">本機展示模式：上傳後會出現合成的 OCR 辨識結果，可修改後再確認；不會呼叫 Google 或外部 AI。</p>{% endif %}
   <section class="sheet">
@@ -18,14 +21,14 @@
       <fieldset class="field">
         <legend>這是什麼文件？</legend>
         <div class="choice-group">
-          <label class="choice"><input type="radio" name="document_type" value="transcript" checked><span><b>成績單</b><small>從學校系統下載，建議用列印版</small></span></label>
-          <label class="choice"><input type="radio" name="document_type" value="credential"><span><b>證照</b><small>證書正面的照片或 PDF</small></span></label>
+          <label class="choice"><input type="radio" name="document_type" value="transcript"{% if document_type == "transcript" %} checked{% endif %}><span><b>成績單</b><small>從學校系統下載，建議用列印版</small></span></label>
+          <label class="choice"><input type="radio" name="document_type" value="credential"{% if document_type == "credential" %} checked{% endif %}><span><b>證照</b><small>證書正面的照片或 PDF</small></span></label>
         </div>
       </fieldset>
       {{ upload_field(hint="PDF、PNG、JPG", accept="image/png,image/jpeg,.pdf") }}
       <div class="record-card__actions">
         <button class="button" type="submit" data-busy-text="辨識中，約 10 秒…">上傳</button>
-        <a class="button button--line" href="{{ url_for('student.learning_profile') }}">取消</a>
+        <a class="button button--line" href="{{ back_url }}">取消</a>
       </div>
       <p class="muted small">上傳後請逐筆確認。系統不會保存你的學校帳號密碼。</p>
     </form>

@@ -154,7 +154,9 @@ def test_learning_profile_page_uses_the_same_status_chips_for_every_record_type(
     client = _status_app(tmp_path).test_client()
     _login(client)
 
-    html = client.get("/student/learning-profile").get_data(as_text=True)
+    # 成績單與證照已分成兩頁；兩頁合起來仍是同一套狀態標籤
+    html = (client.get("/student/learning-profile").get_data(as_text=True)
+            + client.get("/student/learning-profile/credentials").get_data(as_text=True))
 
     assert html.count('class="status-chip status-chip--confirmed"') == 3
     assert html.count('class="status-chip status-chip--draft"') == 1
