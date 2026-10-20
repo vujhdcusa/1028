@@ -178,3 +178,30 @@ def test_summary_stats_and_today_tasks(app):
     assert "今天先完成哪一步" in page
     assert "五年累積" in page and "待處理" in page and "最近成果" in page
     assert "只是累積比例，不是錄取機率" in page
+
+
+def test_folders_drawer_comes_before_the_puzzle(app):
+    """五年資料夾往前放：在「今天先完成哪一步」之後、拼圖之前，不用捲過整個拼圖才看得到。"""
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    page = client.get("/student/dashboard").get_data(as_text=True)
+    assert page.index('id="today-title"') < page.index('id="folders"') < page.index('class="year-puzzle"')
+
+
+def test_loose_pieces_open_the_matching_upload_page(app):
+    """成績單與證照已分兩頁：成績、證照那兩片直接開對應類型的上傳頁。"""
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    page = client.get("/student/dashboard").get_data(as_text=True)
+    assert 'href="/student/learning-profile/upload?type=transcript" data-loose="grades"' in page
+    assert 'href="/student/learning-profile/upload?type=credential" data-loose="credential"' in page
+
+
+def test_loose_pieces_sit_in_a_compact_tray():
+    """散落的片在旁邊是小尺寸（一列六格、手機三格），拖起來才放大到洞的大小；不再用和洞一樣大的片撐出很長的區塊。"""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1] / "app" / "static"
+    css = (root / "css" / "design-system.css").read_text(encoding="utf-8")
+    js = (root / "js" / "components.js").read_text(encoding="utf-8")
+    assert ".jig__tray { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));" in css
+    assert "scale(${grow})" in js

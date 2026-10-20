@@ -112,94 +112,8 @@
     {% if not has_transfer_record %}<p class="today__transfer small"><a href="{{ url_for('transfer_credit.student_transfer_credit') }}">轉學生？填寫抵免進度 →</a></p>{% endif %}
   </section>
 
-  {# 今年的拼圖：一張插畫切成六片，每片是一類資料。有資料的拼在圖上，沒有的是洞，
-     那一片散在旁邊，拖回洞裡就拼上並打開新增（直接點也可以）。 #}
-  <section class="year-puzzle" aria-labelledby="puzzle-title">
-    <h2 id="puzzle-title" class="year-puzzle__title" data-board-title>{% if home.blanks %}還差 {{ home.blanks }} 片，就拼完{{ home.grade_label }}。{% else %}{{ home.grade_label }}拼完了。{% endif %}</h2>
-    {% if home.blanks %}<p class="year-puzzle__hint">把旁邊的拼圖拖回洞裡。</p>{% endif %}
-
-    {# 整張插畫與六片的形狀，只定義一次，下面的圖和散落的片都拿來用 #}
-    <svg class="jig-defs" width="0" height="0" aria-hidden="true" style="--year: var(--year-{{ home.grade }});">
-      <defs>
-        <linearGradient id="scene-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe7fb"/><stop offset="1" stop-color="#fbf6ea"/></linearGradient>
-        {% for piece in home.pieces %}<clipPath id="jp-{{ loop.index0 }}"><path d="{{ piece.d }}"/></clipPath>{% endfor %}
-        <symbol id="year-scene" viewBox="0 0 600 400" overflow="visible">
-          {% if photo_url %}
-          {# 學生自己上傳的這學期照片（已裁成 3:2）；外圈補底色，讓凸出的拼圖邊不是空的 #}
-          <rect x="-40" y="-40" width="680" height="480" fill="#d9d2c3"/>
-          <image href="{{ photo_url }}" x="0" y="0" width="600" height="400" preserveAspectRatio="xMidYMid slice"/>
-          {% else %}
-          <rect x="-40" y="-40" width="680" height="480" fill="url(#scene-sky)"/>
-          <circle cx="470" cy="95" r="46" fill="#f3c55b"/>
-          <path d="M-40 260 Q90 190 220 245 T470 230 T640 215 V440 H-40 Z" fill="#b9d8c9"/>
-          <path d="M-40 300 Q130 250 300 290 T640 270 V440 H-40 Z" fill="#8fc0a9"/>
-          {# 學校 #}
-          <rect x="70" y="150" width="190" height="120" fill="#fffdf8" stroke="#1c2230" stroke-width="4"/>
-          <path d="M55 152 L165 95 L275 152 Z" fill="var(--year)" stroke="#1c2230" stroke-width="4"/>
-          {% for wx in [95, 140, 185, 225] %}<rect x="{{ wx }}" y="180" width="22" height="26" fill="#cfe0f7" stroke="#1c2230" stroke-width="3"/>{% endfor %}
-          <rect x="148" y="222" width="34" height="48" fill="var(--year)" stroke="#1c2230" stroke-width="3"/>
-          {# 往前的路 #}
-          <path d="M165 400 C200 330 330 330 360 280 S470 230 520 200" fill="none" stroke="#fffdf8" stroke-width="34" stroke-linecap="round"/>
-          <path d="M165 400 C200 330 330 330 360 280 S470 230 520 200" fill="none" stroke="#1c2230" stroke-width="3" stroke-dasharray="14 12"/>
-          {# 樹 #}
-          <circle cx="330" cy="215" r="30" fill="#4e9f7d" stroke="#1c2230" stroke-width="3"/><rect x="325" y="240" width="10" height="28" fill="#1c2230"/>
-          <circle cx="560" cy="250" r="24" fill="#4e9f7d" stroke="#1c2230" stroke-width="3"/><rect x="555" y="270" width="10" height="22" fill="#1c2230"/>
-          <text x="520" y="350" text-anchor="middle" font-size="64" font-weight="900" fill="var(--year)" stroke="#1c2230" stroke-width="2" font-family="Noto Serif TC, serif">{{ home.grade_label }}</text>
-          {% endif %}
-        </symbol>
-      </defs>
-    </svg>
-
-    <div class="jig" data-board data-grade="{{ home.grade }}" data-tour="缺的片拖回洞裡，就去補那一類資料。" data-tour-order="3">
-      <svg class="jig__board" viewBox="-30 -30 660 460" role="img" aria-label="{{ home.grade_label }}的拼圖，{{ 6 - home.blanks }} 片已拼上">
-        <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
-        {% for piece in home.pieces %}
-        {% if piece.filled %}
-        <g class="jig__piece" data-piece="{{ piece.key }}" data-filled style="--n: {{ loop.index0 }};">
-          <g clip-path="url(#jp-{{ loop.index0 }})"><use href="#year-scene" width="600" height="400"/></g>
-          <path class="jig__edge" d="{{ piece.d }}"/>
-          <text class="jig__tag" x="{{ piece.x + 100 }}" y="{{ piece.y + 186 }}" text-anchor="middle">{{ piece.label }}</text>
-        </g>
-        {% else %}
-        <a class="jig__hole" data-piece="{{ piece.key }}" data-hole="{{ piece.key }}" href="{{ piece.href }}" aria-label="補上{{ piece.full_label }}">
-          <path d="{{ piece.d }}"/>
-          <text x="{{ piece.x + 100 }}" y="{{ piece.y + 110 }}" text-anchor="middle">＋{{ piece.label }}</text>
-        </a>
-        {% endif %}
-        {% endfor %}
-      </svg>
-
-      {% if home.blanks %}
-      <div class="jig__tray" aria-label="還沒拼上的拼圖">
-        {% for piece in home.pieces if not piece.filled %}
-        <a class="jig__loose" href="{{ piece.href }}" data-loose="{{ piece.key }}" data-x="{{ piece.x }}" data-y="{{ piece.y }}"
-           style="--r: {{ [-12, 9, -6, 14, -10, 7][loop.index0] }}deg; --n: {{ loop.index0 }};" aria-label="補上{{ piece.full_label }}">
-          <svg data-drag-piece viewBox="{{ piece.x - 30 }} {{ piece.y - 30 }} 260 260" aria-hidden="true">
-            <g clip-path="url(#jp-{{ home.pieces.index(piece) }})"><use href="#year-scene" width="600" height="400"/></g>
-            <path class="jig__edge" d="{{ piece.d }}"/>
-          </svg>
-          <span>{{ piece.label }}</span>
-        </a>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-
-    {# 換成自己的照片：只有自己看得到 #}
-    <form class="jig-photo" data-tour="換成這學期最快樂的照片，只有你看得到。" data-tour-order="4" method="post" action="{{ url_for('main.semester_photo_upload') }}" enctype="multipart/form-data" data-photo-form>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="jig-photo__pick">
-        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required data-photo-input>
-        <span>{% if photo_url %}換一張{{ semester_label }}的照片{% else %}放上{{ semester_label }}最快樂的照片{% endif %}</span>
-      </label>
-      <button class="button button--small" type="submit" data-photo-submit>上傳</button>
-      <small>只有你自己看得到。</small>
-    </form>
-  </section>
-
-
-  {# 五年資料夾：收起來，點路線上的節點才打開 #}
-  <details class="folders-drawer" id="folders" data-folders-drawer data-tour="五年所有資料都收在這裡。" data-tour-order="5">
+  {# 五年資料夾：收起來，點路線上的節點才打開；放在拼圖前面，不用捲過拼圖才找得到 #}
+  <details class="folders-drawer" id="folders" data-folders-drawer data-tour="五年所有資料都收在這裡。" data-tour-order="3">
     <summary>打開五年資料夾</summary>
     <div class="split mt-1">
       <section class="folders" data-folders aria-label="五年資料夾">
@@ -255,6 +169,91 @@
       </aside>
     </div>
   </details>
+
+  {# 今年的拼圖：一張插畫切成六片，每片是一類資料。有資料的拼在圖上，沒有的是洞，
+     那一片散在旁邊，拖回洞裡就拼上並打開新增（直接點也可以）。 #}
+  <section class="year-puzzle" aria-labelledby="puzzle-title">
+    <h2 id="puzzle-title" class="year-puzzle__title" data-board-title>{% if home.blanks %}還差 {{ home.blanks }} 片，就拼完{{ home.grade_label }}。{% else %}{{ home.grade_label }}拼完了。{% endif %}</h2>
+    {% if home.blanks %}<p class="year-puzzle__hint">把旁邊的拼圖拖回洞裡。</p>{% endif %}
+
+    {# 整張插畫與六片的形狀，只定義一次，下面的圖和散落的片都拿來用 #}
+    <svg class="jig-defs" width="0" height="0" aria-hidden="true" style="--year: var(--year-{{ home.grade }});">
+      <defs>
+        <linearGradient id="scene-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe7fb"/><stop offset="1" stop-color="#fbf6ea"/></linearGradient>
+        {% for piece in home.pieces %}<clipPath id="jp-{{ loop.index0 }}"><path d="{{ piece.d }}"/></clipPath>{% endfor %}
+        <symbol id="year-scene" viewBox="0 0 600 400" overflow="visible">
+          {% if photo_url %}
+          {# 學生自己上傳的這學期照片（已裁成 3:2）；外圈補底色，讓凸出的拼圖邊不是空的 #}
+          <rect x="-40" y="-40" width="680" height="480" fill="#d9d2c3"/>
+          <image href="{{ photo_url }}" x="0" y="0" width="600" height="400" preserveAspectRatio="xMidYMid slice"/>
+          {% else %}
+          <rect x="-40" y="-40" width="680" height="480" fill="url(#scene-sky)"/>
+          <circle cx="470" cy="95" r="46" fill="#f3c55b"/>
+          <path d="M-40 260 Q90 190 220 245 T470 230 T640 215 V440 H-40 Z" fill="#b9d8c9"/>
+          <path d="M-40 300 Q130 250 300 290 T640 270 V440 H-40 Z" fill="#8fc0a9"/>
+          {# 學校 #}
+          <rect x="70" y="150" width="190" height="120" fill="#fffdf8" stroke="#1c2230" stroke-width="4"/>
+          <path d="M55 152 L165 95 L275 152 Z" fill="var(--year)" stroke="#1c2230" stroke-width="4"/>
+          {% for wx in [95, 140, 185, 225] %}<rect x="{{ wx }}" y="180" width="22" height="26" fill="#cfe0f7" stroke="#1c2230" stroke-width="3"/>{% endfor %}
+          <rect x="148" y="222" width="34" height="48" fill="var(--year)" stroke="#1c2230" stroke-width="3"/>
+          {# 往前的路 #}
+          <path d="M165 400 C200 330 330 330 360 280 S470 230 520 200" fill="none" stroke="#fffdf8" stroke-width="34" stroke-linecap="round"/>
+          <path d="M165 400 C200 330 330 330 360 280 S470 230 520 200" fill="none" stroke="#1c2230" stroke-width="3" stroke-dasharray="14 12"/>
+          {# 樹 #}
+          <circle cx="330" cy="215" r="30" fill="#4e9f7d" stroke="#1c2230" stroke-width="3"/><rect x="325" y="240" width="10" height="28" fill="#1c2230"/>
+          <circle cx="560" cy="250" r="24" fill="#4e9f7d" stroke="#1c2230" stroke-width="3"/><rect x="555" y="270" width="10" height="22" fill="#1c2230"/>
+          <text x="520" y="350" text-anchor="middle" font-size="64" font-weight="900" fill="var(--year)" stroke="#1c2230" stroke-width="2" font-family="Noto Serif TC, serif">{{ home.grade_label }}</text>
+          {% endif %}
+        </symbol>
+      </defs>
+    </svg>
+
+    <div class="jig" data-board data-grade="{{ home.grade }}" data-tour="缺的片拖回洞裡，就去補那一類資料。" data-tour-order="4">
+      <svg class="jig__board" viewBox="-30 -30 660 460" role="img" aria-label="{{ home.grade_label }}的拼圖，{{ 6 - home.blanks }} 片已拼上">
+        <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
+        {% for piece in home.pieces %}
+        {% if piece.filled %}
+        <g class="jig__piece" data-piece="{{ piece.key }}" data-filled style="--n: {{ loop.index0 }};">
+          <g clip-path="url(#jp-{{ loop.index0 }})"><use href="#year-scene" width="600" height="400"/></g>
+          <path class="jig__edge" d="{{ piece.d }}"/>
+          <text class="jig__tag" x="{{ piece.x + 100 }}" y="{{ piece.y + 186 }}" text-anchor="middle">{{ piece.label }}</text>
+        </g>
+        {% else %}
+        <a class="jig__hole" data-piece="{{ piece.key }}" data-hole="{{ piece.key }}" href="{{ piece.href }}" aria-label="補上{{ piece.full_label }}">
+          <path d="{{ piece.d }}"/>
+          <text x="{{ piece.x + 100 }}" y="{{ piece.y + 110 }}" text-anchor="middle">＋{{ piece.label }}</text>
+        </a>
+        {% endif %}
+        {% endfor %}
+      </svg>
+
+      {% if home.blanks %}
+      <div class="jig__tray" aria-label="還沒拼上的拼圖">
+        {% for piece in home.pieces if not piece.filled %}
+        <a class="jig__loose" href="{{ piece.href }}" data-loose="{{ piece.key }}" data-x="{{ piece.x }}" data-y="{{ piece.y }}"
+           style="--r: {{ [-12, 9, -6, 14, -10, 7][loop.index0] }}deg; --n: {{ loop.index0 }};" aria-label="補上{{ piece.full_label }}">
+          <svg data-drag-piece viewBox="{{ piece.x - 30 }} {{ piece.y - 30 }} 260 260" aria-hidden="true">
+            <g clip-path="url(#jp-{{ home.pieces.index(piece) }})"><use href="#year-scene" width="600" height="400"/></g>
+            <path class="jig__edge" d="{{ piece.d }}"/>
+          </svg>
+          <span>{{ piece.label }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    {# 換成自己的照片：只有自己看得到 #}
+    <form class="jig-photo" data-tour="換成這學期最快樂的照片，只有你看得到。" data-tour-order="5" method="post" action="{{ url_for('main.semester_photo_upload') }}" enctype="multipart/form-data" data-photo-form>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="jig-photo__pick">
+        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required data-photo-input>
+        <span>{% if photo_url %}換一張{{ semester_label }}的照片{% else %}放上{{ semester_label }}最快樂的照片{% endif %}</span>
+      </label>
+      <button class="button button--small" type="submit" data-photo-submit>上傳</button>
+      <small>只有你自己看得到。</small>
+    </form>
+  </section>
 </div>
 {% endblock %}
 

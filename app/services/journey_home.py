@@ -56,7 +56,9 @@ def jigsaw_pieces():
 
 def _add_link(category):
     if category in ("grades", "credential"):
-        return url_for("student.learning_profile_upload_page")
+        # 成績單與證照分兩頁：直接開對應類型的上傳頁
+        return url_for("student.learning_profile_upload_page",
+                       type="transcript" if category == "grades" else "credential")
     return url_for("student.portfolio_new", category=category)
 
 

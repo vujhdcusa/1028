@@ -846,7 +846,7 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .puzzle-piece--blank path { fill: var(--sheet); stroke-dasharray: 7 6; }
 .puzzle-piece--blank span { color: var(--muted); }
 .puzzle-piece--blank:hover path, .puzzle-piece--blank:focus-visible path { fill: var(--c); fill-opacity: .25; transform: translateY(-4px); }
-.folders-drawer { margin-top: 1rem; }
+.folders-drawer { margin: 0 0 2rem; }
 .folders-drawer > summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: .5rem 0; }
 @keyframes route-draw { from { stroke-dashoffset: 100; } }
 @keyframes node-pop { from { transform: scale(0); } 70% { transform: scale(1.2); } to { transform: none; } }
@@ -929,10 +929,13 @@ body[data-page="student-welcome"] .assistant { display: none; }
 @media (max-width: 720px) { .jig { grid-template-columns: 1fr; } .jig__tray { order: 2; } }
 @media (prefers-reduced-motion: reduce) { .jig__piece, .jig__loose svg { animation: none !important; } }
 /* 版面：圖在上，散落的片在下面錯落擺放（像桌上剛倒出來的拼圖） */
-.jig { grid-template-columns: 1fr; max-width: 40rem; gap: .5rem; }
-.jig__tray { gap: 0 .25rem; margin-top: -.5rem; }
-.jig__loose:nth-child(even) { margin-top: 1.5rem; }
-.jig__loose span { margin-top: -.6rem; }
+.jig { grid-template-columns: 1fr; max-width: 34rem; gap: .5rem; }
+/* 散落的片排成一列六格（手機三格），只有洞的四成左右大；拖起來才放大到洞的大小（components.js） */
+.jig__tray { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .25rem .5rem; justify-items: center; margin-top: .25rem; }
+.jig__loose { width: 100%; max-width: var(--size, 6rem); }
+.jig__loose:nth-child(even) { margin-top: .5rem; }
+.jig__loose span { margin-top: -.3rem; font-size: .8rem; }
+@media (max-width: 520px) { .jig__tray { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem 1rem; } }
 
 /* 換成自己的照片 */
 .jig-photo { display: flex; align-items: center; justify-content: center; gap: .75rem; flex-wrap: wrap; margin-top: 1rem; }
@@ -1227,8 +1230,9 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .masthead--student .mainnav a { padding: .6rem .75rem; }
 }
 @media (max-width: 520px) {
-  .masthead--student .mainnav { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
-  .masthead--student .mainnav a { white-space: normal; padding: .6rem .15rem; }
+  /* 手機：字縮小一點、不折行，平均排開；多了「抵免進度」放不下時可以左右滑 */
+  .masthead--student .mainnav { display: flex; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }
+  .masthead--student .mainnav a { flex: 0 0 auto; padding: .6rem .2rem; font-size: .82rem; }
   .masthead--student .brand > span:not(.brand__mark) { display: none; }
   .masthead--student .masthead__help { padding: .3rem .35rem; }
 }

@@ -536,11 +536,12 @@ document.querySelectorAll("[data-walker]").forEach((walker) => {
 // 拼圖：把旁邊散落的那片拖回圖上的洞裡（或直接點），拼上後打開新增
 document.querySelectorAll("[data-board]").forEach((board) => {
   const boardSvg = board.querySelector(".jig__board");
-  // 散落的片要和圖上的洞一樣大：整張圖 viewBox 寬 660，每片的 viewBox 寬 260
+  // 洞在畫面上的寬度：整張圖 viewBox 寬 660，每片的 viewBox 寬 260。
+  // 散落的片平常只有洞的四成多（區塊才不會很長），拖起來再放大到和洞一樣
+  const holeWidth = () => (boardSvg ? boardSvg.getBoundingClientRect().width / 660 * 260 : 0);
   const resize = () => {
     if (!boardSvg) return;
-    const scale = boardSvg.getBoundingClientRect().width / 660;
-    board.querySelectorAll("[data-loose]").forEach((loose) => loose.style.setProperty("--size", `${260 * scale}px`));
+    board.querySelectorAll("[data-loose]").forEach((loose) => loose.style.setProperty("--size", `${holeWidth() * 0.45}px`));
   };
   resize();
   window.addEventListener("resize", resize);
@@ -550,6 +551,8 @@ document.querySelectorAll("[data-board]").forEach((board) => {
     const hole = board.querySelector(`[data-hole="${loose.dataset.loose}"]`);
     let start = null;
     let moved = false;
+    let grow = 1;  // 拖曳時放大幾倍才和洞一樣大
+    const measureGrow = () => { grow = holeWidth() / (loose.getBoundingClientRect().width || 1); };
     // 這片在畫面上應該到的位置（洞的左上角，含拼圖凸出的留白）
     const target = () => {
       const box = boardSvg.getBoundingClientRect();
@@ -557,6 +560,10 @@ document.querySelectorAll("[data-board]").forEach((board) => {
       return { x: box.left + (Number(loose.dataset.x) + 30 - 30) * scale, y: box.top + (Number(loose.dataset.y) + 30 - 30) * scale };
     };
     const snap = () => {
+      measureGrow();
+      // 直接點（沒拖）時先放大，量到放大後的位置再移過去
+      if (!piece.classList.contains("is-dragging")) piece.classList.add("is-dragging");
+      if (!/scale\(/.test(piece.style.transform)) piece.style.transform = `translate(0px, 0px) scale(${grow})`;
       const now = piece.getBoundingClientRect();
       const goal = target();
       const base = piece.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
@@ -564,7 +571,7 @@ document.querySelectorAll("[data-board]").forEach((board) => {
       const by = base ? Number(base[2]) : 0;
       piece.classList.remove("is-dragging");
       piece.classList.add("is-snapped");
-      piece.style.transform = `translate(${bx + goal.x - now.left}px, ${by + goal.y - now.top}px) rotate(0deg)`;
+      piece.style.transform = `translate(${bx + goal.x - now.left}px, ${by + goal.y - now.top}px) scale(${grow})`;
       setTimeout(() => { window.location.href = loose.getAttribute("href"); }, 320);
     };
     piece.addEventListener("pointerdown", (event) => {
@@ -572,6 +579,10 @@ document.querySelectorAll("[data-board]").forEach((board) => {
       piece.setPointerCapture(event.pointerId);
       start = { x: event.clientX, y: event.clientY };
       moved = false;
+      measureGrow();
+      // 以按下的那一點為中心放大，片才會一直在手指下面
+      const box = piece.getBoundingClientRect();
+      piece.style.transformOrigin = `${event.clientX - box.left}px ${event.clientY - box.top}px`;
       piece.classList.add("is-dragging");
     });
     piece.addEventListener("pointermove", (event) => {
@@ -579,7 +590,7 @@ document.querySelectorAll("[data-board]").forEach((board) => {
       const dx = event.clientX - start.x;
       const dy = event.clientY - start.y;
       if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
-      piece.style.transform = `translate(${dx}px, ${dy}px) rotate(0deg)`;
+      piece.style.transform = `translate(${dx}px, ${dy}px) scale(${grow})`;
       if (hole) {
         const a = piece.getBoundingClientRect();
         const goal = target();
@@ -595,6 +606,7 @@ document.querySelectorAll("[data-board]").forEach((board) => {
       if (!moved || Math.hypot(a.left - goal.x, a.top - goal.y) < a.width * 0.35) { snap(); return; }
       piece.classList.remove("is-dragging");
       piece.style.transform = "";
+      piece.style.transformOrigin = "";
     });
     // 拖到一半被系統打斷（來電、手勢）：放回原位
     piece.addEventListener("pointercancel", () => {
@@ -602,6 +614,7 @@ document.querySelectorAll("[data-board]").forEach((board) => {
       if (hole) hole.classList.remove("is-near");
       piece.classList.remove("is-dragging");
       piece.style.transform = "";
+      piece.style.transformOrigin = "";
     });
     // 滑鼠或手指放開後瀏覽器還會送一次 click，交給上面處理；鍵盤 Enter 的 click（detail 為 0）照常換頁
     loose.addEventListener("click", (event) => { if (event.detail !== 0) event.preventDefault(); });
