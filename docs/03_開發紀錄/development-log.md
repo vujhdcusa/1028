@@ -1,5 +1,24 @@
 # 開發日誌
 
+## 2026-10-21 任務 A：成績單課程名稱字形校正（引擎與核對提示）
+
+日期：2026-10-21（台灣時間）
+
+開發者：Claude（任務 A 視窗，分支 `feat/ocr-course-names`）
+
+目標：OCR 讀錯的課名（例如「合計概論」「育料結構」）依本科課程清單改成字形相近的正確課名；學生仍要在確認頁核對。
+
+- 修改檔案：
+  - 新增 `app/services/course_name_correction.py`：字形混淆表（10 組，來源是 `OCR驗收紀錄_2026-10-20.md` 的 11 筆錯字）；`correct_course_name` 只在清單上恰好一個候選時才改，差異超過 2 字不改；`apply_name_correction` 改名、保留 `course_name_corrected_from`、設為需確認，並加一則核對提示「課程名稱已依課程清單校正為『…』（OCR 原文『…』），請對照原圖。」
+  - `app/services/ocr_pipeline.py`：成績單兩條解析路徑（表格版型、無版型）的輸出都經過校正；辨識邏輯本身沒有改。
+  - 新增 `tests/test_course_name_correction.py`：18 個測試，全部使用合成課名（僅為測試資料），涵蓋 10 組錯字、不該被改的例子（已是正確名、清單外的課名、多一個字、少一個字）、清單為空、以及校正後的旗標與提示文字。
+- 未完成（阻塞，需要使用者提供資料）：
+  - `COURSE_CATALOG` 目前是空的，所以校正還不會生效。`school/public-sources/修業科目表/` 的 PDF 只有英文課名，`im-curriculum-planning.html` 等網頁也沒有中文課名，無法從現有來源建立清單；沒有硬湊課名。
+  - 因此沒有用本機 PDF 實測「74／85」能改善到多少，`app/content/ocr_acceptance.py` 與驗收紀錄沒有更新。
+  - 提示放在既有的核對提示欄，沒有另外做「已校正自」的獨立標籤。
+- 驗證：`D:\democase\ai\.venv` 執行完整測試 **661 passed、9 skipped**（修改前 643 passed、9 skipped，新增 18 個）。直接執行 `pytest` 會因 Windows 暫存資料夾權限出現 302 個 error，需加 `--basetemp`；這是環境問題，不是程式錯誤。
+- 下一步：使用者提供本科中文課名（學校正式修業科目表的中文版，或使用者整理的名單）→ 填入 `COURSE_CATALOG` → 用本機 PDF 實測課名正確數 → 更新驗收紀錄與 `ocr_acceptance.py`。
+
 ## 2026-10-21 多視窗分工：任務 A～D
 
 日期：2026-10-21（台灣時間）
