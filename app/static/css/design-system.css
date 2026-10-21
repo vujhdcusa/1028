@@ -323,7 +323,8 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .data-table th, .data-table td { padding: .65rem .75rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
 .data-table th { font-family: var(--font-mono); font-size: .74rem; font-weight: 400; color: var(--muted); letter-spacing: .05em; border-bottom: 1.5px solid var(--ink); }
 .data-table tr:last-child td { border-bottom: 0; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); }
+/* position: relative 讓表格內 .visually-hidden 這類絕對定位文字也被捲動區裁住，不會撐寬整頁 */
+.table-wrap { position: relative; overflow-x: auto; border: 1px solid var(--line); }
 
 /* 可編輯表格（確認擷取結果） */
 .edit-table input, .edit-table select { width: 100%; min-width: 70px; padding: .4rem .5rem; border: 1px solid var(--line); border-radius: 4px; background: var(--sheet); }
@@ -395,6 +396,7 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .motion-ready [data-motion="reveal"].is-visible { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
+  html { scroll-behavior: auto; }
   .route__line path { stroke-dashoffset: 0; }
 }
 
@@ -421,6 +423,13 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
   .grade-mark { text-align: left; }
   .work-list > li { grid-template-columns: 1.8rem 1fr; }
   .work-list > li > :last-child { grid-column: 2; }
+}
+/* 窄螢幕的表格改在 .table-wrap 內左右捲動：表頭不換行、中文詞不拆字，避免姓名或欄名被擠成一字一行 */
+@media (max-width: 760px) {
+  .table-wrap .data-table th, .table-wrap .data-table .button { white-space: nowrap; }
+  .table-wrap .data-table td { word-break: keep-all; }
+  /* 老師、科辦、管理員的導覽在手機上會折成好幾行，不再黏在頂端，免得一直蓋住三成畫面 */
+  .masthead:not(.masthead--student) { position: static; }
 }
 
 /* ---------- 小工具 ---------- */
@@ -654,7 +663,10 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .facts__weights, .facts__list { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; font-size: .88rem; }
 .facts__weights b { display: inline-block; min-width: 3em; color: var(--accent); }
 .facts__list li { display: grid; grid-template-columns: 2.4rem 1fr; gap: .4rem; }
-.facts__list { max-height: 420px; overflow: auto; }
+/* 只做上下捲動：行尾全形括號在 Chrome 會多算 2～3px 寬，用 auto 會冒出幾乎看不見的橫向捲軸 */
+.facts__list { max-height: 420px; overflow-x: hidden; overflow-y: auto; }
+/* 證據編號放在文字欄下方，不擠進 2.4rem 的編號欄 */
+.facts__list li > small { grid-column: 2; }
 .draft { display: grid; gap: 1.25rem; }
 .draft__paragraph { padding: 1rem 1.25rem; background: var(--sheet); border: 1px solid var(--line); border-left: 4px solid var(--accent); }
 .draft__paragraph h2 { margin-bottom: .5rem; }
@@ -973,6 +985,8 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .today__title { margin: 0 0 .4rem; font-family: var(--font-serif); font-size: clamp(1.4rem, 3.5vw, 2rem); text-align: center; }
 .today__stats { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem 1.5rem; margin: 0 0 1.25rem; color: var(--muted); font-size: .95rem; }
 .today__stats b { color: var(--ink); }
+/* 獨立一行的小連結：上下加一點點擊範圍，手機上至少 24px 高 */
+.today__transfer a { display: inline-block; padding: .2rem 0; }
 
 /* 網頁導覽 */
 .masthead__help { background: none; border: 0; padding: .3rem .5rem; font: inherit; font-size: .9rem; color: var(--accent); text-decoration: none; cursor: pointer; font-weight: 700; }
