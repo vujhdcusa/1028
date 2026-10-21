@@ -18,7 +18,7 @@
 - 沒有資料庫遷移：沿用 `source_documents.status`（新增 `queued`、`processing` 兩個值，欄位長度 30 足夠），失敗原因放在既有的 `document_extractions.error_message`。
 - 驗證：
   - 先寫測試並確認失敗（找不到 `ocr_queue`），再實作；新測試涵蓋成功、失敗與重新辨識、未預期錯誤、重複查詢與重複執行、別人的文件不能查或重試、伺服器重開、背景執行緒真的會跑。
-  - 完整測試（`D:\democasei\.venv`，加 `--basetemp`）：**675 passed、9 skipped**。第一次跑有 1 個舊測試失敗（它檢查上傳按鈕忙碌文字是「辨識中」），因為按鈕現在只負責上傳，已把該測試改成「上傳中」。
+  - 完整測試（`D:\democase\ai\.venv`，加 `--basetemp`）：**675 passed、9 skipped**。第一次跑有 1 個舊測試失敗（它檢查上傳按鈕忙碌文字是「辨識中」），因為按鈕現在只負責上傳，已把該測試改成「上傳中」。
   - 瀏覽器實測（本機展示站、真實 RapidOCR、顯示卡 1，模型唯讀指向 `ai-wt-story\instance\ocr-models`）：上傳合成成績單 PDF（由 `tests/synthetic_transcript.py` 產生，僅為測試資料）後立刻看到「成績單辨識中」頁（辨識文字中、已經過 2 秒），查詢 5 次後約 10 秒自動跳到確認頁，辨識到 19 門課。
 - 限制：只適用單一程序的伺服器；若改用多程序部署，啟動時的「中斷工作標成失敗」會誤標其他程序正在跑的工作，要改成記錄工作開始時間或改用資料表排隊。
 - 下一步：使用者決定是否合併進 `feat/google-docs-autobiography`；任務 C 的手機驗收可順便看辨識中頁在 390px 的樣子。
@@ -1069,7 +1069,7 @@
 ## 2026-10-10（續 24）引導卡片第一版與「一兩句話」文字瘦身
 
 日期：2026-10-10
-開發者：Claude Code（分支 `feat/story-guide`，worktree `D:\democasei-wt-story`；尚未合併、未推送）
+開發者：Claude Code（分支 `feat/story-guide`，worktree `D:\democase\ai-wt-story`；尚未合併、未推送）
 
 - 起因：使用者說第一版離預期的「用網頁講簡短一兩句話的故事」差太多、字太多；範圍選「都有」（學生頁面、引導卡片、公開首頁、小助手視窗）。
 - 新增 `app/services/guide_service.py`：依年級與學生做了什麼決定引導卡片，**一次最多 3 張，每張 40 字內、一個按鈕**；做完自動消失；「稍後再說」存在工作階段、隔 24 小時再出現（不新增資料表）。路由 `POST /student/guide/snooze`（只接受白名單卡片代號）。
