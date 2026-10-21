@@ -1,5 +1,28 @@
 # 開發日誌
 
+## 2026-10-21 組員一鍵啟動：XAMPP MySQL＋虛擬環境＋資料庫＋瀏覽器
+
+日期：2026-10-21（台灣時間）
+
+開發者：Claude（分支視窗）
+
+目標：組員 clone 後點桌面捷徑就能把資料庫、後端、網頁全部開起來。
+
+- 確認來源：5013 埠目前跑的是本資料夾（`D:\democase\ai-wt-story`）的 `scripts/run_local_demo.py`（記憶體 SQLite 合成資料展示站），分支是 `feat/google-docs-autobiography`，不是交接寫的 `feat/journey-home`。一鍵啟動改走正式路線（MySQL），同樣開在 5013。
+- 新增 `start_system.bat`：找 Python（`py -3` 或 `python`）→ 找 XAMPP（`XAMPP_HOME` 或 C:～G: 的 `\xampp`，找不到提示安裝）→ MySQL 沒開就啟動 `mysqld --standalone` 並等 30 秒 → 第一次建 `.venv`、裝 `requirements.txt`（之後只在 `requirements.txt` 變動時重裝）→ 從 `.env.example` 複製 `.env` → 呼叫 `scripts/start_local.py`。全部相對路徑。
+- 新增 `scripts/start_local.py`：把 `.env` 中還是範例值的 `SECRET_KEY`、`DB_PASSWORD` 換成隨機值；用 root 建資料庫與帳號（帳號已存在但密碼不符時不改密碼，只提示）；空資料庫先依 Model 建表再把遷移版本標到最新並建 admin，已有遷移紀錄就執行遷移；啟動 Flask（`APP_PORT` 預設 5013，被占用時提示），可連線後開瀏覽器。
+- 新增 `create_desktop_shortcut.bat`：在桌面（含 OneDrive 桌面）建立「資管科學習歷程」捷徑指向 `start_system.bat`。
+- 新增 `.gitattributes`：`*.bat` 一律 CRLF，避免組員 clone 後批次檔標籤失效。
+- `.env.example`：`DB_PORT` 改為 XAMPP 預設 3306，補充一鍵啟動相關說明（`MYSQL_ROOT_PASSWORD`、`APP_PORT`）。
+- 新增 `docs/05_交接與專案管理/組員開啟說明.md`（安裝、第一次開啟、常見問題）；`README.md` 加上一鍵啟動入口。
+- 驗證（如實記錄）：把目前版本解壓到暫存資料夾模擬組員 clone，用測試用資料庫名稱與帳號 `slp_launch_test`、埠 5015（5013 被展示站占用）實跑：
+  - 第一次：建 venv 並裝好全部套件、建 `.env` 並產生隨機值、建資料庫與帳號、建表並標到最新版本 `a7c3e9d10f42`、建 admin、啟動成功；瀏覽器開首頁正常，admin 登入進到系統總覽。
+  - 第二次：跳過安裝，執行遷移，自動開瀏覽器（伺服器紀錄有 `GET /` 200）。
+  - MySQL 先關閉再執行：腳本自行啟動 XAMPP MariaDB 10.4.27，首頁 HTTP 200。
+  - 建立桌面捷徑腳本實跑成功，捷徑指向本資料夾的 `start_system.bat`。
+  - 未測：找不到 XAMPP、找不到 Python 的提示路徑（本機兩者都有）。
+- 注意：本機 XAMPP 已有使用者自己的 `smart_learning_portfolio` 資料庫（遷移版本停在 `a1c8e4d7f902`）與 `smart_learning_app` 帳號，本次沒有動它們。測試留下的 `slp_launch_test` 資料庫與帳號未刪除。
+
 ## 2026-10-21 多視窗分工：任務 A～D
 
 日期：2026-10-21（台灣時間）

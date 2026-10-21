@@ -12,7 +12,13 @@
 - BMAD
 - Git
 
-## 第一次設定
+## 一鍵啟動（組員請用這個）
+
+先安裝 Python、XAMPP、Git，clone 後點兩下 `create_desktop_shortcut.bat` 建立桌面捷徑，之後點桌面的「資管科學習歷程」就會啟動 MySQL、建好資料庫並開啟 `http://127.0.0.1:5013`。
+
+詳細步驟與常見問題：[docs/05_交接與專案管理/組員開啟說明.md](docs/05_交接與專案管理/組員開啟說明.md)
+
+## 手動設定
 
 ```powershell
 cd D:\democase\ai
