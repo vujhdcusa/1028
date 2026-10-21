@@ -6,6 +6,14 @@ rem 全部用相對位置，clone 到任何資料夾都能用。說明見 docs\0
 cd /d "%~dp0"
 title 資管科學習歷程
 
+rem ---- 0. 先拉最新版（只做快轉；有本機修改或沒網路時略過，照現有版本啟動）----
+if exist ".git" (
+    where git >nul 2>nul && (
+        echo 檢查是否有新版本...
+        git pull --ff-only || echo [注意] 無法自動更新，先用目前版本啟動。
+    )
+)
+
 rem ---- 1. 找 Python ----
 set "PY="
 where py >nul 2>nul && set "PY=py -3"

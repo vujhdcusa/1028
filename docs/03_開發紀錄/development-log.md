@@ -21,6 +21,8 @@
   - MySQL 先關閉再執行：腳本自行啟動 XAMPP MariaDB 10.4.27，首頁 HTTP 200。
   - 建立桌面捷徑腳本實跑成功，捷徑指向本資料夾的 `start_system.bat`。
   - 未測：找不到 XAMPP、找不到 Python 的提示路徑（本機兩者都有）。
+- 組員看到舊版首頁的原因：舊版（「五年，會留下很多東西。」、選單有「校系資料」）是 `D:\democase\ai` 的 `main`（`d889109`）用 `run.py` 開在 5000 埠，和小組 repo 的 `main`（`9ebea0b`）首頁相同；組員 clone 預設拿到 `main`。新版只在 `feat/google-docs-autobiography`。小組 `main` 是本分支的祖先，可直接快轉。
+- 補強：`start_system.bat` 啟動前先 `git pull --ff-only`（失敗就略過）；說明加上新舊版首頁辨認方式與切換分支指令。用 `git clone -b feat/google-docs-autobiography` 全新 clone 小組 repo 實跑（5016 埠），首頁是「把五年，拼成下一站」、藍色資料夾與小人，選單只有「五年路徑」「登入」。
 - 注意：本機 XAMPP 已有使用者自己的 `smart_learning_portfolio` 資料庫（遷移版本停在 `a1c8e4d7f902`）與 `smart_learning_app` 帳號，本次沒有動它們。測試留下的 `slp_launch_test` 資料庫與帳號未刪除。
 
 ## 2026-10-21 多視窗分工：任務 A～D
