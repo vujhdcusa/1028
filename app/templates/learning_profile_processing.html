@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
+{% set page_name = "learning-profile-processing" %}
+{% set page_label = "成績單" if document.document_type == "transcript" else "證照" %}
+{% set back_url = url_for("student.learning_profile") if document.document_type == "transcript" else url_for("student.learning_profile_credentials") %}
+{% set status_url = url_for("student.learning_profile_document_status", document_id=document.id, next=next_path) %}
+
+{% block title %}{{ "辨識中" if state != "failed" else "辨識失敗" }}｜{{ page_label }}｜資管科智慧學習歷程系統{% endblock %}
+
+{% block navigation %}{{ masthead(user, page_label) }}{% endblock %}
+
+{% block content %}
+{{ page_band(page_label ~ ("辨識中" if state != "failed" else "辨識失敗"), [(page_label, back_url)]) }}
+<style>
+  .ocr-wait { display: grid; grid-template-columns: minmax(0, 9rem) 1fr; gap: 1.5rem; align-items: center; }
+  .ocr-wait__doc { position: relative; aspect-ratio: 3 / 4; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--sheet); overflow: hidden; }
+  /* 用橫線代表成績單的列，辨識到哪一列就變深 */
+  .ocr-wait__row { position: absolute; left: 12%; right: 12%; height: 6%; border-radius: 2px; background: var(--paper-deep); transition: background .4s; }
+  .ocr-wait__row.is-read { background: var(--ink-soft); }
+  .ocr-wait__scan { position: absolute; left: 0; right: 0; height: 3px; background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: ocr-scan 2.4s ease-in-out infinite alternate; }
+  .ocr-wait.is-done .ocr-wait__scan { display: none; }
+  .ocr-wait.is-done .ocr-wait__doc { border-color: var(--ok); }
+  @keyframes ocr-scan { from { top: 6%; } to { top: 92%; } }
+  .ocr-steps { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: .5rem; }
+  .ocr-steps li { display: flex; gap: .6rem; align-items: center; color: var(--muted); }
+  .ocr-steps li::before { content: ""; width: .8rem; height: .8rem; border-radius: 50%; border: 2px solid var(--line-strong); flex: none; }
+  .ocr-steps li.is-current { color: var(--ink); font-weight: 700; }
+  .ocr-steps li.is-current::before { border-color: var(--accent); background: var(--accent-soft); }
+  .ocr-steps li.is-finished { color: var(--ink-soft); }
+  .ocr-steps li.is-finished::before { border-color: var(--ok); background: var(--ok); }
+  @media (max-width: 560px) { .ocr-wait { grid-template-columns: 1fr; } .ocr-wait__doc { width: 7rem; } }
+  @media (prefers-reduced-motion: reduce) { .ocr-wait__scan { animation: none; top: 50%; } .ocr-wait__row { transition: none; } }
+</style>
+<div class="page narrow page--banded">
+  <section class="sheet">
+    {% if state == "failed" %}
+    <p class="alert mb-1" role="alert">「{{ document.display_name }}」沒有辨識成功：{{ error or "辨識失敗" }}</p>
+    <p>檔案已經存好，可以直接再辨識一次；如果還是不行，改傳更清楚的檔案，或自己手動輸入。</p>
+    <div class="record-card__actions">
+      <form method="post" action="{{ url_for('student.learning_profile_document_retry', document_id=document.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if next_path %}<input type="hidden" name="next" value="{{ next_path }}">{% endif %}
+        <button class="button" type="submit" data-busy-text="排隊中…">重新辨識</button>
+      </form>
+      <a class="button button--line" href="{{ url_for('student.learning_profile_upload_page', type=document.document_type, next=next_path) }}">重新上傳</a>
+      <a class="button button--line" href="{{ url_for('student.learning_profile_document_review', document_id=document.id, next=next_path) }}">改用手動輸入</a>
+    </div>
+    {% else %}
+    <div class="ocr-wait" id="ocr-wait" data-status-url="{{ status_url }}">
+      <div class="ocr-wait__doc" aria-hidden="true">
+        {% for top in range(10, 90, 9) %}<span class="ocr-wait__row" style="top: {{ top }}%"></span>{% endfor %}
+        <span class="ocr-wait__scan"></span>
+      </div>
+      <div>
+        <ol class="ocr-steps" aria-label="辨識進度">
+          <li class="is-finished">已收到「{{ document.display_name }}」</li>
+          <li id="ocr-step-read" class="is-current">{{ "排隊等辨識" if state == "queued" else "辨識文字中" }}</li>
+          <li id="ocr-step-review">整理成可確認的{{ "課程" if document.document_type == "transcript" else "證照" }}</li>
+        </ol>
+        <p id="ocr-message" role="status" aria-live="polite">辨識中，完成後會自動進入確認頁，不用重新整理。</p>
+        <p class="muted small">PDF 成績單通常要 10～30 秒。已經過 <b id="ocr-elapsed">0</b> 秒。可以先離開，之後從{{ page_label }}頁點這份文件回來。</p>
+        <noscript><meta http-equiv="refresh" content="5"><p>瀏覽器沒有開啟 JavaScript，本頁每 5 秒會自動重新整理。</p></noscript>
+      </div>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if state != "failed" %}
+<script>
+(function () {
+  var box = document.getElementById("ocr-wait");
+  var rows = box.querySelectorAll(".ocr-wait__row");
+  var elapsed = document.getElementById("ocr-elapsed");
+  var readStep = document.getElementById("ocr-step-read");
+  var message = document.getElementById("ocr-message");
+  var started = Date.now();
+  var lit = 0;
+  var failures = 0;
+
+  // 每秒點亮一列；辨識還沒完成就停在最後一列前，不假裝已經做完
+  var ticker = setInterval(function () {
+    elapsed.textContent = Math.floor((Date.now() - started) / 1000);
+    if (lit < rows.length - 1) { rows[lit].classList.add("is-read"); lit += 1; }
+  }, 1000);
+
+  function finish(url) {
+    clearInterval(ticker);
+    rows.forEach(function (row) { row.classList.add("is-read"); });
+    box.classList.add("is-done");
+    readStep.className = "is-finished";
+    readStep.textContent = "辨識完成";
+    document.getElementById("ocr-step-review").className = "is-current";
+    message.textContent = "辨識完成，正在打開確認頁…";
+    setTimeout(function () { window.location.assign(url); }, 600);
+  }
+
+  function poll() {
+    fetch(box.dataset.statusUrl, { headers: { "Accept": "application/json" }, credentials: "same-origin" })
+      .then(function (response) { if (!response.ok) { throw new Error(response.status); } return response.json(); })
+      .then(function (data) {
+        failures = 0;
+        if (data.state === "done") { finish(data.redirect); return; }
+        // 失敗頁由伺服器畫（原因、重新辨識、重新上傳），重新載入即可
+        if (data.state === "failed") { window.location.reload(); return; }
+        readStep.textContent = data.state === "queued" ? "排隊等辨識" : "辨識文字中";
+        setTimeout(poll, 2000);
+      })
+      .catch(function () {
+        failures += 1;
+        message.textContent = "暫時連不到伺服器，" + (failures < 5 ? "稍後自動再試。" : "請重新整理本頁。");
+        if (failures < 5) { setTimeout(poll, 4000); }
+      });
+  }
+  setTimeout(poll, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}

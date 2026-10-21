@@ -42,7 +42,7 @@ from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES,
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
 from app.services.record_status import learning_profile_state, portfolio_state
-from app.services import ai_quota_service, autobiography_review, autobiography_service, review_snapshot_service, student_rules
+from app.services import ai_quota_service, autobiography_review, autobiography_service, ocr_queue, review_snapshot_service, student_rules
 from app.services.gemini_client import AIUnavailable, ai_ready
 from app.services.course_review_presentation import (
     build_course_review_groups,
@@ -93,65 +93,66 @@ def learning_profile_document_upload():
             display_name=safe_name,
             file_path=str(stored_path),
             sha256=sha256(file_bytes).hexdigest(),
-            status="uploaded",
+            status="queued",
         )
         db.session.add(document)
-        db.session.flush()
-        try:
-            result = analyze_document(
-                document_type,
-                stored_path,
-                current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],
-                ocr_engine=current_app.config.get("OCR_ENGINE"),
-            )
-            result = {**result, "draft_revision": uuid4().hex}
-            if resolution:
-                result["processing_steps"] = [*(result.get("processing_steps") or []), {
-                    "step": "resolution_checked", "long_side": resolution["long_side"], "level": resolution["level"]}]
-                if resolution["level"] == "low":
-                    result["warnings"] = [*(result.get("warnings") or []), resolution["message"]]
-            extraction = DocumentExtraction(
-                source_document_id=document.id,
-                provider=current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],
-                status="extracted",
-                result_json=result,
-            )
-            document.status = "extracted"
-        except RuntimeError as exc:
-            extraction = DocumentExtraction(
-                source_document_id=document.id,
-                provider=current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],
-                status="failed",
-                error_message=str(exc),
-            )
-            document.status = "analysis_failed"
-        db.session.add(extraction)
-        # 有些提供者以 None 表示「此類型沒有這一欄」，所以用 or [] 而不是預設值
-        parsed_count = len((result or {}).get("courses") or []) + len((result or {}).get("credentials") or []) if "result" in locals() else 0
-        processing_steps = (result or {}).get("processing_steps", []) if "result" in locals() else []
-        db.session.add(AuditLog(
-            user_id=user.id,
-            action=("learning_profile.ocr_completed" if extraction.status == "extracted" else "learning_profile.ocr_failed"),
-            target_type="source_document",
-            target_id=document.id,
-            detail_json={
-                "document_type": document_type,
-                "file_name": safe_name,
-                "provider": current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],
-                "status": extraction.status,
-                "parsed_count": parsed_count,
-                "processing_steps": processing_steps,
-                "raw_text": (result or {}).get("raw_text") if "result" in locals() else None,
-                "error_message": extraction.error_message,
-            },
-        ))
         db.session.commit()
     except Exception:
         db.session.rollback()
         stored_path.unlink(missing_ok=True)
         raise
-    # 上傳後直接進確認頁；從校系頁來的會帶著 next，確認後再回去
-    return redirect(url_for("student.learning_profile_document_review", document_id=document.id,
+    # 辨識要 7～30 秒：先跳「辨識中」頁，背景跑完再自動進確認頁；從校系頁來的會帶著 next
+    ocr_queue.enqueue(current_app._get_current_object(), document.id)
+    return redirect(url_for("student.learning_profile_document_processing", document_id=document.id,
+                            next=safe_next(request.form.get("next"))))
+
+
+def _ocr_job_state(document):
+    if document.status in ocr_queue.PENDING_STATUSES:
+        return document.status
+    return "failed" if document.status == "analysis_failed" else "done"
+
+
+@student_bp.get("/student/learning-profile/documents/<int:document_id>/processing")
+@role_required("student")
+def learning_profile_document_processing(document_id):
+    document = _owned_source_document(document_id)
+    next_path = safe_next(request.args.get("next"))
+    state = _ocr_job_state(document)
+    if state == "done":
+        return redirect(url_for("student.learning_profile_document_review", document_id=document.id, next=next_path))
+    return render_template("learning_profile_processing.html", user=get_current_user(), document=document,
+                           state=state, next_path=next_path,
+                           error=document.extraction.error_message if document.extraction else None)
+
+
+@student_bp.get("/student/learning-profile/documents/<int:document_id>/status")
+@role_required("student")
+def learning_profile_document_status(document_id):
+    """「辨識中」頁定時查詢；只回狀態，不回辨識內容。"""
+    document = _owned_source_document(document_id)
+    state = _ocr_job_state(document)
+    payload = {"state": state}
+    if state == "done":
+        payload["redirect"] = url_for("student.learning_profile_document_review", document_id=document.id,
+                                      next=safe_next(request.args.get("next")))
+    elif state == "failed":
+        payload["error"] = (document.extraction.error_message if document.extraction else None) or "辨識失敗"
+    return payload
+
+
+@student_bp.post("/student/learning-profile/documents/<int:document_id>/retry")
+@role_required("student")
+def learning_profile_document_retry(document_id):
+    document = _owned_source_document(document_id)
+    if document.status != "analysis_failed":
+        abort(409, description="這份文件不是辨識失敗的狀態，不需要重新辨識。")
+    if not Path(document.file_path).is_file():
+        abort(409, description="找不到原始檔案，請重新上傳。")
+    document.status = "queued"
+    db.session.commit()
+    ocr_queue.enqueue(current_app._get_current_object(), document.id)
+    return redirect(url_for("student.learning_profile_document_processing", document_id=document.id,
                             next=safe_next(request.form.get("next"))))
 
 
@@ -245,6 +246,9 @@ def learning_profile_document_review(document_id):
     user = get_current_user()
     if document.owner_id != user.id:
         abort(403)
+    if document.status in ocr_queue.PENDING_STATUSES:
+        return redirect(url_for("student.learning_profile_document_processing", document_id=document.id,
+                                next=safe_next(request.args.get("next"))))
     result = document.extraction.result_json if document.extraction and document.extraction.result_json else {}
     if document.document_type == "credential":
         from app.services.credential_analysis import prepare_credential_review_result
@@ -302,6 +306,8 @@ def _claim_extraction(extraction, expected_updated_at, expected_revision):
 @role_required("student")
 def learning_profile_document_reanalyze(document_id):
     document = _owned_source_document(document_id)
+    if document.status in ocr_queue.PENDING_STATUSES:
+        abort(409, description="這份文件正在背景辨識，請等辨識完成。")
     extraction = document.extraction
     # Capture both before slow OCR; a later writer must win even if the ORM
     # instance is refreshed or the database truncates timestamp precision.

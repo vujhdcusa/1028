@@ -64,14 +64,16 @@ def nav_html(html):
     return re.search(r'<nav class="mainnav".*?</nav>', html, re.S).group(0)
 
 
-# 1. 上傳後直接進確認頁
-def test_upload_goes_straight_to_review_page(client, app):
+# 1. 上傳後先到「辨識中」頁，辨識完成就進確認頁
+def test_upload_goes_to_processing_then_review_page(client, app):
     response = upload(client)
 
     assert response.status_code == 302
     with app.app_context():
         document_id = SourceDocument.query.one().id
-    assert response.headers["Location"].endswith(f"/student/learning-profile/documents/{document_id}/review")
+    assert response.headers["Location"].endswith(f"/student/learning-profile/documents/{document_id}/processing")
+    processing = client.get(response.headers["Location"])
+    assert processing.headers["Location"].endswith(f"/student/learning-profile/documents/{document_id}/review")
 
 
 # 2. 做完回原處並顯示更新
@@ -88,7 +90,9 @@ def test_upload_and_confirm_return_to_target_with_readiness_update(client, app):
 
     response = upload(client, path)
     assert "next=/student/targets/" in response.headers["Location"]
-    review = client.get(response.headers["Location"]).get_data(as_text=True)
+    processing = client.get(response.headers["Location"])
+    assert "next=/student/targets/" in processing.headers["Location"]
+    review = client.get(processing.headers["Location"]).get_data(as_text=True)
     assert f'name="next" value="{path}"' in review
 
     response = confirm(client, app, path)
@@ -148,7 +152,8 @@ def test_transfer_credit_is_hidden_from_students_without_a_transfer_record(clien
 
 
 # 5. 上傳時顯示辨識中
-def test_upload_button_says_recognizing_while_submitting(client):
+def test_upload_button_says_uploading_while_submitting(client):
+    # 辨識改在「辨識中」頁顯示，按鈕只負責上傳
     html = client.get("/student/learning-profile/upload").get_data(as_text=True)
 
-    assert re.search(r'<button[^>]*data-busy-text="辨識中[^"]*"[^>]*>上傳</button>', html)
+    assert re.search(r'<button[^>]*data-busy-text="上傳中[^"]*"[^>]*>上傳</button>', html)

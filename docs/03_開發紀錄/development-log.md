@@ -1,5 +1,28 @@
 # 開發日誌
 
+## 2026-10-21 任務 B：成績單上傳後背景排隊辨識，先顯示「辨識中」頁
+
+日期：2026-10-21（台灣時間）
+
+開發者：Claude（任務 B 視窗，分支 `feat/ocr-background-queue`）
+
+目標：上傳後要等辨識完才跳頁（PDF 成績單用顯示卡約 7～28 秒、CPU 更久），學生會以為當掉。改成上傳後立刻存檔並跳到「辨識中」頁，辨識在背景跑，完成後自動進確認頁。
+
+- 修改檔案：
+  - 新增 `app/services/ocr_queue.py`：本機單一背景執行緒依序辨識（不用 Celery 等外部服務，一次只跑一份，避免顯示卡記憶體不夠）。辨識結果、解析度警告與操作日誌的寫法沿用原本上傳路由；同一份文件重複執行只會真的辨識一次（先把 `queued` 原子改成 `processing` 才開始）；未預期的錯誤也會標成失敗，不會卡在辨識中。
+  - `app/routes/student.py`：上傳只存檔、文件標成 `queued` 後跳到新的「辨識中」頁；新增 `processing`（辨識中頁）、`status`（給頁面定時查詢的 JSON，只回狀態不回內容）、`retry`（失敗後重新辨識）三個路由，都只限文件本人；確認頁遇到還在辨識的文件會先帶回辨識中頁；辨識中的文件不能按舊的「重新分析」。
+  - 新增 `app/templates/learning_profile_processing.html`：成績單示意圖會一列一列變深、步驟清單與經過秒數；每 2 秒查詢一次，完成時全部點亮再跳確認頁；失敗時顯示原因與「重新辨識」「重新上傳」「改用手動輸入」；沒開 JavaScript 時每 5 秒自動重新整理；尊重「減少動態效果」設定。
+  - `app/__init__.py`、`app/config.py`：新增 `OCR_QUEUE_MODE`（`thread` 預設／`inline` 在請求裡跑完／`manual` 只排隊）；自動化測試沒指定時用 `inline`，既有測試不用改。`thread` 模式啟動時把上一次沒跑完（`queued`／`processing`）的文件標成失敗並寫操作日誌，學生按「重新辨識」即可。
+  - `app/templates/learning_profile.html`：辨識中的文件顯示「辨識中…」連到辨識中頁；`learning_profile_upload.html` 上傳按鈕忙碌文字改為「上傳中…」。
+  - 新增 `tests/test_ocr_background_queue.py`（10 個）；`tests/test_student_flow.py` 兩個測試改成「上傳 → 辨識中頁 → 確認頁」，一個改成檢查按鈕文字「上傳中」。
+- 沒有資料庫遷移：沿用 `source_documents.status`（新增 `queued`、`processing` 兩個值，欄位長度 30 足夠），失敗原因放在既有的 `document_extractions.error_message`。
+- 驗證：
+  - 先寫測試並確認失敗（找不到 `ocr_queue`），再實作；新測試涵蓋成功、失敗與重新辨識、未預期錯誤、重複查詢與重複執行、別人的文件不能查或重試、伺服器重開、背景執行緒真的會跑。
+  - 完整測試（`D:\democasei\.venv`，加 `--basetemp`）：**675 passed、9 skipped**。第一次跑有 1 個舊測試失敗（它檢查上傳按鈕忙碌文字是「辨識中」），因為按鈕現在只負責上傳，已把該測試改成「上傳中」。
+  - 瀏覽器實測（本機展示站、真實 RapidOCR、顯示卡 1，模型唯讀指向 `ai-wt-story\instance\ocr-models`）：上傳合成成績單 PDF（由 `tests/synthetic_transcript.py` 產生，僅為測試資料）後立刻看到「成績單辨識中」頁（辨識文字中、已經過 2 秒），查詢 5 次後約 10 秒自動跳到確認頁，辨識到 19 門課。
+- 限制：只適用單一程序的伺服器；若改用多程序部署，啟動時的「中斷工作標成失敗」會誤標其他程序正在跑的工作，要改成記錄工作開始時間或改用資料表排隊。
+- 下一步：使用者決定是否合併進 `feat/google-docs-autobiography`；任務 C 的手機驗收可順便看辨識中頁在 390px 的樣子。
+
 ## 2026-10-21 組員開啟說明：整合系統啟動手冊，標明最新版分支
 
 日期：2026-10-21（台灣時間）

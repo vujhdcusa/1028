@@ -58,6 +58,8 @@ class Config:
     OCR_DEVICE = os.getenv("OCR_DEVICE", "cpu")
     # DirectML 顯示卡編號：筆電的 0 多半是內建顯示，獨立顯示卡常是 1（開發用筆電的 RTX 4060 是 1）
     OCR_DML_DEVICE_ID = int(os.getenv("OCR_DML_DEVICE_ID", "0"))
+    # 上傳後的辨識方式：thread＝背景執行緒排隊（預設，學生先看到「辨識中」頁）；inline＝在上傳請求裡跑完
+    OCR_QUEUE_MODE = os.getenv("OCR_QUEUE_MODE", "thread")
     CSRF_ENABLED = os.getenv("CSRF_ENABLED", "true").lower() == "true"
     ALLOWED_UPLOAD_EXTENSIONS = {
         value.strip().lower()
