@@ -10,6 +10,9 @@ def create_app(config_overrides=None):
     app.config.from_object(Config)
     if config_overrides:
         app.config.update(config_overrides)
+    # 自動化測試沒指定時在請求裡直接辨識，既有測試上傳後就能拿到辨識結果
+    if app.config.get("TESTING") and "OCR_QUEUE_MODE" not in (config_overrides or {}):
+        app.config["OCR_QUEUE_MODE"] = "inline"
     if app.config.get("DOCUMENT_OCR_ENGINE") == "rapidocr" and app.config.get("OCR_ENGINE") is None:
         from app.services.document_analysis_service import RapidOcrEngine
 
@@ -67,6 +70,10 @@ def create_app(config_overrides=None):
         for task in check_all(admin):
             result = task.error_message or ("有更新" if task.result_json.get("changed") else "沒有更新")
             print(f"來源 {task.target_id}：{result}")
+
+    if app.config["OCR_QUEUE_MODE"] == "thread":
+        from app.services.ocr_queue import recover_on_startup
+        recover_on_startup(app)
 
     @app.errorhandler(413)
     def file_too_large(_error):
