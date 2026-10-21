@@ -1253,3 +1253,5 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .acceptance__summary b { font-size: 1.4rem; }
 .acceptance__summary small { color: var(--muted); }
 .acceptance__note td { color: var(--ink-soft); font-size: .85rem; background: var(--paper-deep); }
+.acceptance__steps li { margin-bottom: .6rem; }
+.acceptance__steps p { margin: .2rem 0 0; }

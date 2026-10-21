@@ -31,9 +31,9 @@ class FakeOcrEngine:
         return self.text
 
 
-def synthetic_png_bytes():
+def synthetic_png_bytes(size=(800, 200)):
     buffer = io.BytesIO()
-    Image.new("RGB", (800, 200), "white").save(buffer, format="PNG")
+    Image.new("RGB", size, "white").save(buffer, format="PNG")
     return buffer.getvalue()
 
 
@@ -118,7 +118,7 @@ def test_upload_with_offline_ocr_stores_candidates_only_until_student_confirms(t
 
     response = client.post("/student/learning-profile/documents", data={
         "document_type": "transcript",
-        "file": (io.BytesIO(synthetic_png_bytes()), "synthetic_transcript.png"),
+        "file": (io.BytesIO(synthetic_png_bytes((3200, 800))), "synthetic_transcript.png"),  # 長邊須達上傳門檻
     }, content_type="multipart/form-data")
 
     assert response.status_code == 302
@@ -167,7 +167,7 @@ def test_upload_with_offline_ocr_but_no_engine_marks_analysis_failed(tmp_path):
 
     client.post("/student/learning-profile/documents", data={
         "document_type": "transcript",
-        "file": (io.BytesIO(synthetic_png_bytes()), "synthetic_transcript.png"),
+        "file": (io.BytesIO(synthetic_png_bytes((3200, 800))), "synthetic_transcript.png"),  # 長邊須達上傳門檻
     }, content_type="multipart/form-data")
 
     with app.app_context():

@@ -569,9 +569,22 @@ def analyze(document_type, file_path, engine):
                 warnings.append(f"第 {page_number} 頁未擷取到課程或證照，請核對原始頁面並補登。")
             texts.append("\n".join(w["text"] for w in page_words))
             evidence.append({"page": page_number, "rotation": rotation, "words": page_words})
-            traces.append({"step": "page_ocr", "page": page_number, "engine": engine,
-                           "rotation": rotation, "panel_count": len(panels),
-                           "width": image.width, "height": image.height})
+            # 保存這一頁的圖片處理方式（確認頁「查看 OCR 辨識過程」用 ocr_trace 翻成中文）
+            page_trace = {"step": "page_ocr", "page": page_number, "engine": engine,
+                          "document_type": document_type,
+                          "source": "pdf" if str(file_path).lower().endswith(".pdf") else "image",
+                          "original_width": original.width, "original_height": original.height,
+                          "rotation": rotation, "panel_count": len(panels),
+                          "width": image.width, "height": image.height}
+            if page_trace["source"] == "pdf":
+                page_trace["dpi"] = PDF_DPI
+            if document_type == "transcript":
+                page_trace["tried_rotations"] = [0, 270, 90, 180]
+            if engine == "rapidocr":
+                from app.services.ocr_engines import configured_rapidocr_settings
+                tier, device, _ = configured_rapidocr_settings()
+                page_trace.update({"model_tier": tier, "device": device})
+            traces.append(page_trace)
             if page_credential_analysis:
                 traces.append({"step": "credential_fields_parsed", "page": page_number,
                                "document_kind": page_credential_analysis["document_kind"],

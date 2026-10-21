@@ -131,7 +131,7 @@
 <details class="ocr-trace">
   <summary>查看 OCR 辨識過程</summary>
   <p>這些紀錄用來說明系統如何從圖片整理出下方資料。</p>
-  <ol>{% for item in trace %}<li><strong>{{ item.step }}</strong>{% if item.rotation is defined %}（旋轉 {{ item.rotation }} 度）{% endif %}{% if item.character_count is defined %}，抓到 {{ item.character_count }} 個字元{% endif %}{% if item.course_count is defined %}，課程 {{ item.course_count }} 門、證照 {{ item.credential_count }} 筆{% endif %}</li>{% else %}<li>目前沒有詳細處理紀錄。</li>{% endfor %}</ol>
+  <ol>{% for item in trace %}<li>{{ item|ocr_step }}</li>{% else %}<li>目前沒有詳細處理紀錄。</li>{% endfor %}</ol>
   {% if raw_text %}
     {% if document.document_type == 'credential' %}
       <label>OCR 辨識文字（繁體顯示）<textarea rows="8" readonly>{{ raw_text|traditional_text }}</textarea></label>

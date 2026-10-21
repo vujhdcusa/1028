@@ -75,6 +75,13 @@ def learning_profile_document_upload():
     file_bytes = uploaded.read()
     if not file_bytes:
         return "file is empty", 400
+    # 成績單圖片太小時 OCR 只會產生亂字：不存檔，直接請學生改傳
+    from app.services.upload_quality import resolution_check
+    resolution = resolution_check(document_type, file_bytes, safe_name)
+    if resolution and resolution["level"] == "too_small":
+        return render_template("learning_profile_upload.html", user=user, document_type=document_type,
+                               next_path=safe_next(request.form.get("next")),
+                               error=resolution["message"]), 400
     folder = Path(current_app.config["UPLOAD_FOLDER"]) / "learning-profile" / str(user.id)
     folder.mkdir(parents=True, exist_ok=True)
     stored_path = folder / f"{uuid4().hex}_{safe_name}"
@@ -98,6 +105,11 @@ def learning_profile_document_upload():
                 ocr_engine=current_app.config.get("OCR_ENGINE"),
             )
             result = {**result, "draft_revision": uuid4().hex}
+            if resolution:
+                result["processing_steps"] = [*(result.get("processing_steps") or []), {
+                    "step": "resolution_checked", "long_side": resolution["long_side"], "level": resolution["level"]}]
+                if resolution["level"] == "low":
+                    result["warnings"] = [*(result.get("warnings") or []), resolution["message"]]
             extraction = DocumentExtraction(
                 source_document_id=document.id,
                 provider=current_app.config["DOCUMENT_ANALYSIS_PROVIDER"],

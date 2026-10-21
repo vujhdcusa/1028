@@ -56,3 +56,12 @@ def test_admin_ocr_page_and_credential_review_link_to_the_results(app):
     assert 'href="/ocr/acceptance"' in html
     review = (Path(__file__).resolve().parents[1] / "app" / "templates" / "learning_profile_review.html").read_text(encoding="utf-8")
     assert "url_for('main.ocr_acceptance')" in review
+
+
+def test_acceptance_page_explains_image_processing_and_resolution(app):
+    html = login(app, "teacher").get("/ocr/acceptance").get_data(as_text=True)
+
+    assert "圖片怎麼處理" in html
+    assert "300 DPI" in html and "框線" in html and "標籤" in html
+    assert "解析度實測" in html and "3507" in html and "1024" in html
+    assert "1600" in html and "3000" in html  # 上傳時的兩個門檻

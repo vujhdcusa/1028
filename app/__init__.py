@@ -25,6 +25,8 @@ def create_app(config_overrides=None):
 
     from app.services.credential_analysis import traditional_text
     app.add_template_filter(traditional_text, "traditional_text")
+    from app.services.ocr_trace import describe_step
+    app.add_template_filter(describe_step, "ocr_step")
 
     from app.routes.main import main_bp
     from app.routes.admin import admin_bp

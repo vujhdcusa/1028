@@ -71,6 +71,24 @@
     </div>
   </section>
 
+  <section aria-labelledby="acc-processing">
+    <h2 id="acc-processing">圖片怎麼處理</h2>
+    <ol class="acceptance__steps">
+      {% for step in data.processing %}<li><b>{{ step.title }}</b><p>{{ step.text }}</p></li>{% endfor %}
+    </ol>
+  </section>
+
+  <section aria-labelledby="acc-resolution">
+    <h2 id="acc-resolution">解析度實測</h2>
+    <p>{{ data.resolution_note }}</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>圖片寬度（像素）</th><th>結果（共 85 門）</th></tr></thead>
+        <tbody>{% for row in data.resolution %}<tr><td>{{ row.width }}</td><td>{{ row.result }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+
   <section aria-labelledby="acc-confidence">
     <h2 id="acc-confidence">「OCR 信心」是什麼</h2>
     <ul>{% for line in data.confidence %}<li>{{ line }}</li>{% endfor %}</ul>
