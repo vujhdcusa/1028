@@ -7,6 +7,7 @@ from statistics import median
 
 from PIL import Image, ImageOps
 
+from app.services.course_name_correction import apply_name_correction
 from app.services.course_review_presentation import split_makeup_marker
 
 MAX_PAGES = 10
@@ -222,7 +223,7 @@ def parse_panel_words(words, size, region_index, *, body=None, columns=None,
                 "field_confidence": confidence, "needs_confirmation": bool(reasons),
                 "review_reasons": reasons,
                 "raw_cells": [[w["text"] for w in cell] for cell in cells]})
-    return courses
+    return [apply_name_correction(course) for course in courses]
 
 
 def grade_from_header(words):
@@ -276,7 +277,7 @@ def parse_unknown_rows(words, *, page, size, rotation=0):
                             min(size[0],max(w["bbox"][2] for w in row)+3),
                             min(size[1],max(w["bbox"][3] for w in row)+3)],
             "raw_cells": values})
-    return courses
+    return [apply_name_correction(course) for course in courses]
 
 
 def _recognize_crop(image, box, engine, *, scale=None):

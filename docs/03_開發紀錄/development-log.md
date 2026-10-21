@@ -1,5 +1,43 @@
 # 開發日誌
 
+## 2026-10-21 任務 A：填入本科課程清單，課名校正生效並實測
+
+日期：2026-10-21（台灣時間）
+
+開發者：Claude（任務 A 視窗，分支 `feat/ocr-course-names`）
+
+目標：使用者指定以 `D:\democase\ai\docs\OCR測試資料\` 的成績單作為課程清單來源，讓校正真正生效並實測。
+
+- 修改檔案：
+  - `app/services/course_name_correction.py`：`COURSE_CATALOG` 填入 58 門課名（成績單逐筆人工對照原圖抄錄，只取課名）；比對前先轉繁體（沿用 `traditionalize_course_name`）並統一全半形，所以「数位化育料處理」「合计學」「JAVA程式语言」「貢料庫管理實務(SQL）」也能對上。
+  - `tests/test_course_name_correction.py`：新增 4 個簡體字／全形括號測試（先看到失敗再實作）。
+  - `app/content/ocr_acceptance.py`、`tests/test_ocr_acceptance_page.py`：實測結果頁加入「課程名稱（清單校正後）85／85」與清單來源限制。
+  - `docs/03_開發紀錄/OCR驗收紀錄_2026-10-20.md`：新增「課程名稱校正實測」一節。
+- 實測（本機 PDF，RapidOCR 伺服器版，約 23 秒）：課程名稱完全正確由 74／85 提高到 **85／85**；共改名 13 筆（11 筆字形錯字＋2 筆只有簡體字），和人工抄錄的 85 列逐一比對沒有多也沒有少。真實檔案只在本機讀取；轉出的圖片與量測腳本放在暫存資料夾，沒有進 repo。
+- 限制：清單與驗收是同一份成績單，結果偏樂觀；其他選修課與其他入學年度的課名還沒有。
+- 實測時模型讀取主視窗 `D:\democase\ai-wt-story\instance\ocr-models`（唯讀，只在暫存腳本內指定路徑，沒有改主視窗任何檔案）；本 worktree 沒有模型檔。
+- 驗證：完整測試 **665 passed、9 skipped**（需加 `--basetemp`）。
+- 下一步：補其他選修課與入學年度的課名，用另一份成績單再驗收。
+
+## 2026-10-21 任務 A：成績單課程名稱字形校正（引擎與核對提示）
+
+日期：2026-10-21（台灣時間）
+
+開發者：Claude（任務 A 視窗，分支 `feat/ocr-course-names`）
+
+目標：OCR 讀錯的課名（例如「合計概論」「育料結構」）依本科課程清單改成字形相近的正確課名；學生仍要在確認頁核對。
+
+- 修改檔案：
+  - 新增 `app/services/course_name_correction.py`：字形混淆表（10 組，來源是 `OCR驗收紀錄_2026-10-20.md` 的 11 筆錯字）；`correct_course_name` 只在清單上恰好一個候選時才改，差異超過 2 字不改；`apply_name_correction` 改名、保留 `course_name_corrected_from`、設為需確認，並加一則核對提示「課程名稱已依課程清單校正為『…』（OCR 原文『…』），請對照原圖。」
+  - `app/services/ocr_pipeline.py`：成績單兩條解析路徑（表格版型、無版型）的輸出都經過校正；辨識邏輯本身沒有改。
+  - 新增 `tests/test_course_name_correction.py`：18 個測試，全部使用合成課名（僅為測試資料），涵蓋 10 組錯字、不該被改的例子（已是正確名、清單外的課名、多一個字、少一個字）、清單為空、以及校正後的旗標與提示文字。
+- 未完成（阻塞，需要使用者提供資料）：
+  - `COURSE_CATALOG` 目前是空的，所以校正還不會生效。`school/public-sources/修業科目表/` 的 PDF 只有英文課名，`im-curriculum-planning.html` 等網頁也沒有中文課名，無法從現有來源建立清單；沒有硬湊課名。
+  - 因此沒有用本機 PDF 實測「74／85」能改善到多少，`app/content/ocr_acceptance.py` 與驗收紀錄沒有更新。
+  - 提示放在既有的核對提示欄，沒有另外做「已校正自」的獨立標籤。
+- 驗證：`D:\democase\ai\.venv` 執行完整測試 **661 passed、9 skipped**（修改前 643 passed、9 skipped，新增 18 個）。直接執行 `pytest` 會因 Windows 暫存資料夾權限出現 302 個 error，需加 `--basetemp`；這是環境問題，不是程式錯誤。
+- 下一步：使用者提供本科中文課名（學校正式修業科目表的中文版，或使用者整理的名單）→ 填入 `COURSE_CATALOG` → 用本機 PDF 實測課名正確數 → 更新驗收紀錄與 `ocr_acceptance.py`。
+
 ## 2026-10-21 組員一鍵啟動：XAMPP MySQL＋虛擬環境＋資料庫＋瀏覽器
 
 日期：2026-10-21（台灣時間）
