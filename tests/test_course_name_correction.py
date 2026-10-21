@@ -3,7 +3,18 @@ import pytest
 
 from app.services.course_name_correction import apply_name_correction, correct_course_name
 
-CATALOG = ("會計概論", "資料結構", "體育", "護理導論", "通識數學", "經濟學", "英語與溝通", "康寧服務")
+CATALOG = ("會計概論", "資料結構", "體育", "護理導論", "通識數學", "經濟學", "英語與溝通", "康寧服務",
+           "數位化資料處理", "會計學", "JAVA程式語言", "資料庫管理實務(SQL)")
+
+
+@pytest.mark.parametrize("ocr_name, expected", [
+    ("数位化育料處理", "數位化資料處理"),   # 簡體字＋字形錯字
+    ("合计學", "會計學"),
+    ("JAVA程式语言", "JAVA程式語言"),       # 只有簡體字
+    ("貢料庫管理實務(SQL）", "資料庫管理實務(SQL)"),  # 全形括號
+])
+def test_simplified_and_full_width_variants_are_normalized_before_matching(ocr_name, expected):
+    assert correct_course_name(ocr_name, CATALOG) == (expected, ocr_name)
 
 
 @pytest.mark.parametrize("ocr_name, expected", [

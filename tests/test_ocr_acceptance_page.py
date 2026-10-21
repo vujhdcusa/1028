@@ -35,7 +35,9 @@ def test_every_role_can_read_the_acceptance_results(app, role):
     html = response.get_data(as_text=True)
     assert "OCR 實測結果" in html
     assert "24／24" in html            # 證照修正後全部欄位
-    assert "74／85" in html            # 成績單課程名稱完全正確
+    assert "74／85" in html            # 成績單課程名稱校正前完全正確
+    assert "課程名稱（清單校正後）" in html  # 校正後的結果要和校正前分開寫
+    assert "同一份成績單" in html      # 清單來源與限制要寫清楚
     assert "不是正確率" in html
     assert "合計概論" in html          # 錯在哪裡要寫出來，不只寫總數
 
