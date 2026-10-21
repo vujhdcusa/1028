@@ -121,8 +121,12 @@ def learning_profile_document_processing(document_id):
     state = _ocr_job_state(document)
     if state == "done":
         return redirect(url_for("student.learning_profile_document_review", document_id=document.id, next=next_path))
+    has_preview = ocr_queue.preview_path(document.file_path).is_file()
     return render_template("learning_profile_processing.html", user=get_current_user(), document=document,
                            state=state, next_path=next_path,
+                           ahead=ocr_queue.queue_position(document) if state == "queued" else 0,
+                           preview_url=url_for("student.learning_profile_document_preview", document_id=document.id)
+                           if has_preview else None,
                            error=document.extraction.error_message if document.extraction else None)
 
 
@@ -133,12 +137,31 @@ def learning_profile_document_status(document_id):
     document = _owned_source_document(document_id)
     state = _ocr_job_state(document)
     payload = {"state": state}
-    if state == "done":
+    if ocr_queue.preview_path(document.file_path).is_file():
+        payload["preview"] = url_for("student.learning_profile_document_preview", document_id=document.id)
+    if state == "queued":
+        payload["ahead"] = ocr_queue.queue_position(document)
+    elif state == "done":
+        result = (document.extraction.result_json if document.extraction else None) or {}
+        payload["found"] = len(result.get("courses") or []) + len(result.get("credentials") or [])
         payload["redirect"] = url_for("student.learning_profile_document_review", document_id=document.id,
                                       next=safe_next(request.args.get("next")))
     elif state == "failed":
         payload["error"] = (document.extraction.error_message if document.extraction else None) or "辨識失敗"
     return payload
+
+
+@student_bp.get("/student/learning-profile/documents/<int:document_id>/preview")
+@role_required("student")
+def learning_profile_document_preview(document_id):
+    """「辨識中」頁顯示的第一頁縮圖；由背景辨識先做好。"""
+    document = _owned_source_document(document_id)
+    path = ocr_queue.preview_path(document.file_path)
+    if not path.is_file():
+        abort(404)
+    response = send_file(path, mimetype="image/png")
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @student_bp.post("/student/learning-profile/documents/<int:document_id>/retry")

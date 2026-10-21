@@ -247,3 +247,95 @@ def test_pending_document_is_listed_as_processing_and_cannot_be_reanalyzed(tmp_p
     assert f"/student/learning-profile/documents/{document_id}/processing" in page
     assert "辨識中…" in page
     assert client.post(f"/student/learning-profile/documents/{document_id}/reanalyze").status_code == 409
+
+
+def upload_png(client):
+    from PIL import Image
+    stream = io.BytesIO()
+    Image.new("RGB", (3200, 2200), "white").save(stream, format="PNG")
+    stream.seek(0)
+    return client.post("/student/learning-profile/documents", data={
+        "document_type": "transcript", "file": (stream, "synthetic_transcript.png")},
+        content_type="multipart/form-data")
+
+
+def test_worker_makes_owner_only_page_preview_for_the_processing_page(tmp_path):
+    app = queue_app(tmp_path)
+    client = app.test_client()
+    login(client)
+    upload_png(client)
+    document_id = only_document_id(app)
+    preview_url = f"/student/learning-profile/documents/{document_id}/preview"
+
+    assert client.get(preview_url).status_code == 404
+    assert "preview" not in client.get(f"/student/learning-profile/documents/{document_id}/status").get_json()
+    ocr_queue.run_job(app, document_id)
+
+    status = client.get(f"/student/learning-profile/documents/{document_id}/status").get_json()
+    assert status["preview"].endswith(preview_url)
+    response = client.get(preview_url)
+    assert response.status_code == 200
+    assert response.mimetype == "image/png"
+    assert response.headers["Cache-Control"] == "private, no-store"
+    other = app.test_client()
+    login(other, "student_other")
+    assert other.get(preview_url).status_code == 403
+
+
+def test_preview_failure_does_not_fail_the_job(tmp_path):
+    app = queue_app(tmp_path)
+    client = app.test_client()
+    login(client)
+    upload(client)  # 內容不是真的 PDF，做不出預覽圖
+    document_id = only_document_id(app)
+
+    ocr_queue.run_job(app, document_id)
+
+    status = client.get(f"/student/learning-profile/documents/{document_id}/status").get_json()
+    assert status["state"] == "done"
+    assert "preview" not in status
+
+
+def test_status_reports_queue_position_and_found_count(tmp_path):
+    app = queue_app(tmp_path)
+    owner = app.test_client()
+    login(owner)
+    upload(owner)
+    other = app.test_client()
+    login(other, "student_other")
+    upload(other)
+    with app.app_context():
+        first_id, second_id = [d.id for d in SourceDocument.query.order_by(SourceDocument.id)]
+
+    assert owner.get(f"/student/learning-profile/documents/{first_id}/status").get_json()["ahead"] == 0
+    assert other.get(f"/student/learning-profile/documents/{second_id}/status").get_json()["ahead"] == 1
+    ocr_queue.run_job(app, first_id)
+    assert other.get(f"/student/learning-profile/documents/{second_id}/status").get_json()["ahead"] == 0
+    done = owner.get(f"/student/learning-profile/documents/{first_id}/status").get_json()
+    assert done["found"] == 1  # 假辨識結果固定一門課
+    page = owner.get(f"/student/learning-profile/documents/{first_id}/processing?stay=1")
+    assert page.status_code == 302  # 完成後仍直接帶去確認頁
+
+
+def test_english_engine_error_is_shown_in_chinese_and_kept_in_audit_log(tmp_path, monkeypatch):
+    app = queue_app(tmp_path)
+    client = app.test_client()
+    login(client)
+    upload(client)
+    document_id = only_document_id(app)
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("Failed to load document (PDFium: Data format error).")
+
+    monkeypatch.setattr(ocr_queue, "analyze_document", broken)
+    ocr_queue.run_job(app, document_id)
+
+    status = client.get(f"/student/learning-profile/documents/{document_id}/status").get_json()
+    assert "PDFium" not in status["error"]
+    assert "檔案" in status["error"]
+    page = client.get(f"/student/learning-profile/documents/{document_id}/processing").get_data(as_text=True)
+    assert "PDFium" not in page
+    assert '<img class="ocr-sheet__img" id="ocr-preview" hidden' in page
+    with app.app_context():
+        log = AuditLog.query.filter_by(action="learning_profile.ocr_failed").one()
+        assert "PDFium" in log.detail_json["raw_error"]

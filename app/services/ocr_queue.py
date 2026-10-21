@@ -22,7 +22,9 @@ from app.services.document_analysis_service import analyze_document
 from app.services.upload_quality import resolution_check
 
 PENDING_STATUSES = ("queued", "processing")
+PREVIEW_LONG_SIDE = 1100
 UNEXPECTED_ERROR = "辨識時發生未預期的錯誤，請按「重新辨識」或改傳其他檔案。"
+UNREADABLE_ERROR = "檔案讀不出來，可能是檔案損毀、加了密碼，或不是成績單／證照的圖片或 PDF。"
 INTERRUPTED_ERROR = "伺服器重新啟動，這次辨識被中斷了，請按「重新辨識」。"
 
 _jobs = queue.Queue()
@@ -76,8 +78,10 @@ def run_job(app, document_id):
             return False
 
         document = db.session.get(SourceDocument, document_id)
+        # 先做第一頁縮圖給「辨識中」頁顯示；PDF 轉圖不能跨執行緒同時做，所以放在同一條執行緒
+        make_preview(app, document.file_path)
         provider = app.config["DOCUMENT_ANALYSIS_PROVIDER"]
-        result, error = None, None
+        result, error, raw_error = None, None, None
         try:
             source_path = Path(document.file_path)
             result = analyze_document(document.document_type, source_path, provider,
@@ -90,10 +94,10 @@ def run_job(app, document_id):
                 if resolution["level"] == "low":
                     result["warnings"] = [*(result.get("warnings") or []), resolution["message"]]
         except RuntimeError as exc:
-            result, error = None, str(exc)
-        except Exception:
+            result, error, raw_error = None, student_error(str(exc)), str(exc)
+        except Exception as exc:
             app.logger.exception("OCR 辨識發生未預期錯誤：document_id=%s", document_id)
-            result, error = None, UNEXPECTED_ERROR
+            result, error, raw_error = None, UNEXPECTED_ERROR, repr(exc)
 
         db.session.rollback()
         document = db.session.get(SourceDocument, document_id)
@@ -123,10 +127,50 @@ def run_job(app, document_id):
                 "processing_steps": (result or {}).get("processing_steps", []),
                 "raw_text": (result or {}).get("raw_text"),
                 "error_message": extraction.error_message,
+                "raw_error": raw_error,
             },
         ))
         db.session.commit()
         return True
+
+
+def student_error(message):
+    """辨識套件的英文錯誤學生看不懂：沒有中文就換成中文說明，原文留在操作日誌。"""
+    if any(0x4E00 <= ord(char) <= 0x9FFF for char in message or ""):
+        return message
+    return UNREADABLE_ERROR
+
+
+def preview_path(file_path):
+    """第一頁縮圖存在原檔旁邊。"""
+    path = Path(file_path)
+    return path.with_name(path.name + ".preview.png")
+
+
+def make_preview(app, file_path):
+    """做不出縮圖（檔案壞掉、格式不對）不影響辨識，頁面改用示意圖。"""
+    from app.services.ocr_pipeline import load_document_pages
+
+    pages = None
+    try:
+        pages = load_document_pages(file_path)
+        page = next(iter(pages))
+        page.thumbnail((PREVIEW_LONG_SIDE, PREVIEW_LONG_SIDE))
+        page.save(preview_path(file_path), format="PNG")
+        page.close()
+        return True
+    except Exception:
+        app.logger.info("無法產生辨識中頁的預覽圖：%s", Path(file_path).name, exc_info=True)
+        return False
+    finally:
+        if pages is not None and hasattr(pages, "close"):
+            pages.close()
+
+
+def queue_position(document):
+    """前面還有幾份在排隊或辨識中（含別人的，只回數字）。"""
+    return SourceDocument.query.filter(
+        SourceDocument.status.in_(PENDING_STATUSES), SourceDocument.id < document.id).count()
 
 
 def recover_interrupted_jobs():
