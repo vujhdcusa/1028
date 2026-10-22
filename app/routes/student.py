@@ -37,6 +37,7 @@ from app.services.learning_profile_docx_service import output_to_docx_bytes
 from app.services.learning_profile_service import generate_learning_profile_outputs
 from app.services.admission_service import published_programs
 from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
+from app.services.matching_service import rank_programs
 from app.services.gap_checklist import download_checklist, review_timeline
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 from app.services.package_service import build_package_docx, latest_review
@@ -973,6 +974,20 @@ def target_list():
         focus=focus_view(user, journey),
         error=error,
     ), (400 if error else 200)
+
+
+@student_bp.get("/student/matching")
+@role_required("student")
+def matching():
+    """A3 媒合排序：全部正式校系依可不可報與契合度排序，每一間都寫理由。"""
+    user = get_current_user()
+    selected = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id).all()}
+    return render_template(
+        "student_matching.html",
+        user=user,
+        rows=rank_programs(user, published_programs()),
+        selected=selected,
+    )
 
 
 @student_bp.post("/student/targets/<int:program_id>/remove")

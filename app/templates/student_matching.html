@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
+{% set page_name = "student-matching" %}
+
+{% block title %}推薦排序｜資管科智慧學習歷程系統{% endblock %}
+
+{% block navigation %}{{ masthead(user, "目標校系") }}{% endblock %}
+
+{% block content %}
+{{ page_band("推薦排序") }}
+<div class="page page--banded">
+  <p class="muted mb-1">系統把全部校系依「能不能報」和「契合度」排好，每一間都寫了理由，不能報的也會告訴你為什麼。這只是幫你找方向，目標校系由你自己決定。</p>
+  <div class="record-card__actions mb-1"><a class="button button--small button--quiet" href="{{ url_for('student.target_list') }}">← 回目標校系</a></div>
+
+  {% if rows %}
+  <ol class="plain-list">
+    {% for row in rows %}
+    {% set program = row.program %}
+    <li class="sheet mb-1" data-motion="reveal">
+      <div class="sheet__head">
+        <h2>{{ loop.index }}. {{ program.school_name }} {{ program.department_name }}</h2>
+        <span class="tag {{ {'eligible': 'tag--info', 'needs_check': 'tag--warn', 'ineligible': 'tag--danger'}[row.status] }}">{{ row.status_label }}</span>
+      </div>
+      <p class="muted small">{{ program.admission_year }} 學年度{% if program.admission_category %} · {{ program.admission_category }}{% endif %}{% if program.program_code.isdigit() %} · 志願代碼 {{ program.program_code }}{% endif %}</p>
+      <p class="mb-1">{% if row.fit is not none %}契合度 <strong>{{ row.fit }}%</strong>{% else %}<span class="muted">契合度：以自傳等文件為主，系統算不出來</span>{% endif %}</p>
+      <ul>
+        {% for reason in row.reasons %}<li>{{ reason }}</li>{% endfor %}
+      </ul>
+      {% if row.status != "ineligible" %}
+      <div class="record-card__actions mt-1">
+        {% if program.id in selected %}
+        <a class="button button--small" href="{{ url_for('student.target_gap', program_id=program.id) }}">已是目標校系，看還缺什麼 →</a>
+        {% else %}
+        <form method="post" action="{{ url_for('student.target_list') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="program_id" value="{{ program.id }}"><button class="button button--small button--line" type="submit">設為目標校系</button></form>
+        {% endif %}
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="paper-empty"><p>目前還沒有公開的校系資料。</p></div>
+  {% endif %}
+
+  <p class="muted small mt-1">契合度是依你已確認的資料和簡章加權算的準備程度，不是錄取機率；能不能報與錄取結果以當年度招生簡章正式審核為準。</p>
+</div>
+{% endblock %}
+
+{% block footer %}{{ footer() }}{% endblock %}
