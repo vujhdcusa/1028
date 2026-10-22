@@ -40,6 +40,19 @@ from app.models import (  # noqa: E402
 
 DEMO_PASSWORD = "demo1234"
 
+# 登入頁「Demo 快速登入」列出的帳號，和 seed() 建立的帳號一致
+DEMO_ACCOUNTS = [
+    {"role": "student", "label": "學生", "username": "111534105", "password": DEMO_PASSWORD,
+     "name": "王小明", "note": "還沒選目標校系"},
+    {"role": "student", "label": "學生", "username": "111534107", "password": DEMO_PASSWORD,
+     "name": "林小美", "note": "已送導師確認"},
+    {"role": "teacher", "label": "導師", "username": "teacher01", "password": DEMO_PASSWORD,
+     "name": "陳導師", "note": "負責資管科三甲"},
+    {"role": "staff", "label": "科辦", "username": "staff01", "password": DEMO_PASSWORD,
+     "name": "林科助", "note": "核准電子獎狀"},
+    {"role": "admin", "label": "管理者", "username": "admin", "password": DEMO_PASSWORD, "name": "系統管理者"},
+]
+
 
 def seed():
     student = User(username="111534105", display_name="王小明", role="student")
@@ -127,7 +140,7 @@ def main():
     app = create_app({
         "SQLALCHEMY_DATABASE_URI": f"sqlite:///{demo_db.as_posix()}",
         "UPLOAD_FOLDER": str(PROJECT_ROOT / "instance" / "demo-uploads"),
-        "DEMO_ACCOUNTS": True,  # 登入頁顯示展示帳號；正式環境不要設定
+        "DEMO_ACCOUNTS": DEMO_ACCOUNTS,  # 登入頁顯示展示帳號；正式環境不要設定
     })
     with app.app_context():
         db.create_all()

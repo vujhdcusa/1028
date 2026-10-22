@@ -26,19 +26,32 @@
         <label class="field">密碼<input name="password" type="password" autocomplete="current-password" required></label>
         <button class="button" type="submit">登入 →</button>
       </form>
-      {% if config.get("LOCAL_DEMO_MODE") and config.get("FLASK_ENV") != "production" %}
-      <table class="data-table mt-1 demo-accounts">
-        <caption class="small">本機展示測試帳號（正式環境不顯示）</caption>
-        <tbody>
-          <tr><th scope="col">角色</th><th scope="col">帳號</th><th scope="col">密碼</th></tr>
-          <tr><th scope="row">學生</th><td class="mono">student_demo</td><td class="mono">demo2026</td></tr>
-          <tr><th scope="row">教師</th><td class="mono">teacher_demo</td><td class="mono">demo2026</td></tr>
-          <tr><th scope="row">科辦</th><td class="mono">staff_demo</td><td class="mono">demo2026</td></tr>
-          <tr><th scope="row">管理員</th><td class="mono">admin_demo</td><td class="mono">demo2026</td></tr>
-        </tbody>
-      </table>
-      {% endif %}
     </div>
+    {% if config.get("DEMO_ACCOUNTS") and config.get("FLASK_ENV") != "production" %}
+    <section class="demo-login" aria-labelledby="demo-login-title">
+      <h3 id="demo-login-title">Demo 快速登入</h3>
+      <p class="small">開發測試用，資料都是假的；正式環境不顯示。點一下就用該帳號登入。</p>
+      <ul class="demo-login__list">
+        {% for account in config.DEMO_ACCOUNTS %}
+        <li>
+          <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="username" value="{{ account.username }}">
+            <input type="hidden" name="password" value="{{ account.password }}">
+            <button class="demo-login__account demo-login__account--{{ account.role }}" type="submit">
+              <span class="demo-login__role">{{ account.label }}</span>
+              <span class="demo-login__who">
+                <strong>{{ account.name }}</strong>
+                {% if account.note %}<small>{{ account.note }}</small>{% endif %}
+              </span>
+              <span class="demo-login__cred mono">{{ account.username }}<br>{{ account.password }}</span>
+            </button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

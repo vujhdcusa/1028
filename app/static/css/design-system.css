@@ -346,6 +346,28 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .auth__form { display: grid; place-items: center; padding: 2rem 1.25rem; }
 .auth__card { width: min(400px, 100%); }
 .auth__card h2 { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 900; margin: .4rem 0 1.5rem; }
+.auth__form:has(.demo-login) { place-items: start center; align-content: center; gap: 1.5rem; }
+
+/* Demo 快速登入：只在展示站出現，用便條紙的顏色和正式登入框分開 */
+.demo-login { width: min(400px, 100%); background: var(--warn-soft); border: 1.5px dashed var(--warn); border-radius: var(--radius); padding: 1rem 1.1rem 1.1rem; }
+.demo-login h3 { font-family: var(--font-serif); font-weight: 900; font-size: 1.15rem; color: var(--warn); margin: 0; }
+.demo-login > p { color: var(--ink-soft); margin: .25rem 0 .8rem; }
+.demo-login__list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.demo-login__account { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .75rem;
+  padding: .55rem .7rem; background: var(--sheet); color: var(--ink); border: 1px solid var(--line); border-left: 4px solid var(--role, var(--accent));
+  border-radius: var(--radius); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s; }
+.demo-login__account:hover { border-color: var(--role, var(--accent)); transform: translateX(2px); }
+.demo-login__account:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.demo-login__account--student { --role: var(--year-1); }
+.demo-login__account--teacher { --role: var(--year-2); }
+.demo-login__account--staff { --role: var(--year-3); }
+.demo-login__account--admin { --role: var(--year-4); }
+.demo-login__role { font-size: .78rem; font-weight: 700; color: var(--role, var(--accent)); min-width: 3em; }
+.demo-login__who { min-width: 0; }
+.demo-login__who strong { display: block; font-size: .95rem; }
+.demo-login__who small { display: block; color: var(--muted); font-size: .78rem; }
+.demo-login__cred { font-size: .78rem; color: var(--ink-soft); text-align: right; line-height: 1.35; }
+@media (prefers-reduced-motion: reduce) { .demo-login__account { transition: none; } .demo-login__account:hover { transform: none; } }
 
 /* =========================================================
    工作層：教師、科辦、管理者（清楚、好找、看久不累）
