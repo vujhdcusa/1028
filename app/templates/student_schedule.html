@@ -44,7 +44,7 @@
         <strong>{{ target.program.school_name }} {{ target.program.department_name }}</strong>
         <span class="muted small">（{{ target.program.admission_year }} 學年度{% if target.program.admission_category %} · {{ target.program.admission_category }}{% endif %}）</span><br>
         {% if target.schedule %}看上面的{{ target.schedule.channel_label }}日程。
-        {% else %}申請入學時程依各校簡章，請看學校招生網站。
+        {% else %}{{ target.channel_label }}時程依各校簡章，請看學校招生網站。
         {% endif %}
         {% for link in target.links %}<a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>{% if not loop.last %}／{% endif %}{% endfor %}
       </li>

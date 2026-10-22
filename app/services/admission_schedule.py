@@ -3,6 +3,7 @@
 資料放在 app/content/admission_schedule.csv，每一列附官方出處；時間是台灣時間。
 - 二技技優甄審（6 位數志願代碼）：全國共用技專校院招生委員會聯合會的日程。
 - 日間部申請入學：各校日期不同，這一版不列，請看學校招生網站。
+- 插大（轉學考）：各校自辦或分區聯招，日期不同，不做共用日程，畫面寫「依各校簡章」並附學校網址。
 - 這一年的日程還沒公告時，用最近一年當參考（reference=True），畫面要標明「去年」。
 """
 
@@ -10,9 +11,11 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
+from app.services.transfer_exam import TRANSFER_CATEGORY, is_transfer
+
 SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "content" / "admission_schedule.csv"
 
-CHANNEL_LABELS = {"skill_review": "二技技優甄審"}
+CHANNEL_LABELS = {"skill_review": "二技技優甄審", "transfer": TRANSFER_CATEGORY}
 
 # 最近一次到官網確認「下一屆日程是否公告」的日期；公告後把新日程加進 CSV
 CHECKED_ON = "2026-10-22"
@@ -44,7 +47,15 @@ def load_schedule(path=None):
 
 
 def program_channel(program):
-    return "skill_review" if program.program_code.isdigit() else None
+    if program.program_code.isdigit():
+        return "skill_review"
+    return "transfer" if is_transfer(program) else None
+
+
+def channel_label(program):
+    """卡片上標示的招生管道名稱；其他管道用簡章上的招生類別。"""
+    channel = program_channel(program)
+    return CHANNEL_LABELS[channel] if channel else (program.admission_category or "申請入學")
 
 
 def _state(event, now):

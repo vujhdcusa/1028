@@ -24,6 +24,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.services.admission_service import import_seed_programs  # noqa: E402
+from app.services.transfer_exam import import_transfer_programs  # noqa: E402
 from app.services import certificate_service, review_snapshot_service  # noqa: E402
 from app.models import (  # noqa: E402
     AdmissionProgram,
@@ -81,6 +82,8 @@ def seed():
     # 展示用：再補上 PDF 裡所有國立校系，讓「選很多校系」的畫面有足夠的資料
     import_seed_programs(PROJECT_ROOT / "app" / "content" / "admission_demo_national_116.csv")
     import_seed_programs(PROJECT_ROOT / "app" / "content" / "admission_demo_dayapply_115.csv")
+    # 插大（轉學考）：北中南資訊相關科系的示範資料（官方簡章，見 CSV 的出處欄）
+    import_transfer_programs()
     db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name="資管科三甲", school_year=115))
     classmate = User(username="111534107", display_name="林小美", role="student")
     classmate.set_password(DEMO_PASSWORD)

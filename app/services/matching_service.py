@@ -6,9 +6,12 @@
 - 排序：可報 → 需確認 → 不可報；同一組裡資管相關科系在前，再依契合度高到低。不可報的仍然列出來，並寫明原因。
 - 資管相關科系先用科系名稱關鍵字判斷（RELATED_KEYWORDS）；之後由 A2 資格判斷 Agent 依學群取代。
 - 這一版的理由由規則產生；之後再交給 AI 改寫成白話（AI 額度用完時仍顯示規則版）。
+- 插大（轉學考）：只考筆試、沒有備審加權的校系不算契合度，改寫「依考試成績，不算契合度」，理由列出考科與報考資格；
+  有書面審查加權的（例如臺大資工）照常算契合度。報考資格系統無法自動判斷，一律「需確認」（D8）。
 
 目前支援的條件類型：
 - fresh_graduate（C1 應屆）：預計畢業學年度 = 入學學年度 + 5。報考學年度之前就已畢業的，不是應屆。
+- transfer_eligibility（插大報考資格）：一律「需確認」，並顯示簡章原文（資料來自 admission_transfer_demo.csv）。
 - 其他類型：一律「需確認」，並顯示簡章原文。
 """
 
@@ -16,9 +19,10 @@ import csv
 from pathlib import Path
 
 from app.services.admission_links import admission_links, load_school_links
-from app.services.admission_schedule import load_schedule, timeline
+from app.services.admission_schedule import channel_label, load_schedule, timeline
 from app.services.gap_service import ALL_LABELS, analyze_gap
 from app.services.journey_service import build_journey
+from app.services.transfer_exam import is_transfer, load_transfer_details
 
 CONDITIONS_FILE = Path(__file__).resolve().parents[1] / "content" / "admission_conditions_demo.csv"
 
@@ -27,6 +31,7 @@ RELATED_KEYWORDS = ("資訊", "資管", "資工", "電子商務", "智慧商務"
 
 STATUS_ORDER = {"eligible": 0, "needs_check": 1, "ineligible": 2}
 STATUS_LABELS = {"eligible": "可報", "needs_check": "需確認", "ineligible": "不可報"}
+NO_FIT_TRANSFER = "依考試成績，不算契合度"
 
 
 def load_conditions(path=None):
@@ -62,7 +67,11 @@ def _check_fresh_graduate(student, program, condition):
                         f"報考那一年是應屆；如有延畢或休學請告訴導師。")
 
 
-CHECKS = {"fresh_graduate": _check_fresh_graduate}
+def _check_transfer_eligibility(student, program, condition):
+    return "needs_check", f"插大報考資格系統無法自動判斷，請對照你的學歷自己核對：「{condition['text']}」{_cite(condition)}"
+
+
+CHECKS = {"fresh_graduate": _check_fresh_graduate, "transfer_eligibility": _check_transfer_eligibility}
 
 
 def _check_conditions(student, program, conditions):
@@ -109,26 +118,53 @@ def _relation_reason(related):
     return "和你的科別（資管）關聯較低，可以參考，但排在相關科系後面。"
 
 
-def rank_programs(student, programs, journey=None, conditions=None):
-    """回傳排序好的 [{program, status, status_label, fit, related, reasons, gap, links, schedule}]。"""
+def _transfer_reasons(program, details):
+    return [
+        f"插大{details['grade']}，考試科目：{details['subjects']}。",
+        f"報名費 {details['fee']}；報名 {details['apply_dates']}；{details['exam_date']}"
+        f"（{program.admission_year} 學年度簡章，{details['checked_on']} 查詢；出處：{details['source']}）。",
+    ]
+
+
+def _transfer_links(links, details):
+    if details and details["admission_url"] and all(link["url"] != details["admission_url"] for link in links):
+        links.append({"label": "轉學考招生網站", "url": details["admission_url"]})
+    return links
+
+
+def rank_programs(student, programs, journey=None, conditions=None, transfer=None):
+    """回傳排序好的 [{program, status, status_label, channel_label, fit, fit_note, related, reasons, gap,
+    transfer, links, schedule}]。"""
     journey = journey or build_journey(student)
     conditions = load_conditions() if conditions is None else conditions
+    transfer = load_transfer_details() if transfer is None else transfer
     school_links = load_school_links()
     schedule = load_schedule()
     rows = []
     for program in programs:
         gap = analyze_gap(student, program, journey)
-        status, condition_reasons = _check_conditions(student, program, conditions.get(program.program_code, []))
+        details = transfer.get(program.program_code) if is_transfer(program) else None
+        program_conditions = list(conditions.get(program.program_code, []))
+        if details:
+            program_conditions.append({"type": "transfer_eligibility", "text": details["eligibility"],
+                                       "source": details["source"]})
+        status, condition_reasons = _check_conditions(student, program, program_conditions)
         related = is_related(program)
+        exam_only = is_transfer(program) and not program.items
         rows.append({
             "program": program,
             "status": status,
             "status_label": STATUS_LABELS[status],
+            "channel_label": channel_label(program),
             "fit": gap["readiness"],
+            "fit_note": NO_FIT_TRANSFER if exam_only else None,
             "related": related,
-            "reasons": condition_reasons + [_relation_reason(related)] + _fit_reasons(gap),
+            "reasons": (condition_reasons + [_relation_reason(related)]
+                        + (_transfer_reasons(program, details) if details else [])
+                        + ([] if exam_only else _fit_reasons(gap))),
             "gap": gap,
-            "links": admission_links(program, school_links),
+            "transfer": details,
+            "links": _transfer_links(admission_links(program, school_links), details),
             "schedule": timeline(program, schedule),
         })
     rows.sort(key=lambda row: (STATUS_ORDER[row["status"]], not row["related"], row["fit"] is None, -(row["fit"] or 0)))

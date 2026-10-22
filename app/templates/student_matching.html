@@ -22,16 +22,17 @@
     <li class="sheet mb-1" data-motion="reveal">
       <div class="sheet__head">
         <h2>{{ loop.index }}. {{ program.school_name }} {{ program.department_name }}</h2>
+        <span class="tag">{{ row.channel_label }}</span>
         <span class="tag {{ {'eligible': 'tag--info', 'needs_check': 'tag--warn', 'ineligible': 'tag--danger'}[row.status] }}">{{ row.status_label }}</span>
       </div>
-      <p class="muted small">{{ program.admission_year }} 學年度{% if program.admission_category %} · {{ program.admission_category }}{% endif %}{% if program.program_code.isdigit() %} · 志願代碼 {{ program.program_code }}{% endif %}</p>
-      <p class="mb-1">{% if row.fit is not none %}契合度 <strong>{{ row.fit }}%</strong>{% else %}<span class="muted">契合度：以自傳等文件為主，系統算不出來</span>{% endif %}</p>
+      <p class="muted small">{{ program.admission_year }} 學年度{% if program.admission_category and program.admission_category != row.channel_label %} · {{ program.admission_category }}{% endif %}{% if row.transfer %} · 插{{ row.transfer.grade }} · {{ row.transfer.quota }}{% endif %}{% if program.program_code.isdigit() %} · 志願代碼 {{ program.program_code }}{% endif %}</p>
+      <p class="mb-1">{% if row.fit_note %}<span class="muted">{{ row.fit_note }}</span>{% elif row.fit is not none %}契合度 <strong>{{ row.fit }}%</strong>{% else %}<span class="muted">契合度：以自傳等文件為主，系統算不出來</span>{% endif %}</p>
       <ul>
         {% for reason in row.reasons %}<li>{{ reason }}</li>{% endfor %}
       </ul>
       {% set sched = row.schedule %}
       <p class="small mt-1">
-        {% if sched is none %}申請入學時程依各校簡章，請看下面的學校招生網站。
+        {% if sched is none %}{{ row.channel_label }}時程依各校簡章，請看下面的學校招生網站。
         {% elif sched.next %}{% if sched.reference %}（參考 {{ sched.year }} 學年度）{% endif %}下一步：{{ sched.next.name }}（{{ sched.next.start.strftime('%Y/%m/%d') }}）
         {% else %}{{ sched.year }} 學年度{{ sched.channel_label }}時程已結束，{{ sched.year + 1 }} 學年度尚未公告。
         {% endif %}

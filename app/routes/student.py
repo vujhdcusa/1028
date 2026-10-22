@@ -39,7 +39,7 @@ from app.services.learning_profile_service import generate_learning_profile_outp
 from app.services.admission_service import published_programs
 from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
 from app.services.admission_links import admission_links, load_school_links
-from app.services.admission_schedule import CHECKED_ON, latest_timeline, timeline
+from app.services.admission_schedule import CHECKED_ON, channel_label, latest_timeline, timeline
 from app.services.matching_service import rank_programs
 from app.services.gap_checklist import download_checklist, review_timeline
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
@@ -1007,8 +1007,8 @@ def schedule():
         user=user,
         skill=latest_timeline("skill_review"),
         checked_on=CHECKED_ON,
-        targets=[{"program": t.program, "schedule": timeline(t.program), "links": admission_links(t.program, school_links)}
-                 for t in targets],
+        targets=[{"program": t.program, "schedule": timeline(t.program), "channel_label": channel_label(t.program),
+                  "links": admission_links(t.program, school_links)} for t in targets],
     )
 
 
