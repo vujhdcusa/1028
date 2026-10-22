@@ -23,6 +23,9 @@
     <div>
       <p class="muted small">{{ program.admission_year }} 學年度 · {{ program.admission_category or "" }}{% if program.program_code.isdigit() %} · 志願代碼 {{ program.program_code }}{% endif %}{% if program.admission_category == "日間部申請入學" %} · 下面是書審內部比例，另計統測{% endif %}</p>
       <h2 class="program-title">{{ program.school_name }} {{ program.department_name }}</h2>
+      {% if program.admission_category == "插大（轉學考）" and not program.items %}
+      <p class="alert" role="status">這個插大校系只看筆試成績，不收備審資料，下面的準備度與備審目錄用不到。考試科目與報考資格請看 <a href="{{ url_for('student.matching') }}">推薦排序</a> 的卡片或簡章。</p>
+      {% endif %}
       <p>方塊越寬，佔分越多；裝得越滿，準備得越完整。點方塊看細節。</p>
     </div>
     <div class="readiness" data-tour="這裡整理你已確認的資料。" data-tour-order="1">

@@ -15,7 +15,7 @@ from app.services.agent_engine import AiDecider, Tool, ToolError, run
 from app.services.gemini_client import AIUnavailable, ai_ready
 from app.services.matching_service import rank_programs
 
-GOAL = ("請依我已確認的資料，推薦適合我的二技校系並說明理由；"
+GOAL = ("請依我已確認的資料，推薦適合我的二技或插大校系並說明理由；"
         "如果我已經選了目標校系、也回答過自傳問題，請挑一個最適合的目標校系幫我準備自傳草稿。")
 
 INSTRUCTION = """你是康寧大學資管科學習歷程系統的「升學 Agent」，正在幫一位五專資管科學生規劃升學。
@@ -24,6 +24,7 @@ INSTRUCTION = """你是康寧大學資管科學習歷程系統的「升學 Agent
 2. 不可以替學生決定目標校系；自傳草稿只能寫學生「已選」的目標校系，而且學生要先回答過自傳問題。
 3. 不可報的學校要說明原因；「需確認」的要提醒學生自己核對簡章。
 4. 契合度是依學生資料和簡章加權算的準備程度，不是錄取機率；不可以說學生一定會上或不會上。
+   插大（轉學考）只考筆試的校系依考試成績錄取，不算契合度；提到插大時要說插幾年級、考什麼科目，並提醒學生自己核對報考資格。
 5. 最後用繁體中文給 3～5 點條列建議：先講最適合的校系與理由，再講還缺什麼、下一步做什麼。每點一行；不要輸出 HTML，也不要用 Markdown 符號（例如 ** 或 #）。"""
 
 AUTO = "auto"
@@ -57,14 +58,22 @@ def _tools(student, generate):
         rows = rank_programs(student, published_programs())
         target_ids = {program.id for program in _targets(student)}
         counts = {label: sum(1 for row in rows if row["status_label"] == label) for label in ("可報", "需確認", "不可報")}
+        # 插大排在可報的二技後面，常常不在前 10 名；另外整理一份，AI 才知道有這條路
+        transfer = [{"program_id": str(row["program"].id), "school": row["program"].school_name,
+                     "department": row["program"].department_name, "grade": row["transfer"]["grade"],
+                     "status": row["status_label"], "subjects": row["transfer"]["subjects"],
+                     "fit": row["fit"], "fit_note": row["fit_note"]} for row in rows if row["transfer"]]
         return {
-            "summary": f"排序 {len(rows)} 個校系：可報 {counts['可報']}、需確認 {counts['需確認']}、不可報 {counts['不可報']}。",
+            "summary": f"排序 {len(rows)} 個校系：可報 {counts['可報']}、需確認 {counts['需確認']}、不可報 {counts['不可報']}"
+                       + (f"；其中插大（轉學考）{len(transfer)} 個，考科與資格見 transfer。" if transfer else "。"),
             "counts": counts,
             "programs": [{"program_id": str(row["program"].id), "school": row["program"].school_name,
                           "department": row["program"].department_name,
-                          "category": row["program"].admission_category or "", "status": row["status_label"],
-                          "fit": row["fit"], "is_target": row["program"].id in target_ids,
+                          "category": row["program"].admission_category or "", "channel": row["channel_label"],
+                          "status": row["status_label"], "fit": row["fit"], "fit_note": row["fit_note"],
+                          "is_target": row["program"].id in target_ids,
                           "reasons": row["reasons"][:3]} for row in rows[:10]],
+            "transfer": transfer,
             "link": {"label": "看完整推薦排序", "endpoint": "student.matching", "params": {}},
         }
 
@@ -125,6 +134,11 @@ def _summary(steps):
         if top:
             lines.append("排在前面、可以報的校系：" + "、".join(
                 f"{p['school']} {p['department']}" + (f"（契合度 {p['fit']}%）" if p["fit"] is not None else "") for p in top) + "。")
+        transfer = rank["result"].get("transfer") or []
+        if transfer:
+            lines.append("也可以考慮插大（轉學考）：" + "、".join(
+                f"{p['school']} {p['department']}（插{p['grade']}，{p['subjects']}）" for p in transfer[:3])
+                + "；報考資格請自己核對簡章。")
     listing = next((s for s in steps if s["tool"] == "list_my_targets"), None)
     drafted = next((s for s in steps if s["tool"] == "draft_autobiography"), None)
     if listing and not listing["result"].get("targets"):
