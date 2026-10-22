@@ -5,7 +5,8 @@ import pytest
 
 from app import create_app
 from app.extensions import db
-from app.models import (AdmissionProgram, AdmissionRequirementItem, CredentialRecord, StudentProfile, User)
+from app.models import (AdmissionProgram, AdmissionRequirementItem, CredentialRecord, LearningCourseRecord,
+                        StudentProfile, User)
 from app.services.gap_service import analyze_gap
 from app.services.matching_service import load_conditions, rank_programs
 
@@ -153,20 +154,73 @@ def test_program_with_only_self_prepared_items_has_no_fit_but_still_a_reason(app
     assert ranked[0]["reasons"]
 
 
+def add_info_courses(student, names=("程式設計", "網頁設計", "資料結構", "計算機網路", "會計學")):
+    for name in names:
+        db.session.add(LearningCourseRecord(student_id=student.id, course_name=name, normalized_course_name=name,
+                                            credits=3, score=85, confirmation_status="confirmed"))
+    db.session.flush()
+
+
+def set_department(program, name, category):
+    program.department_name = name
+    program.admission_category = category
+    return program
+
+
 def test_related_departments_rank_before_unrelated_ones_with_higher_fit(app):
     student = make_student()
+    add_info_courses(student)
     db.session.add(CredentialRecord(student_id=student.id, credential_name="丙級", issue_date=date(2025, 3, 1)))
-    unrelated = make_program("900001", [("證照", 100, "credential")])
-    unrelated.department_name = "模具工程系"
-    related = make_program("900002", [("證照", 50, "credential"), ("歷年成績", 50, "grades")])
-    related.department_name = "資訊管理系"
+    unrelated = set_department(make_program("900001", [("證照", 100, "credential")]), "模具工程系", "機械類")
+    related = set_department(make_program("900002", [("證照", 50, "credential"), ("歷年成績", 50, "grades")]),
+                             "資訊管理系", "管理類四")
 
     ranked = rank_programs(student, [unrelated, related], conditions={})
 
     assert [row["program"].department_name for row in ranked] == ["資訊管理系", "模具工程系"]
-    assert any("資管" in reason for reason in ranked[0]["reasons"])
+    assert any("資訊類專業科目 4 科" in reason and "資訊學群" in reason for reason in ranked[0]["reasons"])
     assert any("關聯較低" in reason for reason in ranked[1]["reasons"])
     assert ranked[1]["status"] == "eligible"  # 不相關不代表不能報
+
+
+def test_accounting_information_is_not_ranked_as_information_group(app):
+    """誤判案例：系名有「資訊」的會計資訊系，以前被關鍵字當成資管相關。"""
+    student = make_student()
+    add_info_courses(student)
+    accounting = set_department(make_program("900001", [("證照", 100, "credential")]), "會計資訊系", "管理類二")
+    nursing = set_department(make_program("900002", [("證照", 100, "credential")]), "醫護教育暨數位學習系", "護理類一")
+    info = set_department(make_program("900003", [("歷年成績", 100, "grades")]), "資訊管理系", "管理類四")
+
+    ranked = rank_programs(student, [accounting, nursing, info], conditions={})
+
+    assert ranked[0]["program"].department_name == "資訊管理系"
+    by_name = {row["program"].department_name: row for row in ranked}
+    assert by_name["會計資訊系"]["related"] is False
+    assert by_name["醫護教育暨數位學習系"]["related"] is False
+    assert any("商管學群" in reason for reason in by_name["會計資訊系"]["reasons"])
+
+
+def test_student_without_course_data_gets_needs_check_relation(app):
+    student = make_student()
+    info = set_department(make_program("900001", [("證照", 100, "credential")]), "資訊管理系", "管理類四")
+
+    ranked = rank_programs(student, [info], conditions={})
+
+    assert ranked[0]["related"] is None
+    assert any("學群待確認" in reason for reason in ranked[0]["reasons"])
+
+
+def test_department_missing_from_table_gets_needs_check_relation_and_sorts_in_between(app):
+    student = make_student()
+    add_info_courses(student)
+    unknown = set_department(make_program("900001", [("證照", 100, "credential")]), "太空探索系", "管理類二")
+    unrelated = set_department(make_program("900002", [("證照", 100, "credential")]), "模具工程系", "機械類")
+    info = set_department(make_program("900003", [("證照", 100, "credential")]), "資訊管理系", "管理類四")
+
+    ranked = rank_programs(student, [unrelated, unknown, info], conditions={})
+
+    assert [row["related"] for row in ranked] == [True, None, False]
+    assert any("學群待確認" in reason for reason in ranked[1]["reasons"])
 
 
 def test_load_conditions_groups_rows_by_program_code(tmp_path):
