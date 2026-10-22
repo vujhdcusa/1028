@@ -1,4 +1,3 @@
-from pathlib import Path
 from hashlib import sha256
 from io import BytesIO
 import json
@@ -46,7 +45,7 @@ from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES,
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
 from app.services.record_status import learning_profile_state, portfolio_state
-from app.services import ai_quota_service, autobiography_review, autobiography_service, ocr_queue, review_snapshot_service, student_rules
+from app.services import ai_quota_service, autobiography_review, autobiography_service, ocr_queue, review_snapshot_service, storage_service, student_rules
 from app.services.gemini_client import AIUnavailable, ai_ready
 from app.services.course_review_presentation import (
     build_course_review_groups,
@@ -86,16 +85,13 @@ def learning_profile_document_upload():
         return render_template("learning_profile_upload.html", user=user, document_type=document_type,
                                next_path=safe_next(request.form.get("next")),
                                error=resolution["message"]), 400
-    folder = Path(current_app.config["UPLOAD_FOLDER"]) / "learning-profile" / str(user.id)
-    folder.mkdir(parents=True, exist_ok=True)
-    stored_path = folder / f"{uuid4().hex}_{safe_name}"
-    stored_path.write_bytes(file_bytes)
+    location = storage_service.save(file_bytes, owner_id=user.id, folder="learning-profile", filename=safe_name)
     try:
         document = SourceDocument(
             owner_id=user.id,
             document_type=document_type,
             display_name=safe_name,
-            file_path=str(stored_path),
+            file_path=location,
             sha256=sha256(file_bytes).hexdigest(),
             status="queued",
         )
@@ -103,7 +99,7 @@ def learning_profile_document_upload():
         db.session.commit()
     except Exception:
         db.session.rollback()
-        stored_path.unlink(missing_ok=True)
+        storage_service.discard(location)
         raise
     # 辨識要 7～30 秒：先跳「辨識中」頁，背景跑完再自動進確認頁；從校系頁來的會帶著 next
     ocr_queue.enqueue(current_app._get_current_object(), document.id)
@@ -174,7 +170,7 @@ def learning_profile_document_retry(document_id):
     document = _owned_source_document(document_id)
     if document.status != "analysis_failed":
         abort(409, description="這份文件不是辨識失敗的狀態，不需要重新辨識。")
-    if not Path(document.file_path).is_file():
+    if not storage_service.exists(document.file_path):
         abort(409, description="找不到原始檔案，請重新上傳。")
     document.status = "queued"
     db.session.commit()
@@ -342,9 +338,7 @@ def learning_profile_document_reanalyze(document_id):
     started_revision = (extraction.result_json or {}).get("draft_revision") if extraction else None
     provider = current_app.config["DOCUMENT_ANALYSIS_PROVIDER"]
     try:
-        source_path = Path(document.file_path)
-        if not source_path.is_file():
-            raise RuntimeError("source unavailable")
+        source_path = storage_service.local_path(document.file_path)
         result = analyze_document(document.document_type, source_path, provider)
         if not isinstance(result, dict) or any(
             not isinstance(result.get(key, []), list)
@@ -408,8 +402,8 @@ def learning_profile_document_reanalyze(document_id):
 @role_required("student")
 def learning_profile_document_source(document_id):
     document = _owned_source_document(document_id)
-    source_path = Path(document.file_path)
-    if not source_path.is_file():
+    source_path = storage_service.local_path_or_none(document.file_path)
+    if source_path is None:
         abort(404)
     response = send_file(source_path.resolve(), as_attachment=True, download_name=document.display_name)
     response.headers["Cache-Control"] = "private, no-store"
@@ -472,7 +466,7 @@ def _source_crop_response(document, page_number, bbox, rotation=0, padding=0):
 
     pages = None
     try:
-        pages = load_document_pages(document.file_path)
+        pages = load_document_pages(storage_service.local_path(document.file_path))
         for number, page in enumerate(pages, start=1):
             try:
                 if number != page_number:
@@ -821,11 +815,11 @@ def portfolio_confirm(portfolio_id):
 @role_required("student")
 def portfolio_delete(portfolio_id):
     portfolio = owned_portfolio(portfolio_id, get_current_user())
-    file_paths = [Path(item.file_path) for item in portfolio.evidence_items if item.file_path]
+    locations = [item.file_path for item in portfolio.evidence_items if item.file_path]
     db.session.delete(portfolio)
     db.session.commit()
-    for file_path in file_paths:
-        file_path.unlink(missing_ok=True)
+    for location in locations:  # 刪除先標記，不直接永久刪除（V2 第 7 頁）
+        storage_service.mark_deleted(location, reason="student_deleted_portfolio")
     return redirect(url_for("student.portfolio_list"))
 
 
@@ -865,11 +859,8 @@ def evidence_upload(portfolio_id):
         safe_name = validate_upload_filename(uploaded.filename, current_app.config["ALLOWED_UPLOAD_EXTENSIONS"])
     except ValueError as exc:
         return str(exc), 400
-    folder = Path(current_app.config["UPLOAD_FOLDER"]) / str(get_current_user().id)
-    folder.mkdir(parents=True, exist_ok=True)
-    stored_path = folder / f"{uuid4().hex}_{safe_name}"
-    uploaded.save(stored_path)
-    db.session.add(PortfolioEvidence(portfolio_id=portfolio.id, evidence_type="file", display_name=safe_name, file_path=str(stored_path)))
+    location = storage_service.save(uploaded.read(), owner_id=get_current_user().id, folder="", filename=safe_name)
+    db.session.add(PortfolioEvidence(portfolio_id=portfolio.id, evidence_type="file", display_name=safe_name, file_path=location))
     db.session.commit()
     return redirect(url_for("student.portfolio_edit", portfolio_id=portfolio.id))
 
@@ -881,7 +872,7 @@ def _owned_evidence_or_404(evidence_id):
     owned_portfolio(evidence.portfolio_id, get_current_user())
     if evidence.external_url:
         return redirect(evidence.external_url)
-    if not evidence.file_path or not Path(evidence.file_path).is_file():
+    if not storage_service.exists(evidence.file_path):
         abort(404)
     return evidence
 
@@ -890,7 +881,8 @@ def _owned_evidence_or_404(evidence_id):
 @role_required("student")
 def evidence_download(evidence_id):
     evidence = _owned_evidence_or_404(evidence_id)
-    return send_file(evidence.file_path, as_attachment=True, download_name=evidence.display_name)
+    return send_file(storage_service.local_path(evidence.file_path).resolve(), as_attachment=True,
+                     download_name=evidence.display_name)
 
 
 @student_bp.get("/student/evidence/<int:evidence_id>/view")
@@ -908,11 +900,10 @@ def evidence_delete(evidence_id):
     if not evidence:
         abort(404)
     portfolio = owned_portfolio(evidence.portfolio_id, get_current_user())
-    file_path = evidence.file_path
+    location = evidence.file_path
     db.session.delete(evidence)
     db.session.commit()
-    if file_path:
-        Path(file_path).unlink(missing_ok=True)
+    storage_service.mark_deleted(location, reason="student_deleted_evidence")
     return redirect(url_for("student.portfolio_edit", portfolio_id=portfolio.id))
 
 
