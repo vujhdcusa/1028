@@ -12,6 +12,7 @@
 
 import hashlib
 import re
+import ssl
 import urllib.request
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -56,10 +57,21 @@ def add_source(name, url=None, upload_name=None):
     return source
 
 
+def _ssl_context():
+    """照常驗證憑證與網域；只關掉 Python 3.13 新增的嚴格 X.509 檢查。
+
+    部分學校與政府網站（例如技專校院招生委員會聯合會）的憑證缺少 Subject Key Identifier，
+    瀏覽器可以開，但嚴格檢查會拒絕連線。
+    """
+    context = ssl.create_default_context()
+    context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    return context
+
+
 def fetch_url(url):
     """下載官方網頁或 PDF，回傳 (內容, Content-Type)。"""
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=30) as response:
+    with urllib.request.urlopen(request, timeout=30, context=_ssl_context()) as response:
         content = response.read(MAX_DOWNLOAD + 1)
         if len(content) > MAX_DOWNLOAD:
             raise ValueError("檔案超過 30MB，請改用手動上傳")
@@ -109,7 +121,7 @@ def check_source(source, requester, fetch=fetch_url, content=None, content_type=
     try:
         if content is None:
             content, content_type = fetch(source.url)
-        digest = hashlib.sha256(content).hexdigest()
+        digest = _fingerprint(content, content_type)
         previous = (PublicSourceSnapshot.query.filter_by(source_id=source.id)
                     .order_by(PublicSourceSnapshot.id.desc()).first())
         if previous and previous.content_hash == digest:
@@ -133,10 +145,10 @@ def check_source(source, requester, fetch=fetch_url, content=None, content_type=
         return _finish(task, "failed", error=f"抓取失敗：{exc}")
 
 
-def check_all(requester):
-    """排程用：檢查所有啟用中的網址來源（flask agent-check）。"""
+def check_all(requester, fetch=fetch_url):
+    """排程用：檢查所有啟用中的網址來源（flask agent-check、升學 Agent 巡查）。fetch 可換成假的（測試用）。"""
     sources = PublicSource.query.filter_by(is_active=True, source_type="url").all()
-    return [check_source(source, requester) for source in sources]
+    return [check_source(source, requester, fetch=fetch) for source in sources]
 
 
 # ---------- 第三階段：擷取加權 ----------
@@ -190,8 +202,28 @@ def _extract_prompt(keywords, page_text=None):
     return prompt
 
 
+# 網頁上每次都會變、但和招生內容無關的計數器，比對前先拿掉（例如「網站人次：1666538」）
+COUNTER = re.compile(r"(網站|瀏覽|訪客|參觀|累計|今日|本日)?(人次|人數|點閱數|點閱率|瀏覽數)\s*[:：]?\s*[\d,]+")
+
+
+def _decode(content):
+    """學校網站常是 Big5：先試 UTF-8，不行再用 cp950（Big5 的 Windows 版）。"""
+    try:
+        return content.decode("utf-8")
+    except UnicodeDecodeError:
+        return content.decode("cp950", errors="ignore")
+
+
+def _fingerprint(content, content_type):
+    """判斷來源有沒有更新用的雜湊：PDF 比原始檔；網頁比去掉標籤與計數器後的文字。"""
+    if content_type == "text/html":
+        text = COUNTER.sub(" ", _html_to_text(content))
+        return hashlib.sha256(re.sub(r"\s+", " ", text).strip().encode("utf-8")).hexdigest()
+    return hashlib.sha256(content).hexdigest()
+
+
 def _html_to_text(content):
-    text = content.decode("utf-8", errors="ignore")
+    text = _decode(content)
     text = re.sub(r"(?is)<(script|style).*?</\1>", " ", text)
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", text))
 

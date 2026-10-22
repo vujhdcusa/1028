@@ -14,6 +14,7 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from app.extensions import db
 from app.models import (
     AdmissionProgram,
+    AgentTask,
     AuditLog,
     CredentialRecord,
     DocumentExtraction,
@@ -1009,6 +1010,25 @@ def schedule():
         targets=[{"program": t.program, "schedule": timeline(t.program), "links": admission_links(t.program, school_links)}
                  for t in targets],
     )
+
+
+@student_bp.post("/student/agent/advise")
+@role_required("student")
+def agent_advise():
+    """升學 Agent：排序校系，並為已選的目標校系準備自傳草稿。"""
+    from app.services.agent_advisor import run_advisor
+    result = run_advisor(get_current_user())
+    return redirect(url_for("student.agent_run", task_id=result["task_id"]))
+
+
+@student_bp.get("/student/agent/runs/<int:task_id>")
+@role_required("student")
+def agent_run(task_id):
+    user = get_current_user()
+    task = db.session.get(AgentTask, task_id)
+    if not task or task.requester_id != user.id or task.task_type != "agent_advisor":
+        abort(404)
+    return render_template("student_agent_run.html", user=user, task=task, run=task.result_json or {})
 
 
 @student_bp.post("/student/targets/<int:program_id>/remove")

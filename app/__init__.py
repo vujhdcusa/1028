@@ -30,6 +30,8 @@ def create_app(config_overrides=None):
     app.add_template_filter(traditional_text, "traditional_text")
     from app.services.ocr_trace import describe_step
     app.add_template_filter(describe_step, "ocr_step")
+    from app.services.agent_engine import taipei_time
+    app.add_template_filter(taipei_time, "taipei_time")
 
     from app.routes.main import main_bp
     from app.routes.admin import admin_bp
@@ -70,6 +72,19 @@ def create_app(config_overrides=None):
         for task in check_all(admin):
             result = task.error_message or ("有更新" if task.result_json.get("changed") else "沒有更新")
             print(f"來源 {task.target_id}：{result}")
+
+    @app.cli.command("agent-patrol")
+    def agent_patrol_command():
+        """升學 Agent 背景巡查：檢查官方來源、把更新擷取成候選校系（給排程用）。"""
+        from app.models import User
+        from app.services.agent_patrol import run_patrol
+        admin = User.query.filter_by(role="admin").order_by(User.id).first()
+        if not admin:
+            print("找不到管理者帳號，無法記錄執行者。")
+            return
+        result = run_patrol(admin)
+        mode = "AI 決定步驟" if result["mode"] == "ai" else "固定流程"
+        print(f"升學 Agent 巡查（{mode}）：{result['summary']}")
 
     if app.config["OCR_QUEUE_MODE"] == "thread":
         from app.services.ocr_queue import recover_on_startup

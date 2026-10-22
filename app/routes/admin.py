@@ -302,7 +302,7 @@ def agent_home():
                .join(PublicSourceSnapshot, PublicSourceChange.snapshot_id == PublicSourceSnapshot.id)
                .join(PublicSource, PublicSourceSnapshot.source_id == PublicSource.id)
                .order_by(PublicSourceChange.id.desc()).limit(20).all())
-    tasks = (AgentTask.query.filter(AgentTask.task_type.in_(["admission_source_check", "admission_extract"]))
+    tasks = (AgentTask.query.filter(AgentTask.task_type.in_(["admission_source_check", "admission_extract", "agent_patrol"]))
              .order_by(AgentTask.id.desc()).limit(15).all())
     return render_template(
         "admin_agent.html",
@@ -349,6 +349,14 @@ def agent_check_source(source_id):
         return redirect(url_for("admin.agent_home", error=task.error_message))
     text = "內容有更新，已建立變更，可以擷取加權" if task.result_json["changed"] else "內容和上次一樣，沒有更新"
     return redirect(url_for("admin.agent_home", message=f"「{source.name}」：{text}"))
+
+
+@admin_bp.post("/admin/agent/patrol")
+@role_required("admin")
+def agent_patrol():
+    from app.services.agent_patrol import run_patrol
+    result = run_patrol(get_current_user())
+    return redirect(url_for("admin.agent_home", message=result["summary"]))
 
 
 @admin_bp.post("/admin/agent/changes/<int:change_id>/extract")

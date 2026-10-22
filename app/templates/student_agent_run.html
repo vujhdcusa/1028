@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
+{% set page_name = "student-agent-run" %}
+
+{% block title %}升學 Agent｜資管科智慧學習歷程系統{% endblock %}
+
+{% block navigation %}{{ masthead(user, "目標校系") }}{% endblock %}
+
+{% block content %}
+{{ page_band("升學 Agent") }}
+<div class="page page--banded">
+  <div class="record-card__actions mb-1">
+    <a class="button button--small button--quiet" href="{{ url_for('student.matching') }}">← 回推薦排序</a>
+    <form method="post" action="{{ url_for('student.agent_advise') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--line" type="submit">再請 Agent 規劃一次</button></form>
+  </div>
+
+  <section class="sheet mb-1" aria-labelledby="advice-title">
+    <div class="sheet__head">
+      <h2 id="advice-title">Agent 的建議</h2>
+      <span class="tag {{ 'tag--info' if run.mode == 'ai' else '' }}">{{ "AI 決定步驟" if run.mode == "ai" else "固定流程" }}</span>
+    </div>
+    {% if run.fallback_reason %}<p class="small muted mb-1">AI 這次不能用（{{ run.fallback_reason }}），改用固定流程完成。</p>{% endif %}
+    <div class="mb-1">{% for line in (run.summary or "").split("\n") if line.strip() %}<p>{{ line }}</p>{% endfor %}</div>
+    {% if run.links %}
+    <div class="record-card__actions">
+      {% for link in run.links %}<a class="button button--small" href="{{ url_for(link.endpoint, **link.params) }}">{{ link.label }} →</a>{% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="sheet" aria-labelledby="steps-title">
+    <div class="sheet__head"><h2 id="steps-title">Agent 做了哪些事</h2></div>
+    <ol>
+      {% for step in run.steps or [] %}<li class="mb-1"><strong>{{ step.label }}</strong>：{{ step.summary }}</li>{% endfor %}
+    </ol>
+    <p class="small muted">{{ task.created_at|taipei_time }} 執行。Agent 只會排序、提醒、產生草稿；目標校系由你決定，草稿要你自己檢查修改後才算數。契合度不是錄取機率，能不能報與錄取以招生簡章為準。</p>
+  </section>
+</div>
+{% endblock %}
+
+{% block footer %}{{ footer() }}{% endblock %}
