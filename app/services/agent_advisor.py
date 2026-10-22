@@ -10,6 +10,7 @@
 from app.extensions import db
 from app.models import LearningProfileOutput, StudentTarget
 from app.services import ai_quota_service, autobiography_service, student_rules
+from app.services.agent_file_tool import document_tools
 from app.services.admission_service import published_programs
 from app.services.agent_engine import AiDecider, Tool, ToolError, run
 from app.services.gemini_client import AIUnavailable, ai_ready
@@ -114,6 +115,7 @@ def _tools(student, generate):
         Tool("list_my_targets", "查目標校系", "列出學生已選的目標校系、各自能不能報，以及是否回答過自傳問題。", list_targets),
         Tool("draft_autobiography", "準備自傳草稿", "為學生已選的一個目標校系產生自傳草稿（每段標出依據）；學生要先回答過自傳問題。",
              draft, params={"program_id": "目標校系的編號（從目標校系清單取得）"}),
+        *document_tools(student),  # 依檔案編號取檔：只讀、檢查擁有者、去識別化（T3）
     ]
 
 

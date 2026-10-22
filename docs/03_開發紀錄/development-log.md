@@ -1,5 +1,25 @@
 # 開發日誌
 
+## 2026-10-22 檔案存放可替換：本機／Google 雲端硬碟（StorageService）、Agent 依檔案編號取檔
+
+日期：2026-10-22（台灣時間）
+
+開發者：Claude（分支 `feat/cloud-storage`）
+
+目標：依 V2 架構與 V1 規格「檔案存放要做成可替換的」，上傳檔案改走 StorageService；Agent 只能透過後端依檔案編號取檔。
+
+- 新增 `app/services/storage_service.py`：`LocalStorage`（現有行為，位置仍是原本的路徑）與 `GoogleDriveStorage`（只用 `drive.file`，位置記成 `drive:<檔案 ID>/<存檔名稱>`，沿用 `file_path` 欄位，**沒有新增資料庫遷移**）。`STORAGE_BACKEND` 預設 `local`；沒設定、沒連線或上傳失敗一律存本機。權杖只放伺服器記憶體。
+- 上傳流程（成績單／證照、獎懲記錄、佐證檔案）、預覽、下載、裁切、OCR 佇列都改走 StorageService；Drive 檔案讀本機快取 `drive-cache/`，快取不見時由後端取回。
+- 刪除改成只標記（本機 `.deleted.json`、Drive `appProperties`），不永久刪除；資料庫沒存進去的孤兒檔才丟掉。送審快照沒有改動。
+- 新增管理員「檔案存放設定」頁（`/admin/storage`，連線／中斷 Google，記稽核紀錄）。
+- 新增 `app/services/agent_file_tool.py`（「查我的檔案」「取檔案內容」，只讀、檢查擁有者、白名單欄位、不拿原始檔、不碰 Drive）與 `app/services/deidentify.py`（姓名、學號、帳號、電子郵件、證號、電話、8～10 位數編號）；接進升學 Agent 學生觸發的工具。
+- 設定文件：`docs/03_開發紀錄/01_參考與環境設定/Google雲端硬碟存放_設定步驟.md`（Google Cloud 設定、`.env`、移除方式）。
+- 測試：新增 `test_storage_service.py`、`test_cloud_storage_routes.py`、`test_agent_file_tool.py`（先看失敗再實作）。完整測試結果見下。
+- **只用假物件測過**：Drive 上傳、下載、標記、垃圾桶、資料夾建立、權杖更新、OAuth 授權碼交換（`HttpDriveClient` 沒有連過真的 Google）。
+- **需要使用者設定 OAuth 才能實測**：依設定文件填 `.env`、管理員連線後，實際上傳到個人 Google 雲端硬碟並預覽。
+- 本機模式瀏覽器實測（5019 埠）：因用量上限，本輪未完成。
+
+
 ## 2026-10-22 升學 Agent：真的 Gemini 實測與修正
 
 日期：2026-10-22（台灣時間）

@@ -39,6 +39,10 @@ class Config:
     GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
     GOOGLE_OAUTH_REDIRECT_URI = os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "")
     GOOGLE_PICKER_API_KEY = os.getenv("GOOGLE_PICKER_API_KEY", "")
+    # 學生上傳檔案存哪裡（app/services/storage_service.py）：local＝本機（預設）；google_drive＝Google 雲端硬碟。
+    # google_drive 還要填 GOOGLE_STORAGE_REDIRECT_URI，並由管理員在「檔案存放設定」連線；沒連上一律存本機。
+    STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local").strip().lower()
+    GOOGLE_STORAGE_REDIRECT_URI = os.getenv("GOOGLE_STORAGE_REDIRECT_URI", "")
     GOOGLE_CLOUD_PROJECT_NUMBER = os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER", "")
     # 小助手對話次數多，用較輕量的模型，和自傳、簡章擷取分開計算每日額度
     ASSISTANT_MODEL = os.getenv("ASSISTANT_MODEL", "gemini-flash-lite-latest")
