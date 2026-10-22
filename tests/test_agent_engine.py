@@ -380,3 +380,41 @@ def test_big5_pages_are_read_as_chinese_text():
     text = admission_agent_service._html_to_text(PAGE.format(date="4/20", count="1").encode("cp950"))
 
     assert "二技技優甄審" in text and "網路報名" in text
+
+
+# ---------- 真的 Gemini：工具呼叫要原封不動送回 thoughtSignature ----------
+
+def test_ai_decider_replays_thought_signature_and_only_the_executed_call(app):
+    seen = []
+
+    def fake_chat(contents, declarations, instruction):
+        seen.append(contents)
+        if len(seen) == 1:
+            return {"role": "model", "parts": [
+                {"functionCall": {"name": "echo", "args": {"text": "甲"}}, "thoughtSignature": "SIG-1"},
+                {"functionCall": {"name": "echo", "args": {"text": "乙"}}}]}
+        return {"role": "model", "parts": [{"text": "好"}]}
+
+    calls = []
+    run(task_type="test_run", goal="目標", tools=[echo_tool(calls)], requester=user("admin"),
+        decide=AiDecider("說明", chat=fake_chat), fallback=finish_plan)
+
+    replayed = seen[1][1]["parts"]
+    assert calls == ["甲"]
+    assert replayed == [{"functionCall": {"name": "echo", "args": {"text": "甲"}}, "thoughtSignature": "SIG-1"}]
+    assert "SIG-1" not in json.dumps(db.session.get(AgentTask, 1).result_json)  # 簽章只在記憶體裡，不寫進紀錄
+
+
+def test_ai_summary_markdown_marks_are_removed(app):
+    result = run(task_type="test_run", goal="測試", tools=[], requester=user("admin"),
+                 decide=scripted({"finish": "## 建議\n1. **先補證照**，再寫自傳。"}), fallback=finish_plan)
+
+    assert result["summary"] == "建議\n1. 先補證照，再寫自傳。"
+
+
+def test_agent_buttons_tell_the_user_to_wait(app):
+    html = login(app, "stu").get("/student/matching").get_data(as_text=True)
+    admin_html = login(app, "admin").get("/admin/agent").get_data(as_text=True)
+
+    assert 'data-busy-text="Agent 正在規劃' in html
+    assert 'data-busy-text="Agent 巡查中' in admin_html

@@ -12,7 +12,7 @@
   <p class="muted mb-1">系統把全部校系依「能不能報」和「契合度」排好，每一間都寫了理由，不能報的也會告訴你為什麼。這只是幫你找方向，目標校系由你自己決定。</p>
   <div class="record-card__actions mb-1">
     <a class="button button--small button--quiet" href="{{ url_for('student.target_list') }}">← 回目標校系</a>
-    <form method="post" action="{{ url_for('student.agent_advise') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small" type="submit">請升學 Agent 幫我規劃</button></form>
+    <form method="post" action="{{ url_for('student.agent_advise') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small" type="submit" data-busy-text="Agent 正在規劃…（約 30 秒～1 分鐘）">請升學 Agent 幫我規劃</button></form>
   </div>
 
   {% if rows %}

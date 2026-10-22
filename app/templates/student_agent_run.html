@@ -11,7 +11,7 @@
 <div class="page page--banded">
   <div class="record-card__actions mb-1">
     <a class="button button--small button--quiet" href="{{ url_for('student.matching') }}">← 回推薦排序</a>
-    <form method="post" action="{{ url_for('student.agent_advise') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--line" type="submit">再請 Agent 規劃一次</button></form>
+    <form method="post" action="{{ url_for('student.agent_advise') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--line" type="submit" data-busy-text="Agent 正在規劃…（約 30 秒～1 分鐘）">再請 Agent 規劃一次</button></form>
   </div>
 
   <section class="sheet mb-1" aria-labelledby="advice-title">

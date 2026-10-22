@@ -10,6 +10,7 @@
 其他欄位會交回給 AI 判斷下一步。
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable
@@ -65,19 +66,28 @@ class AiDecider:
     def __call__(self, goal, steps, tools):
         contents = [{"role": "user", "parts": [{"text": goal}]}]
         for step in steps:
-            contents.append({"role": "model", "parts": [{"functionCall": {"name": step["tool"], "args": step["args"]}}]})
+            # Gemini 會在工具呼叫上附 thoughtSignature，下一輪要原封不動送回，否則回 400
+            parts = step.get("model_parts") or [{"functionCall": {"name": step["tool"], "args": step["args"]}}]
+            contents.append({"role": "model", "parts": parts})
             contents.append({"role": "user", "parts": [
                 {"functionResponse": {"name": step["tool"], "response": {"result": step["result"]}}}]})
         chat = self.chat or gemini_client.chat
         content = chat(contents, [tool.declaration() for tool in tools], self.instruction)
         parts = content.get("parts", [])
-        calls = [part["functionCall"] for part in parts if "functionCall" in part]
-        if calls:  # 一次只執行第一個工具，結果交回後再讓 AI 決定
-            return {"tool": calls[0].get("name"), "args": calls[0].get("args") or {}}
+        calls = [part for part in parts if "functionCall" in part]
+        if calls:  # 一次只執行第一個工具，結果交回後再讓 AI 決定；送回時也只留這一個呼叫
+            call = calls[0]["functionCall"]
+            return {"tool": call.get("name"), "args": call.get("args") or {}, "model_parts": [calls[0]]}
         text = "".join(part.get("text", "") for part in parts).strip()
         if not text:
             raise AIUnavailable("AI 沒有給出下一步。")
         return {"finish": text}
+
+
+def _plain(text):
+    """畫面不轉 Markdown：拿掉 AI 常用的 **粗體** 與 # 標題符號。"""
+    text = re.sub(r"(\*\*|__)(.+?)\1", r"\2", text)
+    return re.sub(r"(?m)^\s*#{1,6}\s*", "", text).strip()
 
 
 def _execute(tools, name, args):
@@ -113,13 +123,14 @@ def run(*, task_type, goal, tools, requester, decide, fallback, max_steps=6, tar
             mode, fallback_reason = "rule", str(exc)
             decision = fallback(goal, steps, tools)
         if "finish" in decision:
-            summary = decision["finish"]
+            summary = _plain(decision["finish"])
             break
         result = _execute(registry, decision.get("tool"), decision.get("args"))
         steps.append({
             "tool": decision.get("tool"),
             "label": registry[decision["tool"]].label if decision.get("tool") in registry else decision.get("tool"),
             "args": decision.get("args") or {},
+            "model_parts": decision.get("model_parts"),  # 只在這次執行的記憶體裡，不寫進紀錄
             "result": result,
             "summary": result.get("error") or result.get("summary", ""),
         })
