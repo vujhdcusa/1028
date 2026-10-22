@@ -232,3 +232,88 @@ def test_matching_page_requires_student_login(site):
     response = site.test_client().get("/student/matching")
 
     assert response.status_code in (302, 401, 403)
+
+
+# ---------- 招生連結 ----------
+
+from app.services.admission_links import admission_links, load_school_links  # noqa: E402
+
+
+def _program(code="208003", school="國立臺北商業大學", source_url=None):
+    return AdmissionProgram(program_code=code, admission_year=116, school_name=school,
+                            department_name="資訊管理系", source_url=source_url)
+
+
+SCHOOLS = {"國立臺北商業大學": "https://admis.ntub.edu.tw/"}
+
+
+def test_links_include_school_admission_site_and_joint_entry_for_skill_review_codes():
+    links = admission_links(_program(), SCHOOLS)
+
+    assert [link["url"] for link in links] == ["https://admis.ntub.edu.tw/", "https://www.jctv.ntut.edu.tw/enter/"]
+    assert "國立臺北商業大學" in links[0]["label"]
+    assert "技優" in links[1]["label"]
+
+
+def test_school_application_programs_without_numeric_code_only_link_the_school():
+    links = admission_links(_program(code="DAY-NTUB-IM"), SCHOOLS)
+
+    assert [link["url"] for link in links] == ["https://admis.ntub.edu.tw/"]
+
+
+def test_agent_source_url_is_listed_first():
+    links = admission_links(_program(source_url="https://example.edu.tw/brochure.pdf"), SCHOOLS)
+
+    assert links[0]["url"] == "https://example.edu.tw/brochure.pdf"
+    assert "簡章" in links[0]["label"]
+
+
+def test_unknown_school_still_gets_joint_entry_but_no_made_up_site():
+    links = admission_links(_program(school="不存在大學"), SCHOOLS)
+
+    assert [link["url"] for link in links] == ["https://www.jctv.ntut.edu.tw/enter/"]
+
+
+def test_load_school_links_reads_csv(tmp_path):
+    path = tmp_path / "links.csv"
+    path.write_text("學校,招生網址,確認日期\n國立臺北商業大學,https://admis.ntub.edu.tw/,2026-10-22\n", encoding="utf-8-sig")
+
+    assert load_school_links(path) == {"國立臺北商業大學": "https://admis.ntub.edu.tw/"}
+
+
+def test_every_school_in_seed_data_has_an_official_link():
+    import csv
+    from pathlib import Path
+    content = Path(__file__).resolve().parents[1] / "app" / "content"
+    schools = set()
+    for name in ("admission_seed_115.csv", "admission_demo_national_116.csv", "admission_demo_dayapply_115.csv"):
+        with open(content / name, encoding="utf-8-sig") as handle:
+            schools |= {row["學校"] for row in csv.DictReader(handle)}
+
+    links = load_school_links()
+
+    assert schools <= set(links)
+    assert all(url.startswith("https://") and ".edu.tw" in url for url in links.values())
+
+
+def test_matching_page_shows_admission_links(site):
+    with site.app_context():
+        program = AdmissionProgram.query.filter_by(program_code="900002").one()
+        program.source_url = "https://example.edu.tw/brochure.pdf"
+        db.session.commit()
+
+    html = login(site).get("/student/matching").get_data(as_text=True)
+
+    assert "https://example.edu.tw/brochure.pdf" in html
+    assert 'rel="noopener noreferrer"' in html
+
+
+def test_targets_page_cards_show_admission_links(site):
+    with site.app_context():
+        program = AdmissionProgram.query.filter_by(program_code="900002").one()
+        program.source_url = "https://example.edu.tw/targets-brochure.pdf"
+        db.session.commit()
+
+    html = login(site).get("/student/targets").get_data(as_text=True)
+
+    assert "https://example.edu.tw/targets-brochure.pdf" in html

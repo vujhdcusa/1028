@@ -37,6 +37,7 @@ from app.services.learning_profile_docx_service import output_to_docx_bytes
 from app.services.learning_profile_service import generate_learning_profile_outputs
 from app.services.admission_service import published_programs
 from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
+from app.services.admission_links import admission_links, load_school_links
 from app.services.matching_service import rank_programs
 from app.services.gap_checklist import download_checklist, review_timeline
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
@@ -963,6 +964,7 @@ def target_list():
     journey = build_journey(user)
     selected = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id).all()}
     programs = published_programs()
+    school_links = load_school_links()
     return render_template(
         "student_targets.html",
         user=user,
@@ -971,6 +973,7 @@ def target_list():
         slots=student_rules.target_slots(user),
         cancelled_programs=_cancelled_autobiography_programs(user),
         gaps={p.id: analyze_gap(user, p, journey) for p in programs},
+        links={p.id: admission_links(p, school_links) for p in programs},
         focus=focus_view(user, journey),
         error=error,
     ), (400 if error else 200)

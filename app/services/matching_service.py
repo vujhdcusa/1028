@@ -15,6 +15,7 @@
 import csv
 from pathlib import Path
 
+from app.services.admission_links import admission_links, load_school_links
 from app.services.gap_service import ALL_LABELS, analyze_gap
 from app.services.journey_service import build_journey
 
@@ -108,9 +109,10 @@ def _relation_reason(related):
 
 
 def rank_programs(student, programs, journey=None, conditions=None):
-    """回傳排序好的 [{program, status, status_label, fit, related, reasons, gap}]。"""
+    """回傳排序好的 [{program, status, status_label, fit, related, reasons, gap, links}]。"""
     journey = journey or build_journey(student)
     conditions = load_conditions() if conditions is None else conditions
+    school_links = load_school_links()
     rows = []
     for program in programs:
         gap = analyze_gap(student, program, journey)
@@ -124,6 +126,7 @@ def rank_programs(student, programs, journey=None, conditions=None):
             "related": related,
             "reasons": condition_reasons + [_relation_reason(related)] + _fit_reasons(gap),
             "gap": gap,
+            "links": admission_links(program, school_links),
         })
     rows.sort(key=lambda row: (STATUS_ORDER[row["status"]], not row["related"], row["fit"] is None, -(row["fit"] or 0)))
     return rows

@@ -26,6 +26,9 @@
       <ul>
         {% for reason in row.reasons %}<li>{{ reason }}</li>{% endfor %}
       </ul>
+      {% if row.links %}
+      <p class="small mt-1">招生資訊：{% for link in row.links %}<a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>{% if not loop.last %}／{% endif %}{% endfor %}</p>
+      {% endif %}
       {% if row.status != "ineligible" %}
       <div class="record-card__actions mt-1">
         {% if program.id in selected %}
