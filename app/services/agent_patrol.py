@@ -16,7 +16,7 @@ GOAL = "請巡查招生資料的官方來源：先檢查有沒有更新，再把
 INSTRUCTION = """你是康寧大學資管科學習歷程系統的「升學 Agent」，現在做背景巡查。
 規則：
 1. 先用工具檢查官方來源，再列出等待擷取的變更；只擷取列出來的變更編號，不要自己編號碼。
-2. 擷取的結果只是「候選」，要等管理員核准；總結時不要說已經發布或學生已經看得到。
+2. 擷取的結果（候選校系、候選日程）只是「候選」，要等管理員核准；總結時不要說已經發布或學生已經看得到。
 3. 工具回傳錯誤時，說明原因，不要一直重試同一個動作。
 4. 不要用 Markdown 符號（例如 ** 或 #）。最後用繁體中文、三句話以內總結：檢查了幾個來源、哪些有更新、建立了哪些候選校系、管理員下一步要做什麼。"""
 
@@ -60,14 +60,17 @@ def _tools(requester, fetch, generate):
         if task.status != "succeeded":
             raise ToolError(task.error_message or "擷取失敗。")
         created = task.result_json.get("created", [])
+        schedule = task.result_json.get("schedule_created", 0)
         return {"summary": f"變更 {change_id} 擷取出 {len(created)} 個候選校系"
-                           + (f"（{'、'.join(created)}）" if created else "") + "，等管理員核准。",
-                "created": created, "skipped": len(task.result_json.get("skipped", []))}
+                           + (f"（{'、'.join(created)}）" if created else "")
+                           + (f"、{schedule} 個候選日程" if schedule else "") + "，等管理員核准。",
+                "created": created, "schedule_created": schedule,
+                "skipped": len(task.result_json.get("skipped", []))}
 
     return [
         Tool("check_sources", "檢查官方來源", "下載所有登記的招生官方網址，和上次比對有沒有更新。", check_sources),
         Tool("list_pending_changes", "列出待擷取的更新", "列出已偵測到、還沒擷取的來源變更與編號。", list_pending_changes),
-        Tool("extract_change", "擷取成候選校系", "把一個變更的簡章交給 AI，擷取資管相關校系的備審加權，建立候選版本。",
+        Tool("extract_change", "擷取成候選校系", "把一個變更的簡章交給 AI，擷取資管相關校系的備審加權與重要日程，建立候選版本。",
              extract_change, params={"change_id": "要擷取的變更編號（從待擷取清單取得）"}),
     ]
 
@@ -89,12 +92,15 @@ def _fixed_plan(can_extract):
                     return {"tool": "extract_change", "args": {"change_id": change_id}}
         check = next(s for s in steps if s["tool"] == "check_sources")["summary"]
         created = [code for s in steps if s["tool"] == "extract_change" for code in s["result"].get("created", [])]
+        schedule = sum(s["result"].get("schedule_created", 0) for s in steps if s["tool"] == "extract_change")
         parts = [f"巡查完成：{check}"]
         if created:
             parts.append(f"建立 {len(created)} 個候選校系（{'、'.join(created)}），請到招生資料 Agent 頁比對後核准。")
+        if schedule:
+            parts.append(f"建立 {schedule} 個候選日程，請到招生資料 Agent 頁比對後核准。")
         if pending and not can_extract:
             parts.append(f"有 {len(pending)} 個變更等待擷取；擷取需要 AI（尚未設定或暫時不能用），請之後在招生資料 Agent 頁按「擷取加權」。")
-        elif not pending and not created:
+        elif not pending and not created and not schedule:
             parts.append("沒有需要擷取的更新。")
         return {"finish": "".join(parts)}
     return plan

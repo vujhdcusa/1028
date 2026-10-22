@@ -68,6 +68,32 @@ class AdmissionRequirementItem(db.Model):
         return [key for key in (self.mapped_categories or "").split(",") if key]
 
 
+class AdmissionScheduleEvent(db.Model):
+    """招生重要日程的一個項目（例如「網路報名」）。
+
+    status：candidate（Agent 擷取的候選）／published（管理員核准，招生時程頁使用）／
+            retired（被新核准的版本取代）／rejected（管理員退回）
+    同一個招生管道、同一個學年度核准後，會整組取代 app/content/admission_schedule.csv 的日程。
+    """
+
+    __tablename__ = "admission_schedule_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+    channel = db.Column(db.String(30), nullable=False, index=True)
+    admission_year = db.Column(db.Integer, nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    start_at = db.Column(db.DateTime, nullable=False)
+    end_at = db.Column(db.DateTime, nullable=True)
+    note = db.Column(db.String(255), nullable=True)
+    source_url = db.Column(db.String(500), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="candidate", index=True)
+    data_origin = db.Column(db.String(20), nullable=False, default="agent")
+    change_id = db.Column(db.Integer, db.ForeignKey("public_source_changes.id"), nullable=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+
+
 class StudentTarget(db.Model):
     """學生選擇的目標校系；可以選多個，用來切換比較。"""
 

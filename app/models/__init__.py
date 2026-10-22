@@ -25,6 +25,7 @@ from app.models.user import StudentProfile, User
 from app.models.admission import (
     AdmissionProgram,
     AdmissionRequirementItem,
+    AdmissionScheduleEvent,
     ClassAdvisor,
     PackageReview,
     StudentTarget,
@@ -83,6 +84,7 @@ __all__ = [
     "PublicSourcePublication",
     "AdmissionProgram",
     "AdmissionRequirementItem",
+    "AdmissionScheduleEvent",
     "StudentTarget",
     "ClassAdvisor",
     "PackageReview",

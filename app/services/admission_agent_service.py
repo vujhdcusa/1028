@@ -23,6 +23,7 @@ from app.extensions import db
 from app.models import (
     AdmissionProgram,
     AdmissionRequirementItem,
+    AdmissionScheduleEvent,
     AgentTask,
     PublicSource,
     PublicSourceChange,
@@ -182,9 +183,31 @@ EXTRACT_SCHEMA = {
                 "required": ["program_code", "admission_year", "school_name", "department_name", "items"],
             },
         },
+        "schedule": {
+            "type": "OBJECT",
+            "properties": {
+                "channel": {"type": "STRING"},
+                "admission_year": {"type": "INTEGER"},
+                "events": {
+                    "type": "ARRAY",
+                    "items": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "name": {"type": "STRING"},
+                            "start": {"type": "STRING"},
+                            "end": {"type": "STRING"},
+                            "note": {"type": "STRING"},
+                        },
+                        "required": ["name", "start"],
+                    },
+                },
+            },
+        },
     },
     "required": ["programs"],
 }
+
+SCHEDULE_CHANNELS = {"skill_review"}
 
 
 def _extract_prompt(keywords, page_text=None):
@@ -196,7 +219,18 @@ def _extract_prompt(keywords, page_text=None):
 - items：備審資料（第二階段）的每個評分項目名稱與加權百分比（整數，照原文）
 - categories：建議這個項目對應的資料類別，只能從這些代碼選：{categories}
 
-規則：只擷取文件裡真的有寫的內容，看不清楚或沒有寫的不要猜；不符合關鍵字的科系不要列出。"""
+規則：只擷取文件裡真的有寫的內容，看不清楚或沒有寫的不要猜；不符合關鍵字的科系不要列出。
+
+另外，如果文件有「重要日程表」，請填 schedule：
+- channel：二技技優保送／技優甄審的日程填 skill_review；其他招生管道填 other
+- admission_year：學年度（民國年，例如 116）
+- events：考生要注意的每一個日程，只取【技優甄審】欄或兩欄共用的項目；學校之間的行政作業（例如寄送錄取名單）不要列
+  - 只出現在【技優保送】欄的項目（例如網路查詢成績排名、成績排名複查、網路選填志願）不要列；日期請對準【技優甄審】欄那一列
+  - name：項目名稱，20 個字以內（例如「網路報名」「登記就讀志願序」）；說明、電話、注意事項一律放 note，不要放進 name
+  - start、end：轉成西元「YYYY-MM-DD HH:MM」（民國年加 1911，例如 115.4.9 → 2026-04-09）；沒寫時間的開始用 00:00、結束用 23:59
+  - 「…前」「…止」這種截止時間只有一個時間點：start 填那個時間、end 留空
+  - note：注意事項（例如「當日只到 17:00」），沒有就留空
+沒有日程表就不要填 schedule。"""
     if page_text:
         prompt += "\n\n文件內容：\n" + page_text[:200000]
     return prompt
@@ -281,8 +315,52 @@ def extract_programs(change, requester, generate=None):
                 weight_percent=weight, mapped_categories=",".join(keys), mapping_status="pending", sort_order=order,
             ))
         created.append(code)
+    schedule_created, schedule_skipped = _save_schedule(result.get("schedule") or {}, change, source)
     change.status = "extracted"
-    return _finish(task, "succeeded", {"created": created, "skipped": skipped})
+    return _finish(task, "succeeded", {"created": created, "skipped": skipped,
+                                       "schedule_created": schedule_created, "schedule_skipped": schedule_skipped})
+
+
+def _parse_time(text):
+    try:
+        return datetime.strptime(str(text or "").strip(), "%Y-%m-%d %H:%M")
+    except ValueError:
+        return None
+
+
+def _save_schedule(schedule, change, source):
+    """把擷取到的日程存成候選；日期看不懂、結束比開始早的項目略過。回傳 (新增數, 略過數)。"""
+    if schedule.get("channel") not in SCHEDULE_CHANNELS:
+        return 0, 0
+    try:
+        year = int(schedule.get("admission_year"))
+    except (TypeError, ValueError):
+        return 0, len(schedule.get("events") or [])
+    if not 100 <= year <= 200:
+        return 0, len(schedule.get("events") or [])
+    created = skipped = 0
+    for raw in schedule.get("events") or []:
+        name = str(raw.get("name", "")).strip()[:100]
+        start, end = _parse_time(raw.get("start")), _parse_time(raw.get("end")) if str(raw.get("end") or "").strip() else None
+        bad_end = str(raw.get("end") or "").strip() and end is None
+        if not name or start is None or bad_end or (end and end < start) or not 2000 <= start.year <= 2100:
+            skipped += 1
+            continue
+        duplicate = AdmissionScheduleEvent.query.filter(
+            AdmissionScheduleEvent.channel == schedule["channel"], AdmissionScheduleEvent.admission_year == year,
+            AdmissionScheduleEvent.name == name, AdmissionScheduleEvent.start_at == start,
+            AdmissionScheduleEvent.end_at.is_(end) if end is None else AdmissionScheduleEvent.end_at == end,
+            AdmissionScheduleEvent.status.in_(["candidate", "published"])).first()
+        if duplicate:
+            continue
+        db.session.add(AdmissionScheduleEvent(
+            channel=schedule["channel"], admission_year=year, name=name, start_at=start, end_at=end,
+            note=str(raw.get("note") or "").strip()[:255] or None,
+            source_url=None if source.url.startswith("upload://") else source.url,
+            status="candidate", data_origin="agent", change_id=change.id,
+        ))
+        created += 1
+    return created, skipped
 
 
 def compare_with_published(program):

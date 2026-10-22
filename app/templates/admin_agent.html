@@ -99,6 +99,36 @@
     {% endif %}
   </section>
 
+  {% if schedule_groups %}
+  <section class="work-panel">
+    <div class="work-panel__head"><div><h2>候選招生日程</h2><p>Agent 從官方日程表擷取的日程。<b>請對照原文</b>，整組核准後才會取代招生時程頁的日程；退回不會影響目前的日程。</p></div></div>
+    {% for group in schedule_groups %}
+    <h3>{{ group.year }} 學年度{{ group.label }}（{{ group.rows|length }} 項）{% if group.source %}<span class="small">：<a href="{{ group.source }}" target="_blank" rel="noopener noreferrer">原文</a></span>{% endif %}</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>項目</th><th>候選日期</th><th>和目前日程比</th></tr></thead>
+        <tbody>
+          {% for row in group.rows %}
+          {% set event = row.event %}
+          <tr>
+            <td><b>{{ event.name }}</b>{% if event.note %}<br><span class="small muted">{{ event.note }}</span>{% endif %}</td>
+            <td class="mono small">{{ event.start_at.strftime("%Y-%m-%d %H:%M") }}{% if event.end_at %} ～ {{ event.end_at.strftime("%m-%d %H:%M") }}{% endif %}</td>
+            <td><span class="tag {{ {'相同': 'tag--ok', '日期不同': 'tag--warn', '新增': 'tag--info'}[row.mark] }}">{{ row.mark }}</span>
+              {% if row.mark == "日期不同" %}<br><span class="small muted">目前：{{ row.current.start.strftime("%Y-%m-%d %H:%M") }}{% if row.current.end %} ～ {{ row.current.end.strftime("%m-%d %H:%M") }}{% endif %}</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if group.missing %}<p class="small">目前日程有、這次沒擷取到：{{ group.missing|join("、") }}（核准後這些項目會從招生時程頁消失，請確認原文真的沒有）。</p>{% endif %}
+    <div class="record-card__actions mb-1">
+      <form method="post" action="{{ url_for('admin.agent_schedule_decide', channel=group.channel, year=group.year, decision='approve') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small" type="submit">核准這一組（取代目前的日程）</button></form>
+      <form method="post" action="{{ url_for('admin.agent_schedule_decide', channel=group.channel, year=group.year, decision='reject') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small button--quiet" type="submit">退回</button></form>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
   <section class="work-panel">
     <div class="work-panel__head"><div><h2>執行紀錄</h2><p>最近 15 次。排程執行：<span class="mono">flask agent-check</span>（可用 Windows 工作排程器每月跑一次）。</p></div></div>
     <ul class="rule-item-list">

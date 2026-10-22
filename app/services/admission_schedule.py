@@ -10,6 +10,8 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
+from flask import has_app_context
+
 SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "content" / "admission_schedule.csv"
 
 CHANNEL_LABELS = {"skill_review": "二技技優甄審"}
@@ -23,12 +25,28 @@ def _parse(text):
     return datetime.strptime(text, "%Y-%m-%d %H:%M") if text else None
 
 
+def _published_events():
+    """管理員核准的日程（資料庫）。同一組（管道＋學年度）整組取代檔案裡的日程。"""
+    from app.models import AdmissionScheduleEvent
+    groups = {}
+    for event in AdmissionScheduleEvent.query.filter_by(status="published").order_by(AdmissionScheduleEvent.id):
+        groups.setdefault((event.channel, event.admission_year), []).append({
+            "name": event.name, "start": event.start_at, "end": event.end_at, "note": event.note or "",
+            "source": event.source_url or "",
+        })
+    return groups
+
+
 def load_schedule(path=None):
-    """回傳 {(管道, 學年度): [{name, start, end, note, source}]}，依開始時間排序。"""
+    """回傳 {(管道, 學年度): [{name, start, end, note, source}]}，依開始時間排序。
+
+    沒指定 path 時：先讀 app/content/admission_schedule.csv，再用管理員核准的日程（資料庫）整組取代。
+    """
+    use_database = path is None and has_app_context()
     path = path or SCHEDULE_FILE
-    if not Path(path).is_file():
-        return {}
     schedule = {}
+    if not Path(path).is_file():
+        return _sorted(_published_events()) if use_database else {}
     with open(path, encoding="utf-8-sig", newline="") as handle:
         for row in csv.DictReader(handle):
             schedule.setdefault((row["管道"].strip(), int(row["學年度"])), []).append({
@@ -38,9 +56,61 @@ def load_schedule(path=None):
                 "note": row["說明"].strip(),
                 "source": row["出處"].strip(),
             })
+    if use_database:
+        schedule.update(_published_events())
+    return _sorted(schedule)
+
+
+def _sorted(schedule):
     for events in schedule.values():
         events.sort(key=lambda event: event["start"].date())  # 同一天依官方表格順序（sort 是穩定排序）
     return schedule
+
+
+def schedule_groups():
+    """管理員核對用：候選日程依（管道、學年度）分組，逐項和目前使用的日程比對。"""
+    from app.models import AdmissionScheduleEvent
+    current = load_schedule()
+    candidates = {}
+    for event in AdmissionScheduleEvent.query.filter_by(status="candidate").order_by(AdmissionScheduleEvent.start_at):
+        candidates.setdefault((event.channel, event.admission_year), []).append(event)
+    groups = []
+    for (channel, year), events in sorted(candidates.items(), key=lambda item: -item[0][1]):
+        existing = current.get((channel, year), [])
+        used, rows = set(), []
+        for event in events:
+            index = _match(event, existing, used)
+            old = existing[index] if index is not None else None
+            if old is None:
+                mark = "新增"
+            elif old["start"] == event.start_at and old["end"] == event.end_at:
+                mark = "相同"
+            else:
+                mark = "日期不同"
+            rows.append({"event": event, "mark": mark, "current": old})
+        groups.append({"channel": channel, "year": year, "label": CHANNEL_LABELS.get(channel, channel), "rows": rows,
+                       "missing": [item["name"] for i, item in enumerate(existing) if i not in used],
+                       "source": events[0].source_url or ""})
+    return groups
+
+
+def _compact(name):
+    return "".join(ch for ch in name if ch.isalnum())
+
+
+def _match(event, existing, used):
+    """候選項目對應目前日程的哪一項：名稱相同 → 起訖時間相同 → 名稱互相包含。AI 常把說明併進名稱，所以不能只比名稱。"""
+    tests = (
+        lambda item: item["name"] == event.name,
+        lambda item: item["start"] == event.start_at and item["end"] == event.end_at,
+        lambda item: _compact(item["name"]) in _compact(event.name) or _compact(event.name) in _compact(item["name"]),
+    )
+    for test in tests:
+        for index, item in enumerate(existing):
+            if index not in used and test(item):
+                used.add(index)
+                return index
+    return None
 
 
 def program_channel(program):

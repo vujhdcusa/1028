@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from flask import Blueprint, abort, current_app, redirect, render_template, request, session, url_for
 
@@ -304,8 +304,10 @@ def agent_home():
                .order_by(PublicSourceChange.id.desc()).limit(20).all())
     tasks = (AgentTask.query.filter(AgentTask.task_type.in_(["admission_source_check", "admission_extract", "agent_patrol"]))
              .order_by(AgentTask.id.desc()).limit(15).all())
+    from app.services.admission_schedule import schedule_groups
     return render_template(
         "admin_agent.html",
+        schedule_groups=schedule_groups(),
         user=get_current_user(),
         sources=sources,
         latest=latest,
@@ -357,6 +359,31 @@ def agent_patrol():
     from app.services.agent_patrol import run_patrol
     result = run_patrol(get_current_user())
     return redirect(url_for("admin.agent_home", message=result["summary"]))
+
+
+@admin_bp.post("/admin/agent/schedule/<channel>/<int:year>/<decision>")
+@role_required("admin")
+def agent_schedule_decide(channel, year, decision):
+    """候選日程整組核准（取代目前的日程）或退回。"""
+    from app.models import AdmissionScheduleEvent
+    if decision not in ("approve", "reject"):
+        abort(404)
+    candidates = AdmissionScheduleEvent.query.filter_by(channel=channel, admission_year=year, status="candidate").all()
+    if not candidates:
+        abort(404)
+    actor, now = get_current_user(), datetime.now(timezone.utc)
+    if decision == "approve":
+        retired = AdmissionScheduleEvent.query.filter_by(channel=channel, admission_year=year, status="published").all()
+        for event in retired:
+            event.status = "retired"
+    for event in candidates:
+        event.status = "published" if decision == "approve" else "rejected"
+        event.reviewed_by, event.reviewed_at = actor.id, now
+    db.session.add(AuditLog(user_id=actor.id, action=f"admission_schedule.{decision}", target_type="admission_schedule",
+                            target_id=year, detail_json={"channel": channel, "year": year, "count": len(candidates)}))
+    db.session.commit()
+    text = "已核准，招生時程頁改用這一組日程" if decision == "approve" else "已退回這一組候選日程"
+    return redirect(url_for("admin.agent_home", message=f"{year} 學年度：{text}（{len(candidates)} 項）。"))
 
 
 @admin_bp.post("/admin/agent/changes/<int:change_id>/extract")
