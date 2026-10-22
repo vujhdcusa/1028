@@ -1160,6 +1160,8 @@ body[data-page="student-welcome"] .assistant { display: none; }
 
 /* Claude 審查修正：標語要在資料夾層上面（原本被 .scatter 蓋住，看起來很淡） */
 [data-page="public-home"] .cover__copy { z-index: 30; }
+/* 封面自成一個圖層：裡面的 z-index 只在封面內比較，捲動時整個封面都在刊頭（z-index 20）下面 */
+[data-page="public-home"] .cover.story-scene--scatter { isolation: isolate; }
 @media (max-width: 640px) {
   /* 手機：標語改上下兩行、夾著小人物，避免右邊被切掉 */
   [data-page="public-home"] .cover__title { grid-template-columns: 1fr; gap: 5.2rem; bottom: 12%; font-size: clamp(2rem, 10vw, 2.6rem); }
