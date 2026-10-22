@@ -22,7 +22,7 @@
   <p class="muted mb-1" data-tour="想去哪裡都可以選，隨時可以換。" data-tour-order="0">目標校系隨時可以更換。五年級準備備審資料時最多保留 5 所。</p>
   {% endif %}
   {% if focus %}{% include "partials/focus.html" %}{% endif %}
-  <div class="record-card__actions mb-1"><a class="button button--small button--line" href="{{ url_for('student.matching') }}">看全部校系的推薦排序 →</a></div>
+  <div class="record-card__actions mb-1"><a class="button button--small button--line" href="{{ url_for('student.matching') }}">看全部校系的推薦排序 →</a><a class="button button--small button--quiet" href="{{ url_for('student.schedule') }}">招生時程</a></div>
   {% if error %}
   <div class="mb-1">
     <p class="alert" role="alert">{{ error }}</p>

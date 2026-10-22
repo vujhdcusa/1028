@@ -38,6 +38,7 @@ from app.services.learning_profile_service import generate_learning_profile_outp
 from app.services.admission_service import published_programs
 from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
 from app.services.admission_links import admission_links, load_school_links
+from app.services.admission_schedule import CHECKED_ON, latest_timeline, timeline
 from app.services.matching_service import rank_programs
 from app.services.gap_checklist import download_checklist, review_timeline
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
@@ -990,6 +991,23 @@ def matching():
         user=user,
         rows=rank_programs(user, published_programs()),
         selected=selected,
+    )
+
+
+@student_bp.get("/student/schedule")
+@role_required("student")
+def schedule():
+    """招生時程：二技技優甄審的全國日程，以及每個目標校系該看哪裡。"""
+    user = get_current_user()
+    targets = StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
+    school_links = load_school_links()
+    return render_template(
+        "student_schedule.html",
+        user=user,
+        skill=latest_timeline("skill_review"),
+        checked_on=CHECKED_ON,
+        targets=[{"program": t.program, "schedule": timeline(t.program), "links": admission_links(t.program, school_links)}
+                 for t in targets],
     )
 
 

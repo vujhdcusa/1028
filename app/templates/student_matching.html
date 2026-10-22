@@ -26,6 +26,14 @@
       <ul>
         {% for reason in row.reasons %}<li>{{ reason }}</li>{% endfor %}
       </ul>
+      {% set sched = row.schedule %}
+      <p class="small mt-1">
+        {% if sched is none %}申請入學時程依各校簡章，請看下面的學校招生網站。
+        {% elif sched.next %}{% if sched.reference %}（參考 {{ sched.year }} 學年度）{% endif %}下一步：{{ sched.next.name }}（{{ sched.next.start.strftime('%Y/%m/%d') }}）
+        {% else %}{{ sched.year }} 學年度{{ sched.channel_label }}時程已結束，{{ sched.year + 1 }} 學年度尚未公告。
+        {% endif %}
+        <a href="{{ url_for('student.schedule') }}">看招生時程 →</a>
+      </p>
       {% if row.links %}
       <p class="small mt-1">招生資訊：{% for link in row.links %}<a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>{% if not loop.last %}／{% endif %}{% endfor %}</p>
       {% endif %}
