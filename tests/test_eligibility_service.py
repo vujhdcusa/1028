@@ -82,6 +82,12 @@ def test_too_few_professional_courses_needs_check(app):
     assert summary["main_group"] is None
 
 
+def test_needs_check_reason_names_courses_missing_from_curriculum(app):
+    student = make_student(courses=["計算機概論"])
+
+    assert "計算機概論" in summarize_student_groups(student)["reason"]
+
+
 def test_failed_courses_are_not_counted(app):
     student = make_student(courses=["程式設計", "網頁設計"])
     add_courses(student, ["資料結構", "計算機網路"], score=40)

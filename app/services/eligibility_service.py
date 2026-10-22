@@ -73,6 +73,8 @@ def department_groups(program, table=None):
 
 
 def _needs_check(summary, reason):
+    if summary["unmatched"]:
+        reason += f"這些課名對不到課綱，請確認：{'、'.join(summary['unmatched'])}。"
     summary.update(status="needs_check", main_group=None, reason=f"學群待確認：{reason}")
     return summary
 
