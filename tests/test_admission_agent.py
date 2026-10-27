@@ -148,7 +148,7 @@ def test_extract_without_api_key_gives_chinese_message(app):
         task = agent.extract_programs(PublicSourceChange.query.one(), admin(app))
 
         assert task.status == "failed"
-        assert "金鑰" in task.error_message
+        assert "沒有開啟" in task.error_message
 
 
 def test_admin_page_and_upload_source(app):
