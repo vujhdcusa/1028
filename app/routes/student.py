@@ -46,7 +46,7 @@ from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES,
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
 from app.services.record_status import learning_profile_state, portfolio_state
-from app.services import ai_quota_service, autobiography_review, autobiography_service, ocr_queue, review_snapshot_service, storage_service, student_rules
+from app.services import ai_quota_service, audit_service, autobiography_review, autobiography_service, ocr_queue, review_snapshot_service, storage_service, student_rules
 from app.services.gemini_client import AIUnavailable, ai_ready
 from app.services.course_review_presentation import (
     build_course_review_groups,
@@ -97,6 +97,9 @@ def learning_profile_document_upload():
             status="queued",
         )
         db.session.add(document)
+        db.session.flush()
+        audit_service.record(user, "learning_profile.document_upload", "source_document", document.id,
+                             detail={"document_type": document_type})
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -687,6 +690,8 @@ def learning_profile_document_confirm(document_id):
             **result, "courses": courses, "credentials": credentials, "draft_revision": uuid4().hex,
         }
         document.status = "confirmed"
+        audit_service.record(user, "learning_profile.document_confirm", "source_document", document.id,
+                             detail={"course_count": len(courses), "credential_count": len(credentials)})
         db.session.commit()
     except (TypeError, ValueError) as exc:
         db.session.rollback()
@@ -741,6 +746,7 @@ def _render_record_form(user, portfolio=None, values=None, error=None, next_path
         category_labels=CATEGORY_LABELS,
         error=error,
         next_path=next_path,
+        locked_message=review_snapshot_service.LOCKED_MESSAGE,
     ), (400 if error else 200)
 
 
@@ -761,7 +767,7 @@ def portfolio_list():
         db.session.commit()
         flash_done(f"已新增「{values['title']}」。", user, program, before)
         return redirect(next_path or url_for("student.portfolio_list", added=values["category"]))
-    records = Portfolio.query.filter_by(student_id=user.id).order_by(Portfolio.created_at.desc()).all()
+    records = Portfolio.active().filter_by(student_id=user.id).order_by(Portfolio.created_at.desc()).all()
     return render_template(
         "student_portfolio.html",
         user=user,
@@ -806,9 +812,11 @@ def portfolio_edit(portfolio_id):
 @role_required("student")
 def portfolio_confirm(portfolio_id):
     """學生確認這筆經歷內容正確；確認過的經歷才會被 AI 寫進自傳。"""
-    portfolio = owned_portfolio(portfolio_id, get_current_user())
+    user = get_current_user()
+    portfolio = owned_portfolio(portfolio_id, user)
     if portfolio.status == "draft":
         portfolio.status = "confirmed"
+        audit_service.record(user, "portfolio.confirm", "portfolio", portfolio.id)
         db.session.commit()
     return redirect(url_for("student.portfolio_list", confirmed=1))
 
@@ -816,13 +824,23 @@ def portfolio_confirm(portfolio_id):
 @student_bp.post("/student/portfolio/<int:portfolio_id>/delete")
 @role_required("student")
 def portfolio_delete(portfolio_id):
-    portfolio = owned_portfolio(portfolio_id, get_current_user())
-    locations = [item.file_path for item in portfolio.evidence_items if item.file_path]
-    db.session.delete(portfolio)
+    """刪除先標記 deleted_at，資料列與檔案都保留（規格 M10）；送審過的不能刪。"""
+    user = get_current_user()
+    portfolio = owned_portfolio(portfolio_id, user)
+    if review_snapshot_service.is_submitted(portfolio):
+        audit_service.record(user, "portfolio.delete_blocked", "portfolio", portfolio.id, commit=True)
+        return redirect(url_for("student.portfolio_edit", portfolio_id=portfolio.id, locked=1))
+    now = datetime.now(timezone.utc)
+    evidence = list(portfolio.evidence_items)
+    for item in evidence:
+        item.deleted_at = now
+    portfolio.deleted_at = now
+    audit_service.record(user, "portfolio.delete", "portfolio", portfolio.id)
     db.session.commit()
-    for location in locations:  # 刪除先標記，不直接永久刪除（V2 第 7 頁）
-        storage_service.mark_deleted(location, reason="student_deleted_portfolio")
-    return redirect(url_for("student.portfolio_list"))
+    for item in evidence:  # 檔案也只標記，不直接永久刪除（V2 第 7 頁）
+        if item.file_path:
+            storage_service.mark_deleted(item.file_path, reason="student_deleted_portfolio")
+    return redirect(url_for("student.portfolio_list", deleted=1))
 
 
 @student_bp.post("/student/portfolio/<int:portfolio_id>/submit")
@@ -846,12 +864,15 @@ def evidence_upload(portfolio_id):
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             return "連結必須是 http 或 https 網址", 400
         link_name = request.form.get("link_name", "").strip() or external_url
-        db.session.add(PortfolioEvidence(
+        link = PortfolioEvidence(
             portfolio_id=portfolio.id,
             evidence_type="link",
             display_name=link_name,
             external_url=external_url,
-        ))
+        )
+        db.session.add(link)
+        db.session.flush()
+        audit_service.record(get_current_user(), "evidence.upload", "portfolio_evidence", link.id)
         db.session.commit()
         return redirect(url_for("student.portfolio_edit", portfolio_id=portfolio.id))
     uploaded = request.files.get("file")
@@ -862,14 +883,17 @@ def evidence_upload(portfolio_id):
     except ValueError as exc:
         return str(exc), 400
     location = storage_service.save(uploaded.read(), owner_id=get_current_user().id, folder="", filename=safe_name)
-    db.session.add(PortfolioEvidence(portfolio_id=portfolio.id, evidence_type="file", display_name=safe_name, file_path=location))
+    evidence = PortfolioEvidence(portfolio_id=portfolio.id, evidence_type="file", display_name=safe_name, file_path=location)
+    db.session.add(evidence)
+    db.session.flush()
+    audit_service.record(get_current_user(), "evidence.upload", "portfolio_evidence", evidence.id)
     db.session.commit()
     return redirect(url_for("student.portfolio_edit", portfolio_id=portfolio.id))
 
 
 def _owned_evidence_or_404(evidence_id):
     evidence = db.session.get(PortfolioEvidence, evidence_id)
-    if not evidence:
+    if not evidence or evidence.deleted_at:
         abort(404)
     owned_portfolio(evidence.portfolio_id, get_current_user())
     if evidence.external_url:
@@ -898,14 +922,19 @@ def evidence_view(evidence_id):
 @student_bp.post("/student/evidence/<int:evidence_id>/delete")
 @role_required("student")
 def evidence_delete(evidence_id):
+    user = get_current_user()
     evidence = db.session.get(PortfolioEvidence, evidence_id)
-    if not evidence:
+    if not evidence or evidence.deleted_at:
         abort(404)
-    portfolio = owned_portfolio(evidence.portfolio_id, get_current_user())
-    location = evidence.file_path
-    db.session.delete(evidence)
+    portfolio = owned_portfolio(evidence.portfolio_id, user)
+    if review_snapshot_service.is_submitted(portfolio):
+        audit_service.record(user, "evidence.delete_blocked", "portfolio_evidence", evidence.id, commit=True)
+        return redirect(url_for("student.portfolio_edit", portfolio_id=portfolio.id, locked=1))
+    evidence.deleted_at = datetime.now(timezone.utc)  # 只標記，資料列保留（規格 M10）
+    audit_service.record(user, "evidence.delete", "portfolio_evidence", evidence.id)
     db.session.commit()
-    storage_service.mark_deleted(location, reason="student_deleted_evidence")
+    if evidence.file_path:
+        storage_service.mark_deleted(evidence.file_path, reason="student_deleted_evidence")
     return redirect(url_for("student.portfolio_edit", portfolio_id=portfolio.id))
 
 
@@ -953,6 +982,7 @@ def target_list():
                 error = f"目標校系同時最多 {slots['limit']} 所，請先取消一所再加入新的。"
             else:
                 db.session.add(StudentTarget(student_id=user.id, rule_version_id=program.id))
+                audit_service.record(user, "student_target.add", "admission_program", program.id)
                 db.session.commit()
         if not error:
             return redirect(url_for("student.target_gap", program_id=program.id))
@@ -1045,7 +1075,8 @@ def agent_run_progress(task_id):
 @role_required("student")
 def target_remove(program_id):
     user = get_current_user()
-    StudentTarget.query.filter_by(student_id=user.id, rule_version_id=program_id).delete()
+    if StudentTarget.query.filter_by(student_id=user.id, rule_version_id=program_id).delete():
+        audit_service.record(user, "student_target.remove", "admission_program", program_id)
     db.session.commit()
     return redirect(url_for("student.target_list"))
 
@@ -1169,7 +1200,10 @@ def autobiography_generate():
         # 學校金鑰每人每天有次數限制；先扣，AI 失敗時 rollback 就會退回
         if not own_key and ai_ready():
             ai_quota_service.consume(user)
-        autobiography_service.generate_draft(user, program, answers, api_key=own_key)
+        output = autobiography_service.generate_draft(user, program, answers, api_key=own_key)
+        audit_service.record(user, "autobiography.generate", "learning_profile_output", output.id,
+                             detail={"program_id": program.id, "provider": output.content_json.get("provider")},
+                             commit=True)
     except ai_quota_service.QuotaExceeded as exc:
         return _render_autobiography(user, program, targets, error=str(exc), answers=answers, status=429)
     except AIUnavailable as exc:
@@ -1193,11 +1227,12 @@ def autobiography_save(output_id):
     count = len(output.content_json.get("paragraphs", []))
     texts = [request.form.get(f"paragraph_{i}", "") for i in range(count)]
     try:
-        autobiography_service.save_edits(output, texts, user)
+        saved = autobiography_service.save_edits(output, texts, user)
     except autobiography_service.StaleVersion as exc:
         program, targets = _autobiography_program(user, output.content_json["program_id"])
         return _render_autobiography(user, program, targets, stale={"message": str(exc), "texts": texts,
                                                                     "paragraphs": output.content_json["paragraphs"]})
+    audit_service.record(user, "autobiography.save", "learning_profile_output", saved.id, commit=True)
     return redirect(url_for("student.autobiography", program_id=output.content_json["program_id"], saved=1))
 
 

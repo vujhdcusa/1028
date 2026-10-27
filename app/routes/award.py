@@ -123,6 +123,7 @@ def award_confirm(document_id):
     added = 0
     for _, row in chosen:
         title = row["reason"].strip()[:150]
+        # 刻意不排除已刪除的：學生刪掉的匯入紀錄，再匯入一次也不要冒回來
         exists = Portfolio.query.filter_by(student_id=user.id, source="award_record", title=title).first()
         if exists:
             continue

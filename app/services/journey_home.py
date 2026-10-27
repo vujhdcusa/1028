@@ -105,8 +105,8 @@ def journey_home(user, journey=None, now=None):
     walked = [year for year in journey["years"] if year["grade"] <= grade]
     filled_cells = sum(1 for year in walked for key in CATEGORY_KEYS if year["categories"][key])
     pending = (SourceDocument.query.filter(SourceDocument.owner_id == user.id, SourceDocument.status != "confirmed").count()
-               + Portfolio.query.filter_by(student_id=user.id, status="draft").count())
-    latest = Portfolio.query.filter_by(student_id=user.id).order_by(Portfolio.created_at.desc(), Portfolio.id.desc()).first()
+               + Portfolio.active().filter_by(student_id=user.id, status="draft").count())
+    latest = Portfolio.active().filter_by(student_id=user.id).order_by(Portfolio.created_at.desc(), Portfolio.id.desc()).first()
     summary = {
         "percent": round(filled_cells / (len(walked) * len(CATEGORY_KEYS)) * 100) if walked else 0,
         "pending": pending,

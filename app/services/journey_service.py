@@ -80,7 +80,7 @@ def build_journey(student, today=None):
             "detail": credential.level or "",
         })
 
-    portfolios = Portfolio.query.filter_by(student_id=student.id).order_by(Portfolio.id).all()
+    portfolios = Portfolio.active().filter_by(student_id=student.id).order_by(Portfolio.id).all()
     unsorted_count = 0
     for record in portfolios:
         if record.category not in EXPERIENCE_CATEGORIES:

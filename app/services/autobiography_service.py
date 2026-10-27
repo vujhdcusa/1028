@@ -76,7 +76,7 @@ def build_facts(student, program):
             "evidence_id": f"credential:{credential.id}",
             "evidence_type": "credential",
         })
-    for record in (Portfolio.query.filter_by(student_id=student.id)
+    for record in (Portfolio.active().filter_by(student_id=student.id)
                    .filter(Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES)).order_by(Portfolio.id)):
         label = CATEGORY_LABELS.get(record.category)
         if label:

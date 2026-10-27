@@ -198,7 +198,7 @@ def test_drive_mode_evidence_upload_view_and_delete_marks_only(tmp_path):
 
     assert client.post(f"/student/evidence/{evidence_id}/delete").status_code == 302
     with app.app_context():
-        assert PortfolioEvidence.query.count() == 0
+        assert PortfolioEvidence.query.one().deleted_at is not None  # 資料列保留，只標記刪除（M10）
     assert fake.files["file1"]["trashed"] is False  # 只標記，不永久刪除
     assert fake.files["file1"]["app_properties"]["slp_deleted_reason"] == "student_deleted_evidence"
 
