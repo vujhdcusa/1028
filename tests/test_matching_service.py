@@ -371,3 +371,84 @@ def test_targets_page_cards_show_admission_links(site):
     html = login(site).get("/student/targets").get_data(as_text=True)
 
     assert "https://example.edu.tw/targets-brochure.pdf" in html
+
+
+# ---------- C5 技優資格：證照等級與取得期限 ----------
+
+SKILL_B = {"type": "skill_credential", "text": "須持有乙級以上技術士證，且於 115/04/13（含）前取得（測試原文）",
+           "source": "測試簡章 p.5", "level": "乙級", "deadline": "115/04/13"}
+
+
+def add_credential(student, name, level, issued, status="confirmed"):
+    db.session.add(CredentialRecord(student_id=student.id, credential_name=name, level=level, issue_date=issued,
+                                    confirmation_status=status))
+    db.session.flush()
+
+
+def skill_row(student):
+    program = make_program("900077", [("證照", 100, "credential")])
+    return rank_programs(student, [program], conditions={"900077": [SKILL_B]})[0]
+
+
+def test_skill_credential_at_required_level_before_deadline_is_eligible(app):
+    student = make_student()
+    add_credential(student, "網頁設計乙級", "乙級", date(2025, 11, 2))
+
+    row = skill_row(student)
+
+    assert row["status"] == "eligible"
+    assert any("網頁設計乙級" in reason and "2025-11-02" in reason for reason in row["reasons"])
+
+
+def test_higher_level_also_counts(app):
+    student = make_student()
+    add_credential(student, "電腦硬體裝修甲級", "甲級", date(2025, 6, 1))
+
+    assert skill_row(student)["status"] == "eligible"
+
+
+def test_only_lower_level_credentials_need_checking_not_rejection(app):
+    """系統裡沒有，不代表學生沒有（可能還沒上傳）；缺資料一律需確認。"""
+    student = make_student()
+    add_credential(student, "電腦軟體應用丙級", "丙級", date(2025, 5, 20))
+
+    row = skill_row(student)
+
+    assert row["status"] == "needs_check"
+    assert any("乙級以上" in reason for reason in row["reasons"])
+
+
+def test_credential_obtained_after_deadline_is_ineligible(app):
+    student = make_student()
+    add_credential(student, "網頁設計乙級", "乙級", date(2026, 5, 1))
+
+    row = skill_row(student)
+
+    assert row["status"] == "ineligible"
+    assert any("2026-04-13" in reason for reason in row["reasons"])
+
+
+def test_credential_without_date_needs_checking(app):
+    student = make_student()
+    add_credential(student, "網頁設計乙級", "乙級", None)
+
+    assert skill_row(student)["status"] == "needs_check"
+
+
+def test_unconfirmed_credentials_are_not_counted(app):
+    student = make_student()
+    add_credential(student, "網頁設計乙級", "乙級", date(2025, 11, 2), status="pending")
+
+    assert skill_row(student)["status"] == "needs_check"
+
+
+def test_load_conditions_reads_optional_level_and_deadline(tmp_path):
+    path = tmp_path / "conditions.csv"
+    path.write_text("志願代碼,條件類型,條件原文,出處,等級,期限\n"
+                    "208001,skill_credential,乙級以上,示範,乙級,115/04/13\n"
+                    "208002,fresh_graduate,限應屆,示範,,\n", encoding="utf-8-sig")
+
+    conditions = load_conditions(path)
+
+    assert conditions["208001"][0]["level"] == "乙級" and conditions["208001"][0]["deadline"] == "115/04/13"
+    assert conditions["208002"][0]["level"] is None

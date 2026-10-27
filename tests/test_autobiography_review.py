@@ -117,3 +117,22 @@ def test_existing_issues_take_priority_over_unsupported_sentences():
     assert unknown["issue"].startswith("引用了不存在的來源 F9")
     assert unknown["unsupported"] == ["我從小就喜歡電腦。"]
     assert no_evidence["issue"] == "這段沒有資料佐證，請補上具體經驗"
+
+
+def test_childhood_claim_is_flagged_even_when_the_same_sentence_mentions_real_data():
+    """「從小」這類說法學校資料不可能佐證；同一句有競賽名稱也要抓出來（2026-10-27 實測 Gemini 草稿）。"""
+    facts = [{"id": "F3", "text": "競賽：全國商業類技藝競賽 佳作"}]
+    sentence = "我從小就對電腦應用充滿好奇，在五專期間，特別是參加了全國商業類技藝競賽並獲得佳作後，讓我更有興趣。"
+    reviews = review_paragraphs([{"title": "學習動機", "text": sentence, "sources": ["F3"]}], facts,
+                                {"motivation": "參加競賽後想學更多。"})
+
+    assert reviews[0]["unsupported"] == [sentence]
+
+
+def test_childhood_claim_written_by_the_student_is_not_flagged():
+    facts = [{"id": "F3", "text": "競賽：全國商業類技藝競賽 佳作"}]
+    sentence = "我從小就喜歡拆電腦，後來參加了全國商業類技藝競賽。"
+    reviews = review_paragraphs([{"title": "學習動機", "text": sentence, "sources": ["F3"]}], facts,
+                                {"motivation": "從小就喜歡拆電腦。"})
+
+    assert reviews[0]["unsupported"] == []

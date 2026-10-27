@@ -123,8 +123,26 @@ def fail_task(task_id, message):
     db.session.commit()
 
 
+STALE_AFTER = timedelta(minutes=5)  # 一次執行通常 1 分鐘內；超過就當成網站重開或卡住而中斷
+INTERRUPTED = "這次執行被中斷了（網站重新啟動或等太久），請再按一次「再請 Agent 規劃一次」。"
+
+
+def expire_if_stale(task):
+    """背景執行的那條執行緒在網站重開時就不見了，紀錄會永遠停在「執行中」；超過時間改記成失敗。"""
+    started = task.started_at
+    if task.status != "running" or started is None:
+        return task
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) - started > STALE_AFTER:
+        fail_task(task.id, INTERRUPTED)
+        task = db.session.get(AgentTask, task.id)
+    return task
+
+
 def progress(task):
     """給畫面輪詢用：目前在做什麼、做完哪些步驟。不含工具交回給 AI 的完整資料。"""
+    task = expire_if_stale(task)
     data = task.result_json or {}
     return {"status": task.status, "done": task.status != "running", "mode": data.get("mode"),
             "phase": data.get("phase"), "current_tool": data.get("current_tool"),
