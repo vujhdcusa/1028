@@ -452,3 +452,18 @@ def test_load_conditions_reads_optional_level_and_deadline(tmp_path):
 
     assert conditions["208001"][0]["level"] == "乙級" and conditions["208001"][0]["deadline"] == "115/04/13"
     assert conditions["208002"][0]["level"] is None
+
+
+def test_student_group_unknown_falls_back_to_their_department_for_ordering(app):
+    """實測問題 1：林小美只有一門對不到課綱的課，模具工程系排第一。學群待確認時，暫依學生科別排序。"""
+    student = make_student()  # 資管科五甲，沒有成績
+    db.session.add(CredentialRecord(student_id=student.id, credential_name="丙級", issue_date=date(2025, 3, 1)))
+    mold = set_department(make_program("900001", [("證照", 100, "credential")]), "模具工程系", "機械類")
+    info = set_department(make_program("900002", [("證照", 50, "credential"), ("歷年成績", 50, "grades")]),
+                          "資訊管理系", "管理類四")
+
+    ranked = rank_programs(student, [mold, info], conditions={})
+
+    assert [row["program"].department_name for row in ranked] == ["資訊管理系", "模具工程系"]
+    assert all(row["related"] is None for row in ranked)  # 仍然標學群待確認，不假裝已經判斷
+    assert any("暫依你的科別（資管科）" in reason for reason in ranked[0]["reasons"])

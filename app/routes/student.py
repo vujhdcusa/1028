@@ -64,21 +64,28 @@ def learning_profile_document_upload():
     user = get_current_user()
     document_type = request.form.get("document_type", "").strip()
     uploaded = request.files.get("file")
+
+    def upload_error(message):
+        # 留在上傳頁、用中文說明，不要整頁只剩英文錯誤（10-27 實測問題 4）
+        return render_template("learning_profile_upload.html", user=user,
+                               document_type=document_type if document_type in ALLOWED_DOCUMENT_TYPES else "transcript",
+                               next_path=safe_next(request.form.get("next")), error=message), 400
+
     if document_type not in ALLOWED_DOCUMENT_TYPES:
-        return "unsupported document type", 400
+        return upload_error("請先選擇要上傳的是成績單還是證照。")
     if not uploaded or not uploaded.filename:
-        return "file is required", 400
+        return upload_error("請先選擇要上傳的檔案。")
     try:
         safe_name = validate_upload_filename(
             uploaded.filename,
             current_app.config["LEARNING_PROFILE_ALLOWED_EXTENSIONS"],
         )
-    except ValueError as exc:
-        return str(exc), 400
+    except ValueError:
+        return upload_error("只接受 PNG、JPG 圖片或 PDF 檔，請換一個檔案再上傳。")
 
     file_bytes = uploaded.read()
     if not file_bytes:
-        return "file is empty", 400
+        return upload_error("這個檔案是空的，請換一個檔案再上傳。")
     # 成績單圖片太小時 OCR 只會產生亂字：不存檔，直接請學生改傳
     from app.services.upload_quality import resolution_check
     resolution = resolution_check(document_type, file_bytes, safe_name)

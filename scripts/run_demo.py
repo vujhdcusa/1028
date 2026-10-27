@@ -105,6 +105,10 @@ def seed():
     db.session.add(StudentProfile(user_id=classmate.id, student_no="111534107", class_name="資管科三甲", admission_year=113))
     db.session.add(LearningCourseRecord(student_id=classmate.id, school_year=1, semester="上", course_name="計算機概論",
                                         normalized_course_name="計算機概論", credits=3, score=90))
+    # 113 學年度課綱的資訊類專業科目各一門，學群才判斷得出來（只有計算機概論時對不到課綱，推薦排序會亂）
+    for year, semester, name, score in ((1, "下", "程式設計", 88), (2, "上", "網頁設計", 85), (2, "下", "管理資訊系統", 82)):
+        db.session.add(LearningCourseRecord(student_id=classmate.id, school_year=year, semester=semester, course_name=name,
+                                            normalized_course_name=name, credits=3, score=score))
     db.session.add(CredentialRecord(student_id=classmate.id, credential_name="電腦軟體應用丙級", level="丙級",
                                     issuing_organization="勞動部", issue_date=date(2025, 4, 12)))
     db.session.add(Portfolio(student_id=classmate.id, category="competition", school_year=2, semester=2,

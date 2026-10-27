@@ -92,6 +92,26 @@ def create_app(config_overrides=None):
         from app.services.ocr_queue import recover_on_startup
         recover_on_startup(app)
 
+    error_texts = {
+        401: ("請先登入", "這一頁要登入後才能看。可能是還沒登入，或太久沒操作被登出了。"),
+        403: ("沒有權限", "你的帳號不能看這一頁。如果你覺得應該可以，請洽導師或系統管理員。"),
+        404: ("找不到這一頁", "網址可能打錯了，或這筆資料不是你的、已經不存在。"),
+    }
+
+    def friendly_error(error):
+        """401、403、404 改成中文頁面（10-27 實測問題 5）；狀態碼不變，給程式讀的請求照樣回 JSON。"""
+        from flask import jsonify, render_template, request
+        from app.routes.main import get_current_user
+        title, message = error_texts[error.code]
+        if request.accept_mimetypes.best == "application/json":
+            return jsonify(error=title, message=message), error.code
+        next_path = request.full_path.rstrip("?") if error.code == 401 and request.method == "GET" else None
+        return render_template("error_page.html", user=get_current_user(), code=error.code, title=title,
+                               message=message, next_path=next_path), error.code
+
+    for code in error_texts:
+        app.register_error_handler(code, friendly_error)
+
     @app.errorhandler(413)
     def file_too_large(_error):
         from flask import render_template, request

@@ -37,6 +37,9 @@ CONDITIONS_FILE = Path(__file__).resolve().parents[1] / "content" / "admission_c
 
 # 學群相關（True）→ 待確認（None）→ 不相關（False）
 RELATED_ORDER = {True: 0, None: 1, False: 2}
+# 學群待確認（成績還不夠判斷）時，暫依學生科別排序，免得不相關的系排第一（10-27 實測問題 1）。
+# 只影響排序與一句說明；related 仍是 None，畫面照樣寫「學群待確認」。
+DEPARTMENT_DEFAULT_GROUPS = {"資管科": "資訊"}
 
 STATUS_ORDER = {"eligible": 0, "needs_check": 1, "ineligible": 2}
 STATUS_LABELS = {"eligible": "可報", "needs_check": "需確認", "ineligible": "不可報"}
@@ -164,6 +167,12 @@ def _fit_reasons(gap):
     return reasons
 
 
+def _department_default(student):
+    """學生科別的預設學群：(科別, 學群)；看不出科別時回傳 None。"""
+    class_name = student.student_profile.class_name if student.student_profile else ""
+    return next(((dept, group) for dept, group in DEPARTMENT_DEFAULT_GROUPS.items() if dept in (class_name or "")), None)
+
+
 def is_related(program, student_groups, department_table=None):
     """學生主要學群是否屬於這個校系的學群；任一邊待確認時回傳 None（排在相關與不相關中間）。"""
     department = department_groups(program, department_table)
@@ -210,6 +219,7 @@ def rank_programs(student, programs, journey=None, conditions=None, transfer=Non
     schedule = load_schedule()
     student_groups = summarize_student_groups(student)
     department_table = load_department_groups()
+    fallback = None if student_groups["main_group"] else _department_default(student)
     rows = []
     for program in programs:
         gap = analyze_gap(student, program, journey)
@@ -221,6 +231,12 @@ def rank_programs(student, programs, journey=None, conditions=None, transfer=Non
         status, condition_reasons = _check_conditions(student, program, program_conditions)
         related = is_related(program, student_groups, department_table)
         exam_only = is_transfer(program) and not program.items
+        relation = [_relation_reason(related, student_groups, program, department_table)]
+        tentative = None
+        if fallback:
+            groups = (department_groups(program, department_table) or {}).get("groups") or []
+            tentative = fallback[1] in groups
+            relation.append(f"暫依你的科別（{fallback[0]}）把{fallback[1]}學群的科系排前面；確認成績單後會改用你修過的課判斷。")
         rows.append({
             "program": program,
             "status": status,
@@ -229,7 +245,8 @@ def rank_programs(student, programs, journey=None, conditions=None, transfer=Non
             "fit": gap["readiness"],
             "fit_note": NO_FIT_TRANSFER if exam_only else None,
             "related": related,
-            "reasons": (condition_reasons + [_relation_reason(related, student_groups, program, department_table)]
+            "tentative_related": tentative,
+            "reasons": (condition_reasons + relation
                         + (_transfer_reasons(program, details) if details else [])
                         + ([] if exam_only else _fit_reasons(gap))),
             "gap": gap,
@@ -237,6 +254,6 @@ def rank_programs(student, programs, journey=None, conditions=None, transfer=Non
             "links": _transfer_links(admission_links(program, school_links), details),
             "schedule": timeline(program, schedule),
         })
-    rows.sort(key=lambda row: (STATUS_ORDER[row["status"]], RELATED_ORDER[row["related"]], row["fit"] is None,
-                               -(row["fit"] or 0)))
+    rows.sort(key=lambda row: (STATUS_ORDER[row["status"]], RELATED_ORDER[row["related"]],
+                               row["tentative_related"] is False, row["fit"] is None, -(row["fit"] or 0)))
     return rows

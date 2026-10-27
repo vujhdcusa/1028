@@ -64,14 +64,18 @@ def health():
 
 @main_bp.route("/login", methods=["GET", "POST"])
 def login():
+    from app.services.flow import safe_next
+    next_path = safe_next(request.values.get("next"))
     if request.method == "GET":
-        return render_template("login.html")
+        return render_template("login.html", next_path=next_path)
 
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "")
     user = User.query.filter_by(username=username).first()
-    if not user or not user.is_active or not user.check_password(password):
-        return render_template("login.html", error="帳號或密碼錯誤"), 401
+    if not user or not user.check_password(password):
+        return render_template("login.html", error="帳號或密碼錯誤", next_path=next_path), 401
+    if not user.is_active:  # 密碼對了才說明已停用，不讓人用來試哪些帳號存在
+        return render_template("login.html", error="這個帳號已停用，請洽系統管理員。", next_path=next_path), 403
 
     session.clear()
     session["user_id"] = user.id
@@ -91,7 +95,7 @@ def login():
     db.session.commit()
     if user.role == "student" and not _welcome_done(user):
         return redirect(url_for("main.student_welcome"))
-    return redirect(url_for(endpoint))
+    return redirect(next_path or url_for(endpoint))  # 被登出前想看的頁面；權限照樣由那一頁檢查
 
 
 @main_bp.post("/logout")
