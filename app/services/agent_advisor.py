@@ -7,12 +7,16 @@
 - 送給 AI 的只有校系資料、排序理由與工具結果，不含學生姓名、學號。
 """
 
+import threading
+
+from flask import current_app
+
 from app.extensions import db
-from app.models import LearningProfileOutput, StudentTarget
+from app.models import LearningProfileOutput, StudentTarget, User
 from app.services import ai_quota_service, autobiography_service, student_rules
 from app.services.agent_file_tool import document_tools
 from app.services.admission_service import published_programs
-from app.services.agent_engine import AiDecider, Tool, ToolError, run
+from app.services.agent_engine import AiDecider, Tool, ToolError, fail_task, run, start_task
 from app.services.gemini_client import AIUnavailable, ai_ready
 from app.services.matching_service import rank_programs
 
@@ -30,6 +34,19 @@ INSTRUCTION = """你是康寧大學資管科學習歷程系統的「升學 Agent
 
 AUTO = "auto"
 AUTOBIOGRAPHY_LINK = "student.autobiography"
+
+# 畫面上的「分工」：同一個 Agent 依需要呼叫不同工具組（規格第〇節）。一張卡片一個工具組，順序就是畫面上的排列；
+# tone 是五年色的編號，tools 是這組包含的工具名稱。
+TOOL_LINEUP = [
+    {"group": "媒合排序", "label": "排序校系", "tone": 1, "tools": ["rank_programs"],
+     "does": "依你的成績、證照、活動和簡章加權，把全部校系分成可報、需確認、不可報"},
+    {"group": "學生條件", "label": "查目標校系", "tone": 2, "tools": ["list_my_targets"],
+     "does": "看你選了哪些目標校系、有沒有回答自傳問題"},
+    {"group": "自傳", "label": "準備自傳草稿", "tone": 3, "tools": ["draft_autobiography"],
+     "does": "只為你已選的目標校系、用你的回答寫草稿，每段標出依據"},
+    {"group": "雲端檔案", "label": "查檔案、取檔案內容", "tone": 5, "tools": ["list_my_documents", "get_my_document"],
+     "does": "依檔案編號讀你自己上傳的檔案，送出前先去掉姓名學號"},
+]
 
 
 def advisor_decider(chat=None):
@@ -66,7 +83,7 @@ def _tools(student, generate):
                      "fit": row["fit"], "fit_note": row["fit_note"]} for row in rows if row["transfer"]]
         return {
             "summary": f"排序 {len(rows)} 個校系：可報 {counts['可報']}、需確認 {counts['需確認']}、不可報 {counts['不可報']}"
-                       + (f"；其中插大（轉學考）{len(transfer)} 個，考科與資格見 transfer。" if transfer else "。"),
+                       + (f"；其中插大（轉學考）{len(transfer)} 個。" if transfer else "。"),
             "counts": counts,
             "programs": [{"program_id": str(row["program"].id), "school": row["program"].school_name,
                           "department": row["program"].department_name,
@@ -168,9 +185,30 @@ def _fixed_plan(goal, steps, tools):
     return {"finish": _summary(steps)}
 
 
-def run_advisor(student, decide=AUTO, generate=None):
+def run_advisor(student, decide=AUTO, generate=None, task_id=None):
     """學生觸發一次升學 Agent。decide=AUTO：有設定 AI 就讓 AI 決定，否則走固定流程。"""
     if decide == AUTO:
         decide = advisor_decider() if ai_ready() else None
     return run(task_type="agent_advisor", goal=GOAL, tools=_tools(student, generate), requester=student,
-               decide=decide, fallback=_fixed_plan, max_steps=6)
+               decide=decide, fallback=_fixed_plan, max_steps=6, task_id=task_id)
+
+
+def start_advisor(student, background=False):
+    """建立紀錄後開始執行，回傳紀錄編號。background=True 時在背景執行，畫面馬上打開、邊做邊顯示每一步。"""
+    task_id = start_task("agent_advisor", student)
+    if not background:
+        run_advisor(student, task_id=task_id)
+        return task_id
+    app, student_id = current_app._get_current_object(), student.id
+
+    def work():
+        with app.app_context():
+            try:
+                run_advisor(db.session.get(User, student_id), task_id=task_id)
+            except Exception:  # 背景執行沒有人接例外；記下來，畫面才會停在「失敗」而不是一直轉
+                db.session.rollback()
+                app.logger.exception("升學 Agent 背景執行失敗（紀錄 %s）", task_id)
+                fail_task(task_id, "Agent 執行時發生錯誤，請稍後再按一次「再請 Agent 規劃一次」。")
+
+    threading.Thread(target=work, name=f"agent-advisor-{task_id}", daemon=True).start()
+    return task_id

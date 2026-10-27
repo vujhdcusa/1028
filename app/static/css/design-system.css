@@ -1365,3 +1365,48 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .ocr-stamp.is-landing { animation: none; }
   .ocr-sheet__img, .ocr-ruler__fill { transition: none; }
 }
+
+/* =========================================================
+   DEMO-01 升學 Agent 執行過程：一個 Agent、分給不同工具做
+   ========================================================= */
+.agent-board { background: var(--sheet); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sheet); overflow: hidden; }
+.agent-board__brain { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 1rem; padding: 1.1rem clamp(1.1rem, 2.5vw, 1.75rem); background: var(--ink); color: var(--sheet); }
+.agent-board__brain h2 { font-family: var(--font-serif); font-weight: 900; font-size: clamp(1.15rem, 2.4vw, 1.45rem); margin: 0; text-wrap: balance; }
+.agent-board__who { min-width: 0; }
+.agent-board__phase { margin: .2rem 0 0; color: #c8cdd8; font-size: .92rem; }
+.agent-board__mode { font-size: .8rem; color: #c8cdd8; white-space: nowrap; }
+.agent-board__pulse { width: 14px; height: 14px; border-radius: 50%; background: var(--year-2); box-shadow: 0 0 0 0 rgb(31 138 122 / 60%); }
+.agent-board[data-status="running"] .agent-board__pulse { animation: agent-pulse 1.4s ease-out infinite; }
+.agent-board[data-status="failed"] .agent-board__pulse { background: var(--danger); }
+@keyframes agent-pulse { to { box-shadow: 0 0 0 12px rgb(31 138 122 / 0%); } }
+
+.agent-board__tools { list-style: none; margin: 0; padding: clamp(1rem, 2.5vw, 1.5rem); display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .75rem; }
+.agent-tool { position: relative; display: grid; align-content: start; gap: .3rem; min-width: 0; padding: .8rem .9rem .9rem; border: 1px solid var(--line); border-top: 5px solid var(--tone); border-radius: var(--radius); background: var(--paper); transition: background .3s, border-color .3s, transform .3s, opacity .3s; }
+.agent-tool__group { font-size: .78rem; font-weight: 700; color: var(--tone); letter-spacing: .04em; }
+.agent-tool__label { font-size: 1.02rem; }
+.agent-tool__state { font-size: .8rem; color: var(--muted); }
+.agent-tool__result { margin: .2rem 0 0; font-size: .88rem; color: var(--ink-soft); overflow-wrap: anywhere; }
+.agent-tool--idle, .agent-tool--unused { opacity: .62; }
+.agent-tool--unused { border-style: dashed; border-top-style: solid; background: transparent; }
+.agent-tool--unused .agent-tool__result, .agent-tool--idle .agent-tool__result { color: var(--muted); }
+.agent-tool--active { opacity: 1; background: var(--sheet); border-color: var(--tone); transform: translateY(-3px); box-shadow: 0 10px 22px -16px var(--tone); }
+.agent-tool--active .agent-tool__state { color: var(--tone); font-weight: 700; }
+.agent-tool--done { background: var(--sheet); }
+.agent-tool--done .agent-tool__state { color: var(--ok); font-weight: 700; }
+.agent-tool--done .agent-tool__state::before { content: "✓ "; }
+.agent-tool--error .agent-tool__state { color: var(--danger); font-weight: 700; }
+
+/* 執行完打開頁面時，依 Agent 呼叫的順序再亮一次，看得出分工的先後 */
+.agent-board.is-replay .agent-tool--done, .agent-board.is-replay .agent-tool--error { animation: agent-light .5s ease-out both; animation-delay: calc(var(--order, 0) * .45s + .2s); }
+@keyframes agent-light { from { opacity: .35; transform: translateY(6px); background: var(--paper); } }
+.agent-steps li { margin-bottom: .6rem; animation: agent-light .4s ease-out both; animation-delay: calc(var(--order, 0) * .45s + .3s); }
+
+@media (max-width: 560px) {
+  .agent-board__brain { grid-template-columns: auto minmax(0, 1fr); }
+  .agent-board__mode { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-board[data-status="running"] .agent-board__pulse, .agent-board.is-replay .agent-tool, .agent-steps li { animation: none; }
+  .agent-tool { transition: none; }
+  .agent-tool--active { transform: none; }
+}

@@ -86,7 +86,7 @@ def test_engine_runs_ai_decisions_and_records_task(app):
     assert result["summary"] == "完成了"
     task = db.session.get(AgentTask, result["task_id"])
     assert task.task_type == "test_run" and task.status == "succeeded"
-    assert task.result_json["steps"] == [{"tool": "echo", "label": "回聲", "summary": "收到 甲"}]
+    assert task.result_json["steps"] == [{"tool": "echo", "label": "回聲", "summary": "收到 甲", "ok": True}]
 
 
 def test_engine_reports_unknown_tool_and_keeps_going(app):
@@ -418,3 +418,104 @@ def test_agent_buttons_tell_the_user_to_wait(app):
 
     assert 'data-busy-text="Agent 正在規劃' in html
     assert 'data-busy-text="Agent 巡查中' in admin_html
+
+
+# ---------- 邊做邊顯示（DEMO-01） ----------
+
+def test_engine_saves_progress_after_each_step(app):
+    from app.services.agent_engine import progress, start_task
+    task_id = start_task("test_run", user("admin"))
+    seen = []
+
+    def peek(text=""):
+        seen.append(progress(db.session.get(AgentTask, task_id)))  # 第二步執行時，畫面輪詢會看到什麼
+        return {"summary": f"看了 {text}"}
+
+    tool = Tool(name="peek", label="偷看", description="測試用", run=peek, params={"text": "內容"})
+    run(task_type="test_run", goal="測試", tools=[tool], requester=user("admin"), task_id=task_id,
+        decide=scripted({"tool": "peek", "args": {"text": "甲"}}, {"tool": "peek", "args": {"text": "乙"}},
+                        {"finish": "好"}), fallback=finish_plan)
+
+    first, second = seen
+    assert first["status"] == "running" and first["phase"] == "running" and first["current_tool"] == "peek"
+    assert first["steps"] == []
+    assert [step["summary"] for step in second["steps"]] == ["看了 甲"]
+    assert second["mode"] == "ai" and second["done"] is False
+    finished = progress(db.session.get(AgentTask, task_id))
+    assert finished["done"] is True and finished["summary"] == "好"
+
+
+def test_failed_tool_step_is_marked_not_ok(app):
+    result = run(task_type="test_run", goal="測試", tools=[], requester=user("admin"),
+                 decide=scripted({"tool": "nope", "args": {}}, {"finish": "好"}), fallback=finish_plan)
+
+    assert db.session.get(AgentTask, result["task_id"]).result_json["steps"][0]["ok"] is False
+
+
+def test_tool_lineup_matches_the_advisor_tools(app):
+    from app.services.agent_advisor import TOOL_LINEUP, _tools
+    names = {tool.name for tool in _tools(user("stu"), None)}
+
+    listed = [name for card in TOOL_LINEUP for name in card["tools"]]
+    assert sorted(listed) == sorted(names)  # 每個工具剛好出現在一張卡片上
+
+
+def test_run_page_shows_each_tool_group_and_which_were_used(app):
+    client = login(app, "stu")
+    page = client.get(client.post("/student/agent/advise").headers["Location"]).get_data(as_text=True)
+
+    assert "媒合排序" in page and "自傳" in page and "雲端檔案" in page
+    assert "agent-tool--done" in page and "這次沒用到" in page  # 沒選目標校系，不會寫自傳
+
+
+def test_progress_endpoint_is_only_for_the_owner(app):
+    client = login(app, "stu")
+    run_url = client.post("/student/agent/advise").headers["Location"]
+    data = client.get(run_url + "/progress").get_json()
+
+    assert data["done"] is True and data["steps"][0]["label"] == "排序校系"
+    assert login(app, "other").get(run_url + "/progress").status_code == 404
+
+
+def test_running_page_polls_progress_and_disables_rerun(app):
+    from app.services.agent_engine import start_task
+    task_id = start_task("agent_advisor", user("stu"))
+    page = login(app, "stu").get(f"/student/agent/runs/{task_id}").get_data(as_text=True)
+
+    assert f"/student/agent/runs/{task_id}/progress" in page and "準備開始" in page
+    assert "Agent 的建議" not in page
+    assert "disabled" in page
+
+
+def test_background_run_finishes_and_failures_are_recorded(tmp_path, monkeypatch):
+    import time
+    from app.services import agent_advisor
+    bg_app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{(tmp_path / 'bg.db').as_posix()}", "TESTING": True,
+                         "UPLOAD_FOLDER": str(tmp_path), "AGENT_BACKGROUND": True})
+    with bg_app.app_context():
+        db.create_all()
+        import_seed_programs()
+        student = User(username="stu", display_name="王stu", role="student")
+        student.set_password("pw")
+        db.session.add(student)
+        db.session.flush()
+        db.session.add(StudentProfile(user_id=student.id, student_no="111534100", class_name="資管科五甲",
+                                      admission_year=111))
+        db.session.commit()
+    client = login(bg_app, "stu")
+
+    def wait_done(url):
+        for _ in range(100):
+            data = client.get(url + "/progress").get_json()
+            if data["done"]:
+                return data
+            time.sleep(0.05)
+        raise AssertionError("背景執行沒有結束")
+
+    assert wait_done(client.post("/student/agent/advise").headers["Location"])["status"] == "succeeded"
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("故意失敗")
+    monkeypatch.setattr(agent_advisor, "run_advisor", boom)
+    failed = wait_done(client.post("/student/agent/advise").headers["Location"])
+    assert failed["status"] == "failed" and "再請 Agent 規劃一次" in failed["summary"]

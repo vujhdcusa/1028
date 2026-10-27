@@ -1,5 +1,21 @@
 # 開發日誌
 
+## 2026-10-27 升學 Agent 執行過程看得見（DEMO-01）
+
+日期：2026-10-27（台灣時間）
+
+開發者：Claude（分支 `feat/google-docs-autobiography`）
+
+目標：10-28 要交 75% 完成度。老師最在意「Agent 要有分工」；原本按下按鈕要等 30～40 秒，只看到最後結果。改成畫面逐步顯示 Agent 把工作分給哪組工具、每組做出什麼。
+
+- 引擎（`app/services/agent_engine.py`）：新增 `start_task`（先建執行中的紀錄）、`fail_task`、`progress`；`run` 可接已建好的 `task_id`，每次「決定下一步」與「執行工具」前後都把進度存進 `agent_tasks.result_json`（`phase`、`current_tool`、已完成的步驟；每步多記 `ok` 表示工具有沒有失敗）。
+- 學生觸發（`app/services/agent_advisor.py`）：`start_advisor` 在背景執行緒跑 Agent，出錯時記成「失敗」，畫面不會一直轉；新增 `TOOL_LINEUP`，四張卡片對應四組工具（媒合排序、學生條件、自傳、雲端檔案），顏色沿用五年色。排序工具的摘要拿掉給 AI 看的「考科與資格見 transfer」。
+- 路由（`app/routes/student.py`）：按下按鈕後馬上打開結果頁；新增 `/student/agent/runs/<編號>/progress` 給畫面輪詢（只有本人看得到）。測試與 5013 記憶體展示站（所有請求共用一條 SQLite 連線）照舊同步執行，可用 `AGENT_BACKGROUND` 設定。
+- 畫面（`student_agent_run.html`、`design-system.css` 檔尾 DEMO-01 區塊）：上方深色列顯示「Gemini 正在想下一步要用哪個工具…」「正在『準備自傳草稿』…」；四張工具卡依序變成「執行中 → 完成」並顯示結果，沒用到的標「這次沒用到」；完成後自動重新整理顯示建議。之後再打開頁面，卡片會依 Agent 呼叫的順序再亮一次。減少動態效果的設定下不播動畫。
+- 測試：`tests/test_agent_engine.py` 新增 7 個（每步存進度、失敗步驟標記、卡片涵蓋全部工具、結果頁顯示工具組、進度只給本人、執行中頁面會輪詢且不能重按、背景執行完成與失敗紀錄），共 33 個通過。
+- 瀏覽器確認（5021 埠，真的 Gemini）：學生 111534107 先回答自傳問題，再請 Agent 規劃；畫面依序亮起「排序校系 → 查目標校系 → 準備自傳草稿」，完成後顯示「用了 3 組工具、3 個步驟」與 Gemini 的建議，產生第 2 版自傳草稿；手機寬度 375px 一欄排列、沒有橫向捲動；伺服器沒有錯誤紀錄。
+- 平行工作：DEMO-02（自傳逐句檢查，`feat/bio-sentence-check`）與 DEMO-03（活動適合學校，`feat/activity-fit`）交給 GPT，各自的 worktree 已建好並登記在工作佇列。
+
 ## 2026-10-22 OCR 辨識過程：缺少的欄位不再顯示成「0」
 
 日期：2026-10-22（台灣時間）

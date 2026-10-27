@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 from urllib.parse import urlparse
 
-from flask import Blueprint, abort, current_app, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_file, url_for
 
 from app.extensions import db
 from app.models import (
@@ -1006,20 +1006,36 @@ def schedule():
 @student_bp.post("/student/agent/advise")
 @role_required("student")
 def agent_advise():
-    """升學 Agent：排序校系，並為已選的目標校系準備自傳草稿。"""
-    from app.services.agent_advisor import run_advisor
-    result = run_advisor(get_current_user())
-    return redirect(url_for("student.agent_run", task_id=result["task_id"]))
+    """升學 Agent：排序校系，並為已選的目標校系準備自傳草稿。背景執行，結果頁邊做邊顯示每一步。"""
+    from app.services.agent_advisor import start_advisor
+    config = current_app.config
+    # 測試與 5013 記憶體展示站（所有請求共用一條 SQLite 連線）照舊同步執行
+    background = config.get("AGENT_BACKGROUND", not (current_app.testing or config.get("LOCAL_DEMO_MODE")))
+    task_id = start_advisor(get_current_user(), background=background)
+    return redirect(url_for("student.agent_run", task_id=task_id))
+
+
+def _own_agent_task(task_id):
+    task = db.session.get(AgentTask, task_id)
+    if not task or task.requester_id != get_current_user().id or task.task_type != "agent_advisor":
+        abort(404)
+    return task
 
 
 @student_bp.get("/student/agent/runs/<int:task_id>")
 @role_required("student")
 def agent_run(task_id):
-    user = get_current_user()
-    task = db.session.get(AgentTask, task_id)
-    if not task or task.requester_id != user.id or task.task_type != "agent_advisor":
-        abort(404)
-    return render_template("student_agent_run.html", user=user, task=task, run=task.result_json or {})
+    from app.services.agent_advisor import TOOL_LINEUP
+    task = _own_agent_task(task_id)
+    return render_template("student_agent_run.html", user=get_current_user(), task=task, run=task.result_json or {},
+                           lineup=TOOL_LINEUP)
+
+
+@student_bp.get("/student/agent/runs/<int:task_id>/progress")
+@role_required("student")
+def agent_run_progress(task_id):
+    from app.services.agent_engine import progress
+    return jsonify(progress(_own_agent_task(task_id)))
 
 
 @student_bp.post("/student/targets/<int:program_id>/remove")

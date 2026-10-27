@@ -103,20 +103,61 @@ def _execute(tools, name, args):
         return {"error": "工具參數不正確。"}
 
 
-def run(*, task_type, goal, tools, requester, decide, fallback, max_steps=6, target_type=None, target_id=None):
-    """執行一次 Agent。decide 是 AI（None 表示直接走固定流程）；fallback 是固定流程。
-
-    回傳 {task_id, mode, steps, summary, links}；steps 每步含 tool、label、args、result、summary。
-    """
+def start_task(task_type, requester, target_type=None, target_id=None):
+    """先建立一筆執行中的紀錄，回傳編號；畫面可以馬上打開，邊執行邊看進度。"""
     task = AgentTask(task_type=task_type, requester_id=requester.id, target_type=target_type, target_id=target_id,
-                     status="running", started_at=datetime.now(timezone.utc))
+                     status="running", started_at=datetime.now(timezone.utc),
+                     result_json={"phase": "starting", "steps": []})
     db.session.add(task)
     db.session.commit()  # 先存起來；工具失敗時會 rollback，不能把這筆紀錄一起退掉
+    return task.id
+
+
+def fail_task(task_id, message):
+    """背景執行出錯時記下來，畫面才不會一直顯示「執行中」。"""
+    task = db.session.get(AgentTask, task_id)
+    task.status = "failed"
+    task.error_message = message
+    task.result_json = {**(task.result_json or {}), "phase": "done", "summary": message}
+    task.finished_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+
+def progress(task):
+    """給畫面輪詢用：目前在做什麼、做完哪些步驟。不含工具交回給 AI 的完整資料。"""
+    data = task.result_json or {}
+    return {"status": task.status, "done": task.status != "running", "mode": data.get("mode"),
+            "phase": data.get("phase"), "current_tool": data.get("current_tool"),
+            "steps": data.get("steps", []), "summary": data.get("summary")}
+
+
+def _record(steps):
+    return [{"tool": s["tool"], "label": s["label"], "summary": s["summary"], "ok": "error" not in s["result"]}
+            for s in steps]
+
+
+def _save_progress(task_id, mode, steps, phase, current_tool=None):
+    task = db.session.get(AgentTask, task_id)
+    task.result_json = {"mode": mode, "phase": phase, "current_tool": current_tool, "steps": _record(steps)}
+    db.session.commit()
+
+
+def run(*, task_type, goal, tools, requester, decide, fallback, max_steps=6, target_type=None, target_id=None,
+        task_id=None):
+    """執行一次 Agent。decide 是 AI（None 表示直接走固定流程）；fallback 是固定流程。
+
+    task_id：已經用 start_task 建好的紀錄（背景執行時用）；沒給就在這裡建立。
+    每做完一步就存進紀錄，畫面輪詢 progress() 就能看到 Agent 正在用哪個工具。
+    回傳 {task_id, mode, steps, summary, links}；steps 每步含 tool、label、args、result、summary。
+    """
+    if task_id is None:
+        task_id = start_task(task_type, requester, target_type, target_id)
 
     registry = {tool.name: tool for tool in tools}
     mode, fallback_reason = ("ai" if decide else "rule"), None
     steps, summary = [], None
     for _ in range(max_steps):
+        _save_progress(task_id, mode, steps, "deciding")
         try:
             decision = (decide if mode == "ai" else fallback)(goal, steps, tools)
         except AIUnavailable as exc:
@@ -125,6 +166,7 @@ def run(*, task_type, goal, tools, requester, decide, fallback, max_steps=6, tar
         if "finish" in decision:
             summary = _plain(decision["finish"])
             break
+        _save_progress(task_id, mode, steps, "running", decision.get("tool"))
         result = _execute(registry, decision.get("tool"), decision.get("args"))
         steps.append({
             "tool": decision.get("tool"),
@@ -140,12 +182,13 @@ def run(*, task_type, goal, tools, requester, decide, fallback, max_steps=6, tar
         link = step["result"].get("link")
         if link and link not in links:
             links.append(link)
-    task = db.session.get(AgentTask, task.id)
+    task = db.session.get(AgentTask, task_id)
     task.status = "succeeded" if summary else "stopped"
     task.result_json = {
         "mode": mode,
+        "phase": "done",
         "fallback_reason": fallback_reason,
-        "steps": [{"tool": s["tool"], "label": s["label"], "summary": s["summary"]} for s in steps],
+        "steps": _record(steps),
         "summary": summary or f"執行了 {len(steps)} 步還沒有結論，已停止；請稍後再試或改用手動流程。",
         "links": links,
     }
