@@ -37,7 +37,7 @@
         {% set c = version.content_json %}
         <li{% if version.id == selected.id %} aria-current="true"{% endif %}>
           <a href="{{ url_for('student.autobiography_versions', program_id=program.id, v=version.id) }}">第 {{ version_of(version) }} 版</a>
-          <span class="small muted">{{ role_text.get(c.editor_role, "修改") }}{% if editors.get(c.editor_id) %} · {{ editors[c.editor_id].display_name }}{% endif %} · {{ version.created_at|taipei_time("%m-%d %H:%M") }}</span>
+          <span class="small muted">{{ "示範草稿（沒有接上 AI）" if c.provider == "demo" and c.editor_role == "ai" else role_text.get(c.editor_role, "修改") }}{% if editors.get(c.editor_id) %} · {{ editors[c.editor_id].display_name }}{% endif %} · {{ version.created_at|taipei_time("%m-%d %H:%M") }}</span>
         </li>
         {% endfor %}
       </ol>

@@ -119,7 +119,7 @@ def test_review_page_has_combined_filters_visible_pending_badges_and_default_loc
     assert '<option value="pending">只看缺學分</option>' in page
     assert "只列出學分空白或待確認的課程" in page
     assert 'id="review-makeup-filter"' in page
-    assert re.search(r'<button[^>]*id="lock-all-scores"[^>]*>.*?全部鎖定', page, re.S)
+    assert re.search(r'<button[^>]*id="lock-all-scores"[^>]*>.*?解鎖成績', page, re.S)
     assert 'id="all-fields-locked" name="all_fields_locked" value="0"' in page
     assert 'data-makeup-season="summer"' in page
     assert 'data-needs-review="true"' in page

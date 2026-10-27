@@ -456,7 +456,7 @@ def ocr_settings_page():
             ocr_settings.save_device(request.form.get("device", ""),
                                      request.form.get("dml_device_id", type=int, default=-1),
                                      get_current_user())
-            return redirect(url_for("admin.ocr_settings_page"))
+            return redirect(url_for("admin.ocr_settings_page", saved=1))
         except ValueError as exc:
             error = str(exc)
     device, dml_device_id = ocr_settings.current_device()

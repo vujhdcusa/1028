@@ -1022,7 +1022,8 @@ def target_list():
             return redirect(url_for("student.target_gap", program_id=program.id))
     journey = build_journey(user)
     selected = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id).all()}
-    programs = published_programs()
+    # 已選的目標放最上面，其他照原本順序（10-27 實測問題 14）
+    programs = sorted(published_programs(), key=lambda p: p.id not in selected)
     school_links = load_school_links()
     return render_template(
         "student_targets.html",

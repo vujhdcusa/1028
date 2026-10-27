@@ -35,7 +35,7 @@
         <button type="button" class="fit-pick fit-brief__row" data-fit-pick="{{ row.program.id }}" data-fit-name="{{ row.name }}（{{ row.channel }}）" aria-pressed="false">
           <span class="fit-brief__rank">{{ loop.index }}</span>
           <span class="fit-brief__school">{{ row.name }} <small>{{ row.channel }}</small></span>
-          <span class="fit-brief__meta">幫得上 {{ row.count }} 筆，最高占 {{ row.weight }}%</span>
+          <span class="fit-brief__meta">幫得上 {{ row.count }} 筆；用得上的甄審項目最高占 {{ row.weight }}%</span>
         </button>
       </li>
       {% endfor %}
@@ -51,7 +51,7 @@
       {% elif fit.programs %}你還沒選目標校系，先用推薦排序裡前 {{ fit.programs|length }} 個可報、和你背景相關的校系比對。
       {% else %}目前沒有可報的推薦校系可以比對。
       {% endif %}
-      <a href="{{ url_for('student.target_list') }}">選目標校系</a>
+      <a href="{{ url_for('student.target_list') }}">{{ "看目標校系" if fit.scope == "target" else "選目標校系" }}</a>
     </p>
   </section>
 
@@ -89,7 +89,7 @@
           <li>
             <button type="button" class="fit-pick fit-line__school" data-fit-pick="{{ entry.program.id }}" data-fit-name="{{ entry.name }}（{{ entry.channel }}）" aria-pressed="false">
               <span class="fit-line__name">{{ entry.name }} <small>{{ entry.channel }}</small></span>
-              <span class="fit-line__weight">「{{ entry.item }}」占 {{ entry.weight }}%</span>
+              <span class="fit-line__weight">可放進「{{ entry.item }}」（這個項目占 {{ entry.weight }}%）</span>
               <span class="fit-bar" style="--w: {{ entry.weight }}%" aria-hidden="true"><i></i></span>
             </button>
           </li>

@@ -317,7 +317,7 @@
       <option value="all">全部類別</option><option value="summer">暑期重補修</option><option value="winter">寒期重補修</option>
     </select>
   </label>
-  <button type="button" id="lock-all-scores" class="lock-all-scores" aria-label="全部鎖定欄位" title="鎖定所有課程欄位"><svg class="lock-all-icon--closed" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><svg class="lock-all-icon--open" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></svg><span class="lock-all-label">全部鎖定</span></button>
+  <button type="button" id="lock-all-scores" class="lock-all-scores" aria-label="全部鎖定欄位" title="鎖定所有課程欄位"><svg class="lock-all-icon--closed" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><svg class="lock-all-icon--open" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></svg><span class="lock-all-label">解鎖成績</span></button>
   <input type="hidden" id="scores-unlocked" name="scores_unlocked" value="0">
   <input type="hidden" id="all-fields-locked" name="all_fields_locked" value="0">
   <span id="score-lock-status" class="score-lock-status" role="status" aria-live="polite">成績已鎖定，避免誤改</span>
@@ -507,13 +507,27 @@
         input.readOnly = locked || (input.name.endsWith('_score') && !scoresUnlocked);
         input.classList.toggle('all-fields-locked', locked);
       }
-      const label = lockAllButton.querySelector('.lock-all-label');
-      if (label) label.textContent = locked ? '全部解鎖' : '全部鎖定';
-      lockAllButton.classList.toggle('is-unlocked', locked);
-      lockAllButton.setAttribute('aria-label', locked ? '全部解鎖欄位' : '全部鎖定欄位');
-      lockAllButton.setAttribute('title', locked ? '解鎖所有課程欄位' : '鎖定所有課程欄位');
+      refreshLockButton();
     };
-    if (lockAllButton) lockAllButton.addEventListener('click', () => setAllFieldsLock(!allFieldsLocked));
+    // 按鈕寫的是「按下去會怎樣」：一開始成績是鎖的，按一次就能改成績（10-27 實測問題 8）
+    const refreshLockButton = () => {
+      if (!lockAllButton) return;
+      const next = allFieldsLocked ? '全部解鎖' : (scoresUnlocked ? '全部鎖定' : '解鎖成績');
+      const label = lockAllButton.querySelector('.lock-all-label');
+      if (label) label.textContent = next;
+      lockAllButton.classList.toggle('is-unlocked', allFieldsLocked || !scoresUnlocked);
+      lockAllButton.setAttribute('aria-label', next);
+      lockAllButton.setAttribute('title', next);
+    };
+    if (lockAllButton) lockAllButton.addEventListener('click', () => {
+      if (!allFieldsLocked && !scoresUnlocked) {
+        setScoreLock(true);
+        refreshLockButton();
+      } else {
+        setAllFieldsLock(!allFieldsLocked);
+      }
+    });
+    refreshLockButton();
     for (const mode of document.querySelectorAll('input[name="course_input_mode"]')) {
       mode.addEventListener('change', () => {
         if (mode.checked && mode.value === 'json') setAllFieldsLock(false);

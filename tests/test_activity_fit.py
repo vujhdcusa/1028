@@ -140,6 +140,6 @@ def test_portfolio_page_shows_program_names_and_weights(app):
 
     assert "對這些學校的甄審有幫助" in html
     assert "目標科大" in html and "資訊管理系" in html
-    assert "「其他」占 20%" in html
+    assert "可放進「其他」（這個項目占 20%）" in html
     assert "最能用在" in html
     assert "目前目標校系的甄審沒有列這一類" in html
