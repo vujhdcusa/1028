@@ -1415,3 +1415,49 @@ body[data-page="student-welcome"] .assistant { display: none; }
 [data-page="student-autobiography"] .unsupported-list li { padding: .45rem .6rem; border-left: 3px solid var(--warn); background: var(--warn-soft); font-size: .86rem; line-height: 1.5; overflow-wrap: anywhere; }
 [data-page="student-autobiography"] .unsupported-list q { quotes: "「" "」"; }
 /* DEMO-02 自傳逐句檢查 結束 */
+/* DEMO-03 活動適合學校 */
+/* 頁首總結：哪幾間學校最用得上你的活動；點學校，下面用得到的紀錄亮起來 */
+.fit-brief { margin: 0 0 2rem; padding: 1.1rem 1.25rem 1rem; background: var(--sheet); border: 1px solid var(--line); border-top: 3px solid var(--ink); box-shadow: var(--shadow-sheet); }
+.fit-brief__title { margin: 0 0 .8rem; font-family: var(--font-serif); font-size: clamp(1.2rem, 3vw, 1.55rem); font-weight: 900; line-height: 1.45; overflow-wrap: anywhere; }
+.fit-brief__name { background: linear-gradient(transparent 62%, var(--warn-soft) 62%) no-repeat; background-size: 100% 100%; transition: background-size .6s ease-out; }
+.fit-brief__list { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; }
+.fit-pick { font: inherit; color: inherit; cursor: pointer; text-align: left; background: transparent; border: 1px solid var(--line); border-radius: 2px; transition: background-color .2s, border-color .2s, box-shadow .2s; }
+.fit-pick:hover { border-color: var(--ink); }
+.fit-pick:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.fit-pick.is-fit-lit { border-color: var(--accent); background: var(--accent-soft); box-shadow: 3px 3px 0 var(--accent); }
+.fit-brief__row { width: 100%; display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: baseline; gap: .2rem .7rem; padding: .5rem .75rem; }
+.fit-brief__rank { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 900; line-height: 1; color: var(--year-4); }
+.fit-brief__school { font-weight: 700; overflow-wrap: anywhere; }
+.fit-brief__school small, .fit-line__name small { font-weight: 400; color: var(--muted); font-size: .8em; }
+.fit-brief__meta { color: var(--muted); font-size: .85rem; }
+.fit-brief__hint { margin: .7rem 0 0; font-size: .9rem; color: var(--ink-soft); }
+.fit-brief__scope { margin: .35rem 0 0; }
+.fit-brief__scope a { color: var(--accent); font-weight: 700; }
+/* 每筆紀錄下方：對哪些學校的甄審有幫助 */
+.fit-line { margin: 0; padding: .55rem .7rem .6rem; border-left: 3px solid var(--slot, var(--accent)); background: var(--paper-deep); }
+.fit-line__label { margin: 0 0 .35rem; font-size: .8rem; font-weight: 800; letter-spacing: .06em; color: var(--ink-soft); }
+.fit-line__list { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
+.fit-line__school { width: 100%; display: grid; gap: .05rem; padding: .3rem .45rem; background: var(--sheet); font-size: .85rem; }
+.fit-line__name { font-weight: 700; overflow-wrap: anywhere; }
+.fit-line__weight { color: var(--ink-soft); overflow-wrap: anywhere; }
+.fit-bar { display: block; height: 4px; margin-top: .25rem; background: var(--line); }
+.fit-bar i { display: block; width: var(--w); height: 100%; background: var(--slot, var(--accent)); transform-origin: left; transition: transform .7s cubic-bezier(.2, .8, .2, 1); }
+.fit-line__list li:nth-child(2) .fit-bar i { transition-delay: .12s; }
+.fit-line__list li:nth-child(3) .fit-bar i { transition-delay: .24s; }
+.fit-line--empty { font-size: .85rem; color: var(--muted); border-left-color: var(--line); background: transparent; }
+/* 逐步揭露：JavaScript 加上 fit-ready 後，進到畫面才長出長條與螢光底線；沒有 JavaScript 時直接完整顯示 */
+.fit-ready .fit-line:not(.is-shown) .fit-bar i { transform: scaleX(0); }
+.fit-ready .fit-brief:not(.is-shown) .fit-brief__name { background-size: 0 100%; }
+/* 選了一間學校：用得到的紀錄亮起來，其餘淡出 */
+.record-card-slot { transition: opacity .25s, filter .25s; }
+.is-fit-picking .record-card-slot:not(.is-fit-lit) { opacity: .38; filter: grayscale(.7); }
+.is-fit-picking .record-card-slot.is-fit-lit .record-card { box-shadow: 0 0 0 2px var(--accent), 4px 4px 0 var(--accent); }
+@media (max-width: 560px) {
+  .fit-brief { padding: .9rem .9rem .85rem; }
+  .fit-brief__row { grid-template-columns: 1.6rem minmax(0, 1fr); }
+  .fit-brief__meta { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fit-pick, .fit-brief__name, .fit-bar i, .record-card-slot { transition: none; }
+}
+/* DEMO-03 活動適合學校 結束 */
