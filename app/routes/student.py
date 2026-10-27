@@ -536,6 +536,33 @@ def _course_integer(value, label, upper=None):
     return value
 
 
+
+SEMESTER_WORDS = {"一": "上", "1": "上", "上": "上", "二": "下", "2": "下", "下": "下"}
+
+
+def _course_semester(value):
+    """成績單印「一」「二」或 1、2，系統統一存「上」「下」（10-27 實測問題 3）。"""
+    text = str(value or "").strip()
+    return SEMESTER_WORDS.get(text, text or None)
+
+
+def _course_grade(user, school_year, grade_level):
+    """課程放在幾年級（1～5）。學生在確認頁填的年級優先；辨識草稿帶的是民國學年度（例如 115）時，
+    用入學年度換算成年級，換不出來就留空，不把 115 當成年級存進去。"""
+    typed = grade_number(grade_level)
+    if typed:
+        return typed
+    try:
+        year = int(school_year)
+    except (TypeError, ValueError):
+        return None
+    if 1 <= year <= 5:
+        return year
+    profile = user.student_profile
+    if profile and profile.admission_year and 1 <= year - profile.admission_year + 1 <= 5:
+        return year - profile.admission_year + 1
+    return None
+
 @student_bp.post("/student/learning-profile/documents/<int:document_id>/review/confirm")
 @role_required("student")
 def learning_profile_document_confirm(document_id):
@@ -648,7 +675,7 @@ def learning_profile_document_confirm(document_id):
             item.update(course_name=course_name, credits=credits, score=score,
                         grade_level=grade_level, makeup_season=makeup_season,
                         score_band=score_band(score))
-            course_year = int(item["school_year"]) if item.get("school_year") else None
+            course_year = _course_grade(user, item.get("school_year"), grade_level)
             if student_rules.grade_block_reason(user) is None:
                 # 組員確認頁只填年級（grade_level）時，也要檢查不能填比現在高的年級
                 student_rules.check_record_year(
@@ -657,7 +684,7 @@ def learning_profile_document_confirm(document_id):
                 student_id=user.id,
                 source_document_id=document.id,
                 school_year=course_year,
-                semester=str(item.get("semester") or "").strip() or None,
+                semester=_course_semester(item.get("semester")),
                 grade_level=grade_level,
                 course_name=course_name,
                 normalized_course_name=normalized_name,

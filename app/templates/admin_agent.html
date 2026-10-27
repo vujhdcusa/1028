@@ -41,7 +41,7 @@
           <tr>
             <td><b>{{ source.name }}</b></td>
             <td class="small">{% if source.source_type == "url" %}<a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.url|truncate(48, True, "…") }}</a>{% else %}手動上傳：{{ source.url[9:] }}{% endif %}</td>
-            <td class="mono small">{{ snap.fetched_at.strftime("%Y-%m-%d %H:%M") if snap else "還沒抓過" }}</td>
+            <td class="mono small">{{ snap.fetched_at|taipei_time("%Y-%m-%d %H:%M") if snap else "還沒抓過" }}</td>
             <td>{% if source.source_type == "url" %}
               <form method="post" action="{{ url_for('admin.agent_check_source', source_id=source.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--small" type="submit" data-busy-text="檢查中…">立即檢查</button></form>
             {% endif %}</td>
@@ -79,7 +79,7 @@
         <tbody>
           {% for change, snap, source in changes %}
           <tr>
-            <td class="mono small">{{ snap.fetched_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            <td class="mono small">{{ snap.fetched_at|taipei_time("%Y-%m-%d %H:%M") }}</td>
             <td>{{ source.name }}</td>
             <td>{{ "第一次抓取" if change.change_type == "first" else "內容有變" }} <span class="muted small">{{ (change.diff_json.size / 1024)|round|int }} KB</span></td>
             <td><span class="tag {{ 'tag--ok' if change.status == 'extracted' else 'tag--warn' }}">{{ "已擷取" if change.status == "extracted" else "待擷取" }}</span></td>
@@ -135,7 +135,7 @@
       {% for task in tasks %}
       {% set label, cls = task_status.get(task.status, (task.status, "tag")) %}
       <li><strong>{{ task_names.get(task.task_type, task.task_type) }} <span class="tag {{ cls }}">{{ label }}</span></strong>
-        <span class="mono small">{{ task.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+        <span class="mono small">{{ task.created_at|taipei_time("%Y-%m-%d %H:%M") }}</span>
         {% if task.error_message %}<span class="small">{{ task.error_message }}</span>
         {% elif task.task_type == "agent_patrol" and task.result_json %}<span class="small">{{ task.result_json.summary }}</span>
         {% elif task.result_json and task.result_json.created is defined %}<span class="small">新增 {{ task.result_json.created|length }} 個候選，略過 {{ task.result_json.skipped|length }} 個</span>

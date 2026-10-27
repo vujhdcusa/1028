@@ -145,6 +145,8 @@ def main():
         "SQLALCHEMY_DATABASE_URI": f"sqlite:///{demo_db.as_posix()}",
         "UPLOAD_FOLDER": str(PROJECT_ROOT / "instance" / "demo-uploads"),
         "DEMO_ACCOUNTS": DEMO_ACCOUNTS,  # 登入頁顯示展示帳號；正式環境不要設定
+        # 瀏覽器的 cookie 只分主機、不分埠：同時開 5020、5021 會互相蓋掉登入（10-27 實測問題 6）
+        "SESSION_COOKIE_NAME": f"demo_session_{port}",
     })
     with app.app_context():
         db.create_all()
