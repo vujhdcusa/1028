@@ -35,6 +35,7 @@ from app.services.flow import flash_done, readiness, safe_next, target_program
 from app.services.document_analysis_service import ALLOWED_DOCUMENT_TYPES, analyze_document, score_band
 from app.services.learning_profile_docx_service import output_to_docx_bytes
 from app.services.learning_profile_service import generate_learning_profile_outputs
+from app.services.activity_fit import build_activity_fit
 from app.services.admission_service import published_programs
 from app.services.gap_service import ALL_LABELS, analyze_gap, chapter_order
 from app.services.admission_links import admission_links, load_school_links
@@ -770,6 +771,7 @@ def portfolio_list():
         categories=EXPERIENCE_CATEGORIES,
         category_labels=CATEGORY_LABELS,
         record_state=portfolio_state,
+        fit=build_activity_fit(user, [r for r in records if r.category in EXPERIENCE_CATEGORIES]),
     )
 
 
