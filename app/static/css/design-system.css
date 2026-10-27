@@ -1410,3 +1410,8 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .agent-tool { transition: none; }
   .agent-tool--active { transform: none; }
 }
+/* DEMO-02 自傳逐句檢查 */
+[data-page="student-autobiography"] .unsupported-list { display: grid; gap: .4rem; margin: .5rem 0 0; padding: 0; list-style: none; }
+[data-page="student-autobiography"] .unsupported-list li { padding: .45rem .6rem; border-left: 3px solid var(--warn); background: var(--warn-soft); font-size: .86rem; line-height: 1.5; overflow-wrap: anywhere; }
+[data-page="student-autobiography"] .unsupported-list q { quotes: "「" "」"; }
+/* DEMO-02 自傳逐句檢查 結束 */

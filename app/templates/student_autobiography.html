@@ -158,6 +158,11 @@
         <section aria-label="疑點">
           <h3>疑點</h3>
           <p class="review-line"><span aria-hidden="true">{{ review.icon }}</span> {{ review.issue }}</p>
+          {% if review.unsupported %}
+          <ul class="unsupported-list" aria-label="找不到依據的句子">
+            {% for sentence in review.unsupported %}<li><q>{{ sentence }}</q></li>{% endfor %}
+          </ul>
+          {% endif %}
         </section>
         <section aria-label="建議">
           <h3>建議</h3>
