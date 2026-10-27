@@ -31,7 +31,11 @@ EXPERIENCE_WORDS = (
     "舉辦", "考取", "考到", "取得", "修習", "修過", "實習", "打工", "志工", "得獎", "獲獎",
     "比賽", "競賽", "指導", "自學", "開發", "架設",
 )
+# 講童年、一向如此的說法：學校資料不可能佐證，只有學生自己的回答寫過才算有依據。
+# 只看含這些詞的那個子句，同一句後面提到真的競賽名稱也不能替它擔保。
+ORIGIN_WORDS = ("從小", "小時候", "自幼", "一直以來")
 SENTENCE_END = re.compile(r"(?<=[。！？])")
+CLAUSE_SPLIT = re.compile(r"[，,；;]")
 NOT_WORD = re.compile(r"[^0-9A-Za-z一-鿿]")
 OVERLAP = 4  # 句子和資料或回答有連續 4 個字相同，就算有依據
 
@@ -57,17 +61,24 @@ def _has_support(sentence, sources, keywords):
     return any(gram in source for source in sources for gram in grams)
 
 
+def _origin_unsupported(sentence, answer_sources):
+    for clause in CLAUSE_SPLIT.split(sentence):
+        if any(word in clause for word in ORIGIN_WORDS) and not _has_support(clause, answer_sources, []):
+            return True
+    return False
+
+
 def unsupported_sentences(text, facts, answers):
     """回傳在講具體經驗、卻對不到任何資料或學生回答的句子原文。寧可少抓。"""
-    sources = [_normalize(fact["text"]) for fact in facts]
-    sources += [_normalize(answer) for answer in answers.values() if answer]
+    answer_sources = [_normalize(answer) for answer in answers.values() if answer]
+    sources = [_normalize(fact["text"]) for fact in facts] + answer_sources
     keywords = [word for fact in facts for word in _fact_keywords(fact["text"])]
     result = []
     for sentence in SENTENCE_END.split(text or ""):
         sentence = sentence.strip()
         if not sentence or "請補上" in sentence or not any(word in sentence for word in EXPERIENCE_WORDS):
             continue
-        if not _has_support(sentence, sources, keywords):
+        if _origin_unsupported(sentence, answer_sources) or not _has_support(sentence, sources, keywords):
             result.append(sentence)
     return result
 

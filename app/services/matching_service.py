@@ -14,11 +14,17 @@
 目前支援的條件類型：
 - fresh_graduate（C1 應屆）：預計畢業學年度 = 入學學年度 + 5。報考學年度之前就已畢業的，不是應屆。
 - transfer_eligibility（插大報考資格）：一律「需確認」，並顯示簡章原文（資料來自 admission_transfer_demo.csv）。
+- skill_credential（C5 技優資格）：已確認的證照達到「等級」欄、且在「期限」欄（民國年）以前取得才可報；
+  沒有符合的證照或缺日期是「需確認」（可能還沒上傳）；證照都在期限後才取得是「不可報」。
 - 其他類型：一律「需確認」，並顯示簡章原文。
 """
 
 import csv
+import re
+from datetime import date
 from pathlib import Path
+
+from app.models import CredentialRecord
 
 from app.services.admission_links import admission_links, load_school_links
 from app.services.admission_schedule import channel_label, load_schedule, timeline
@@ -49,6 +55,9 @@ def load_conditions(path=None):
                 "type": row["條件類型"].strip(),
                 "text": row["條件原文"].strip(),
                 "source": row["出處"].strip(),
+                # C5 技優資格用：證照至少要幾級、幾號以前取得（民國年月日）；其他條件留空
+                "level": (row.get("等級") or "").strip() or None,
+                "deadline": (row.get("期限") or "").strip() or None,
             })
     return conditions
 
@@ -74,7 +83,51 @@ def _check_transfer_eligibility(student, program, condition):
     return "needs_check", f"插大報考資格系統無法自動判斷，請對照你的學歷自己核對：「{condition['text']}」{_cite(condition)}"
 
 
-CHECKS = {"fresh_graduate": _check_fresh_graduate, "transfer_eligibility": _check_transfer_eligibility}
+LEVEL_RANK = {"丙級": 1, "乙級": 2, "甲級": 3}
+
+
+def _level_of(credential):
+    text = f"{credential.level or ''}{credential.credential_name or ''}"
+    return max((rank for name, rank in LEVEL_RANK.items() if name in text), default=0)
+
+
+def _roc_date(text):
+    """「115/04/13」→ date(2026, 4, 13)；看不懂回傳 None。"""
+    parts = re.findall(r"\d+", text or "")
+    if len(parts) != 3:
+        return None
+    try:
+        return date(int(parts[0]) + 1911, int(parts[1]), int(parts[2]))
+    except ValueError:
+        return None
+
+
+def _check_skill_credential(student, program, condition):
+    """C5：已確認的證照裡，有沒有達到等級、且在期限內取得的。系統沒有資料時是「需確認」，不是「不可報」。"""
+    required, deadline = condition.get("level"), _roc_date(condition.get("deadline"))
+    if required not in LEVEL_RANK:
+        return "needs_check", f"簡章要求技優資格，系統無法自動判斷，請自己核對：「{condition['text']}」{_cite(condition)}"
+    rule = f"這個志願要{required}以上證照" + (f"、{deadline:%Y-%m-%d} 以前取得" if deadline else "") + _cite(condition)
+    qualified = [c for c in CredentialRecord.query.filter_by(student_id=student.id, confirmation_status="confirmed")
+                 if _level_of(c) >= LEVEL_RANK[required]]
+    if not qualified:
+        return "needs_check", f"{rule}。系統裡沒有你已確認的{required}以上證照；如果你有，請上傳並確認。"
+    if deadline is None:
+        best = qualified[0]
+        return "eligible", f"{rule}；你有「{best.credential_name}」。"
+    in_time = [c for c in qualified if c.issue_date and c.issue_date <= deadline]
+    if in_time:
+        best = min(in_time, key=lambda c: c.issue_date)
+        return "eligible", f"{rule}；你的「{best.credential_name}」在 {best.issue_date:%Y-%m-%d} 取得，符合。"
+    if any(c.issue_date is None for c in qualified):
+        return "needs_check", f"{rule}；你的{required}以上證照沒有取得日期，請補上日期確認。"
+    latest = max(qualified, key=lambda c: c.issue_date)
+    return "ineligible", (f"{rule}；你的「{latest.credential_name}」在 {latest.issue_date:%Y-%m-%d} 才取得，"
+                          f"晚於期限 {deadline:%Y-%m-%d}。日期有誤請更正證照資料。")
+
+
+CHECKS = {"fresh_graduate": _check_fresh_graduate, "transfer_eligibility": _check_transfer_eligibility,
+          "skill_credential": _check_skill_credential}
 
 
 def _check_conditions(student, program, conditions):

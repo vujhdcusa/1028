@@ -519,3 +519,29 @@ def test_background_run_finishes_and_failures_are_recorded(tmp_path, monkeypatch
     monkeypatch.setattr(agent_advisor, "run_advisor", boom)
     failed = wait_done(client.post("/student/agent/advise").headers["Location"])
     assert failed["status"] == "failed" and "再請 Agent 規劃一次" in failed["summary"]
+
+
+def test_run_left_running_by_a_restart_is_shown_as_interrupted(app):
+    """網站重開時正在跑的那一次不會再有人更新；超過時間就當成中斷，畫面才不會一直轉。"""
+    from datetime import datetime, timedelta, timezone
+    from app.services.agent_engine import start_task
+    task_id = start_task("agent_advisor", user("stu"))
+    task = db.session.get(AgentTask, task_id)
+    task.started_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    db.session.commit()
+    client = login(app, "stu")
+
+    data = client.get(f"/student/agent/runs/{task_id}/progress").get_json()
+
+    assert data["done"] is True and data["status"] == "failed"
+    assert "中斷" in data["summary"]
+    assert "再請 Agent 規劃一次" in client.get(f"/student/agent/runs/{task_id}").get_data(as_text=True)
+
+
+def test_recent_running_task_is_not_marked_interrupted(app):
+    from app.services.agent_engine import start_task
+    task_id = start_task("agent_advisor", user("stu"))
+
+    data = login(app, "stu").get(f"/student/agent/runs/{task_id}/progress").get_json()
+
+    assert data["done"] is False

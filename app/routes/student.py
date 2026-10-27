@@ -1028,7 +1028,8 @@ def _own_agent_task(task_id):
 @role_required("student")
 def agent_run(task_id):
     from app.services.agent_advisor import TOOL_LINEUP
-    task = _own_agent_task(task_id)
+    from app.services.agent_engine import expire_if_stale
+    task = expire_if_stale(_own_agent_task(task_id))
     return render_template("student_agent_run.html", user=get_current_user(), task=task, run=task.result_json or {},
                            lineup=TOOL_LINEUP)
 
