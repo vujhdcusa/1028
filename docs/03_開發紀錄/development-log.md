@@ -10,9 +10,9 @@
 
 - 更新 `docs/05_交接與專案管理/系統完整測試手冊.md`：修正 X-09、S-10、S-13、S-14、S-24、S-28、S-29、S-31、S-42、T-01、T-05b、T-08、F-03、A-02、A-07、A-10、A-11；補上測試檔案規格及同一瀏覽器測多個埠／角色的注意事項。另補契合度、自傳證據編號限制，以及測試報告問題 13、18 是展示資料情況的說明。
 - S-13 註明成績確認頁一開始按鈕顯示「解鎖成績」，按一次即可修改分數；一般辨識成功頁沒有新增／刪除按鈕。
-- 完整自動測試：依指定指令執行，`898 passed, 3 failed, 2 skipped`（403.17 秒）。3 個失敗是既有程式測試：`test_extract_without_api_key_gives_chinese_message`、`test_missing_key_raises_chinese_message`、`test_editable_course_fields_save_without_javascript`；本次依要求未改程式，故未修復。另有 pytest `cache_dir` 未知設定警告。
+- 完整自動測試：依指定指令執行，`898 passed, 3 failed, 2 skipped`（403.17 秒）。3 個失敗是既有程式測試：`test_extract_without_api_key_gives_chinese_message`、`test_missing_key_raises_chinese_message`、`test_editable_course_fields_save_without_javascript`；本次依要求未改程式，故未修復。另有 pytest `cache_dir` 未知設定警告。（GPT 執行時的結果；這 3 個是測試還在檢查舊行為，Claude 已在 `a966c67`、`3c94bac` 改成新行為，之後完整測試 900 通過、唯一失敗已修正並單獨重跑通過，2026-10-27 已推送 `3c94bac`。）
 
-下一步：回報文件修改和測試數字；三個程式測試失敗需另行處理。本次只提交手冊與本開發日誌，不推送。
+下一步：回報文件修改和測試數字。三個測試失敗已由 Claude 處理（見上）。本次只提交手冊與本開發日誌，不推送。
 
 ## 2026-10-27 從頭到尾的主線自動測試
 
