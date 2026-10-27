@@ -470,3 +470,25 @@ def ocr_settings_page():
         provider=current_app.config.get("DOCUMENT_ANALYSIS_PROVIDER"),
         error=error,
     ), (400 if error else 200)
+
+
+@admin_bp.get("/admin/audit-logs")
+@role_required("admin")
+def audit_logs():
+    """操作紀錄（規格 M11）：最近 200 筆，可依動作篩選。只顯示角色與使用者編號，不顯示姓名與學號。"""
+    from app.services import audit_service
+
+    action = request.args.get("action", "").strip()
+    query = AuditLog.query
+    if action:
+        query = query.filter_by(action=action)
+    logs = query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).limit(200).all()
+    known = {row[0] for row in db.session.query(AuditLog.action).distinct()}
+    return render_template(
+        "admin_audit_logs.html",
+        user=get_current_user(),
+        logs=logs,
+        action=action,
+        actions=sorted(known | set(audit_service.ACTION_LABELS)),
+        label=audit_service.label,
+    )

@@ -457,7 +457,7 @@ def test_teacher_confirm_and_withdraw_are_logged(app):
     with app.app_context():
         actions = [log.action for log in AuditLog.query.filter(AuditLog.action.like("package_review.%")).order_by(AuditLog.id).all()]
         withdraw = AuditLog.query.filter_by(action="package_review.withdraw").one()
-    assert actions == ["package_review.confirm", "package_review.withdraw"]
+    assert actions == ["package_review.request", "package_review.confirm", "package_review.withdraw"]  # 送審也有紀錄（M11）
     assert withdraw.detail_json["reason"] == "按錯了，自傳還沒看完"
     assert withdraw.target_id == review_id
 

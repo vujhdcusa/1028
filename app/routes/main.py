@@ -85,10 +85,10 @@ def login():
     if not endpoint:
         session.clear()
         return render_template("login.html", error="此帳號尚未設定可用角色"), 403
-    if user.role == "student":
-        # 記下登入時間：首頁用它判斷是不是很久沒來（「好久不見」那一幕）
-        db.session.add(AuditLog(user_id=user.id, action="student.login", ip_address=request.remote_addr))
-        db.session.commit()
+    # 每次登入都記（規格 M11）；學生首頁也用 student.login 判斷是不是很久沒來（「好久不見」那一幕）
+    action = "student.login" if user.role == "student" else "user.login"
+    db.session.add(AuditLog(user_id=user.id, action=action, ip_address=request.remote_addr))
+    db.session.commit()
     if user.role == "student" and not _welcome_done(user):
         return redirect(url_for("main.student_welcome"))
     return redirect(url_for(endpoint))

@@ -111,3 +111,36 @@ def test_portfolio_source_migration_adds_and_removes_columns(tmp_path):
         db.engine.dispose()
         columns = {column["name"] for column in inspect(db.engine).get_columns("portfolios")}
     assert "source" not in columns
+
+
+def test_soft_delete_migration_upgrades_downgrades_and_upgrades_again(tmp_path):
+    """M10：deleted_at 欄位從零升級、降級、再升級都正常（只在 SQLite 測；MySQL 要先備份再執行）。"""
+    fresh = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{tmp_path / 'fresh.db'}", "TESTING": True})
+    app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{tmp_path / 'old.db'}", "TESTING": True})
+    runner = app.test_cli_runner()
+
+    def columns(table):
+        with app.app_context():
+            db.engine.dispose()
+            return {column["name"] for column in inspect(db.engine).get_columns(table)}
+
+    # 從零：基本表還沒建時要能跳過，降到 base 再升回來也不會錯
+    fresh_runner = fresh.test_cli_runner()
+    assert fresh_runner.invoke(args=["db", "upgrade"]).exit_code == 0
+    assert fresh_runner.invoke(args=["db", "downgrade", "base"]).exit_code == 0
+    assert fresh_runner.invoke(args=["db", "upgrade"]).exit_code == 0
+
+    # 舊資料庫：表已存在但還沒有 deleted_at（模擬上一版的正式資料庫）
+    with app.app_context():
+        db.create_all()
+        with db.engine.begin() as connection:
+            for table in ("portfolio_evidence", "portfolios"):
+                connection.exec_driver_sql(f"ALTER TABLE {table} DROP COLUMN deleted_at")
+    assert runner.invoke(args=["db", "stamp", "c4e2b7a91d05"]).exit_code == 0
+
+    assert runner.invoke(args=["db", "upgrade"]).exit_code == 0
+    assert "deleted_at" in columns("portfolios") and "deleted_at" in columns("portfolio_evidence")
+    assert runner.invoke(args=["db", "downgrade", "c4e2b7a91d05"]).exit_code == 0
+    assert "deleted_at" not in columns("portfolios") and "deleted_at" not in columns("portfolio_evidence")
+    assert runner.invoke(args=["db", "upgrade"]).exit_code == 0
+    assert "deleted_at" in columns("portfolios") and "deleted_at" in columns("portfolio_evidence")
