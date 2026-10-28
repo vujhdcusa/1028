@@ -1,5 +1,33 @@
 # 開發日誌
 
+## 2026-10-28 自傳兩邊都存：學校端 Word 備份＋學生自己的 Google 文件
+
+日期：2026-10-28（台灣時間）
+
+開發者：Claude（分支 `feat/google-docs-autobiography`；子代理實作，另一個子代理審查）
+
+目標：使用者問「自傳要存在雲端上，阿雲端的位置勒」，並選擇「兩邊都存」。原本自傳只存在系統資料庫，Google 文件只是另開一份給學生編輯。
+
+- 新增 `app/services/autobiography_backup.py`：自傳每新增一版就輸出成 Word 檔。
+  - 三個建立點都會備份：AI 生成、學生或導師存修改、從 Google 文件取回。
+  - 檔案透過 `storage_service.save` 存到學校端，位置記在該版的 `content_json["backup_location"]`。
+  - 管理員在「檔案存放設定」連上 Google 時，存到學校的 Google 雲端硬碟；沒連上或 Drive 失敗時改存本機。
+  - 備份失敗不會影響生成或存檔。
+- 自傳頁與版本頁：每一版顯示「已備份到學校雲端」「已備份到本機（學校雲端未連線）」或「備份失敗」，不顯示內部路徑。
+- 自傳頁的 Google 文件區塊加上「在自己的 Google 文件中編輯」標題；學校尚未設定 Google 連線時會顯示說明，不再整塊隱藏。
+- `/admin/storage` 加說明：自傳備份也存在這裡。
+
+驗證：
+- 新測試 `tests/test_autobiography_backup.py` 8 個，先失敗後通過；相關測試 92 個通過。
+- 完整測試 **947 passed, 2 skipped**，0 失敗（子代理在提交 37e9fde 執行）。
+- 審查結論為通過，具名風險都查過：檔名安全、例外範圍、JSON 有存進資料庫、導師修改時檔案歸學生、Google 取回也有備份。
+
+已知未完成：
+- 這台電腦的 `.env` 沒有 Google OAuth 設定，所以 Drive 路徑只用假的 Drive 測過，沒有真的上傳到 Google；要有人在 Google Cloud Console 建立 OAuth 用戶端並填進 `.env`。
+- 備份在請求裡同步執行，Drive 很慢時會拖慢存檔（逾時 20 秒）。
+- 備份失敗的那一版不會自動補；每一版都存一份 Word，清理政策還沒訂。
+- 審查的小建議（Minor）：`_backup_existing` 查學生的那行在 try 外面；Word 檔沒有標示是導師或學生修改的。
+
 ## 2026-10-28 首頁改成亂亂的五年拼圖桌；展示站與正式版預設真實 OCR
 
 日期：2026-10-28（台灣時間）
