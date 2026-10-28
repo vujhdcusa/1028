@@ -929,79 +929,80 @@ body[data-page="student-welcome"] .assistant { display: none; }
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .jwalker, .place * { transition: none !important; animation: none !important; } }
 
-/* 拖拉拼圖：空格上方浮著一片，拖進去就拼上 */
-.year-puzzle__hint { margin: -.4rem 0 1rem; color: var(--muted); font-size: .9rem; }
-.puzzle-piece { position: relative; }
-.puzzle-loose { position: absolute; top: -14%; left: 16%; width: 100%; cursor: grab; touch-action: none; transform: rotate(10deg); filter: drop-shadow(3px 5px 0 rgba(28,34,48,.25)); animation: loose-float 2.4s ease-in-out infinite alternate; animation-delay: calc(2.2s + var(--n) * .2s); }
-.puzzle-loose path { fill: var(--c) !important; stroke-dasharray: none !important; opacity: .92; }
-.puzzle-loose.is-dragging { cursor: grabbing; animation: none; filter: drop-shadow(6px 10px 0 rgba(28,34,48,.25)); z-index: 5; }
-.puzzle-loose.is-returning { transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
-.puzzle-loose.is-snapped { transition: transform .22s ease-in; animation: none; filter: none; }
-.puzzle-piece--blank:hover path { transform: none; }
-.puzzle-piece.is-new path { animation: snap-in .55s cubic-bezier(.2,.9,.3,1.4) both; }
-@keyframes loose-float { from { transform: rotate(10deg) translateY(0); } to { transform: rotate(6deg) translateY(-6px); } }
-@media (prefers-reduced-motion: reduce) { .puzzle-loose { animation: none; } }
-
-/* 今年的拼圖：一張圖切六片 */
-.jig-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-.jig { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: 1.5rem; align-items: center; max-width: 60rem; margin: 0 auto; }
-.jig__board { width: 100%; height: auto; overflow: visible; }
-.jig__frame { fill: var(--paper-deep); stroke: var(--line); stroke-width: 2; }
-.jig__edge { fill: none; stroke: #1c2230; stroke-width: 2.5; stroke-linejoin: round; }
-.jig__piece { transform-box: fill-box; transform-origin: center; animation: jig-in .5s cubic-bezier(.2,.9,.3,1.3) both; animation-delay: calc(2s + var(--n) * .12s); }
-.jig__piece.is-new { animation: jig-in .6s cubic-bezier(.2,.9,.3,1.5) both; }
-.jig__tag { font: 700 20px var(--font-sans); fill: #fff; paint-order: stroke; stroke: #1c2230; stroke-width: 4px; }
-.jig__hole path { fill: rgba(28,34,48,.06); stroke: #1c2230; stroke-width: 2.5; stroke-dasharray: 9 7; transition: fill .2s; }
-.jig__hole text { font: 700 22px var(--font-sans); fill: var(--muted); }
-.jig__hole:hover path, .jig__hole.is-near path { fill: rgba(36,72,201,.14); }
-.jig__tray { display: flex; flex-wrap: wrap; gap: .5rem 1rem; justify-content: center; }
-.jig__loose { display: grid; justify-items: center; text-decoration: none; color: var(--ink-soft); font-size: .85rem; font-weight: 700; width: var(--size, 7rem); }
-.jig__loose svg { width: 100%; height: auto; overflow: visible; cursor: grab; touch-action: none; transform: rotate(var(--r)); filter: drop-shadow(4px 6px 0 rgba(28,34,48,.22)); transition: transform .35s cubic-bezier(.3,1.4,.5,1); animation: loose-in .6s cubic-bezier(.2,.9,.3,1.2) both; animation-delay: calc(2.4s + var(--n) * .12s); }
-.jig__loose svg.is-dragging { cursor: grabbing; transition: none; animation: none; position: relative; z-index: 20; filter: drop-shadow(8px 12px 0 rgba(28,34,48,.25)); }
-.jig__loose svg.is-snapped { transition: transform .25s ease-in; filter: none; }
-@keyframes jig-in { from { opacity: 0; transform: scale(.85) rotate(-6deg); } to { opacity: 1; transform: none; } }
-@keyframes loose-in { from { opacity: 0; transform: translateY(-40px) rotate(calc(var(--r) * 3)); } to { opacity: 1; transform: rotate(var(--r)); } }
-@media (max-width: 720px) { .jig { grid-template-columns: 1fr; } .jig__tray { order: 2; } }
-@media (prefers-reduced-motion: reduce) { .jig__piece, .jig__loose svg { animation: none !important; } }
-/* 版面：圖在上，散落的片在下面錯落擺放（像桌上剛倒出來的拼圖） */
-.jig { grid-template-columns: 1fr; max-width: 34rem; gap: .5rem; }
-/* 散落的片排成一列六格（手機三格），只有洞的四成左右大；拖起來才放大到洞的大小（components.js） */
-.jig__tray { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .25rem .5rem; justify-items: center; margin-top: .25rem; }
-.jig__loose { width: 100%; max-width: var(--size, 6rem); }
-.jig__loose:nth-child(even) { margin-top: .5rem; }
-.jig__loose span { margin-top: -.3rem; font-size: .8rem; }
-@media (max-width: 520px) { .jig__tray { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem 1rem; } }
-
-/* 大桌板：今年那塊大（上面的 .jig），走過的年級一列最多三塊、較小；手機一個年級一塊上下堆疊，不水平捲動 */
-.board { max-width: 60rem; margin: 0 auto; padding: .75rem; border-radius: var(--radius, 12px); min-width: 0; }
-.board__status { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem; margin: 0 0 .75rem; text-align: center; }
-.board__status p { margin: 0; }
-.board__count { color: var(--muted); }
-.board__done { font-weight: 900; font-size: 1.15rem; }
-.board__past-title { margin: 1.5rem 0 .5rem; text-align: center; font-size: 1rem; color: var(--ink-soft); }
-.board__years { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.board__year { margin: 0; min-width: 0; text-align: center; }
-.board__year figcaption { font-weight: 700; color: var(--ink-soft); font-size: .9rem; }
-.board__svg { display: block; width: 100%; height: auto; overflow: visible; }
-.board__cell path { stroke: #1c2230; stroke-width: 3; stroke-linejoin: round; }
-.board__cell.is-lit path { fill: var(--year); }
-.board__cell.is-lit text { font: 700 44px var(--font-sans); fill: #fff; paint-order: stroke; stroke: #1c2230; stroke-width: 6px; }
-.board__cell.is-new { transform-box: fill-box; transform-origin: center; animation: jig-in .6s cubic-bezier(.2,.9,.3,1.5) both; }
-/* 空格：手機上每格約 110px、電腦版三塊一列時約 65px 以上，都大於 44px 的點擊大小 */
-.board__gap path { fill: rgba(28,34,48,.06); stroke-dasharray: 12 9; transition: fill .2s; }
-.board__gap text { font: 700 40px var(--font-sans); fill: var(--muted); }
-.board__gap:hover path, .board__gap:focus-visible path { fill: rgba(36,72,201,.14); }
-/* 亮起的格也能點（再上傳一份）：滑過或鍵盤停留時邊框變粗 */
-.board__cell.is-lit:hover path, .board__cell.is-lit:focus-visible path { stroke-width: 6; }
-a.jig__piece:hover .jig__edge, a.jig__piece:focus-visible .jig__edge { stroke-width: 5; }
-/* 全部亮起：整張桌板發光 */
-.board.is-complete { box-shadow: 0 0 0 3px var(--accent), 0 0 28px 6px rgba(243,197,91,.65); animation: board-glow 2.4s ease-in-out infinite alternate; }
-@keyframes board-glow { from { box-shadow: 0 0 0 3px var(--accent), 0 0 14px 2px rgba(243,197,91,.45); } to { box-shadow: 0 0 0 3px var(--accent), 0 0 34px 10px rgba(243,197,91,.8); } }
-@media (max-width: 720px) {
-  .board { padding: .5rem; }
-  .board__years { grid-template-columns: minmax(0, 1fr); max-width: 34rem; margin: 0 auto; }
+/* 五年拼圖桌（試用版）：一筆資料＝一片拼圖，散在深灰毛氈桌的四邊；每片是同一張圖的一部分，拼好在中間合成整張圖。
+   類別只用片內緣一條低飽和的細色線表示（色票沿用 --year-*）。 */
+.year-puzzle {
+  --cat-grades: color-mix(in srgb, var(--year-1) 62%, #a7adb4);
+  --cat-credential: color-mix(in srgb, var(--year-2) 62%, #a7adb4);
+  --cat-activity: color-mix(in srgb, var(--year-3) 62%, #a7adb4);
+  --cat-competition: color-mix(in srgb, var(--year-4) 62%, #a7adb4);
+  --cat-service: color-mix(in srgb, var(--year-2) 30%, #b9b2a2);
+  --cat-leadership: color-mix(in srgb, var(--year-5) 62%, #a7adb4);
 }
-@media (prefers-reduced-motion: reduce) { .board.is-complete, .board__cell.is-new { animation: none !important; } }
+.maker-row { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; max-width: 64rem; margin: 0 auto 1rem; }
+.maker { background: var(--sheet); gap: .45rem; white-space: nowrap; }
+.maker__icon { width: 1.05rem; height: 1.05rem; flex: none; fill: none; stroke: var(--cat); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.table-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+.ptable { --ps: 8.5%; position: relative; isolation: isolate; max-width: 64rem; margin: 0 auto; aspect-ratio: 16 / 9; overflow: hidden; text-align: left;
+  border: 1px solid #25282c; border-radius: 10px; background-color: #3a3e44;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .075 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='turbulence' baseFrequency='.012 .35' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),
+    radial-gradient(120% 95% at 50% 45%, rgb(255 255 255 / .07), transparent 62%),
+    radial-gradient(60% 50% at 15% 20%, rgb(255 255 255 / .03), transparent 70%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .05), inset 0 0 70px rgb(0 0 0 / .5), 0 18px 34px -16px rgb(15 20 30 / .55); }
+.tp { position: absolute; left: var(--x); top: var(--y); z-index: 1; width: calc(var(--ps) * var(--kw)); padding: 0; border: 0; background: none; cursor: pointer;
+  transform: translate(-50%, -50%) rotate(var(--r));
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / .5)) drop-shadow(0 5px 6px rgb(0 0 0 / .3)); }
+.tp__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tp__light { fill: none; stroke: rgb(255 255 255 / .42); stroke-width: 5; }
+.tp__dark { fill: none; stroke: rgb(0 0 0 / .38); stroke-width: 5; }
+.tp__cat { fill: none; stroke: var(--cat); stroke-width: 4; }
+.tp__edge { fill: none; stroke: rgb(18 20 24 / .6); stroke-width: 1.2; stroke-linejoin: round; }
+.tp:hover, .tp:focus-visible, .tp.is-active { z-index: 6; outline: none; filter: drop-shadow(0 2px 2px rgb(0 0 0 / .5)) drop-shadow(0 10px 14px rgb(0 0 0 / .38)); }
+.tp:focus-visible .tp__edge, .tp.is-active .tp__edge { stroke: #f4f1ea; stroke-width: 3; }
+.ptable__count, .ptable__empty { position: absolute; left: 50%; top: 50%; margin: 0; transform: translate(-50%, -50%); text-align: center; pointer-events: none; transition: opacity .25s; }
+.ptable__count { color: rgb(236 232 224 / .6); font-size: .85rem; letter-spacing: .04em; }
+.ptable__count b { color: #f1ede6; font-weight: 600; font-size: 1.05rem; }
+.ptable__empty { width: 80%; transform: translate(-50%, -160%); color: #ebe7df; font-weight: 700; }
+.ptable__tip { position: absolute; z-index: 9; max-width: 16rem; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: 6px; background: var(--sheet); color: var(--ink); font-size: .88rem; line-height: 1.45; box-shadow: 0 10px 24px rgb(0 0 0 / .35); transform: translate(-50%, calc(-100% - 14px)); pointer-events: none; }
+.ptable__tip.is-below { transform: translate(-50%, 14px); }
+.ptable__tip small { display: block; font-family: var(--font-mono); font-size: .74rem; color: var(--muted); }
+/* 小助手泡泡：和右下角「資管科小助手」同一款 */
+.ptable__helper { position: absolute; right: 1rem; bottom: 1rem; z-index: 210; display: inline-flex; align-items: center; gap: .5rem; margin: 0; padding: .7rem 1.05rem; border-radius: 999px; background: var(--ink); color: var(--sheet); font-weight: 700; font-size: .92rem; box-shadow: 0 8px 24px rgb(15 20 30 / .25); animation: helper-in .25s ease-out both; }
+.ptable__helper[hidden] { display: none; }
+@keyframes helper-in { from { opacity: 0; transform: translateY(8px); } }
+/* 拼好後的整張圖：蓋在拼好的方陣上淡入、發光一下 */
+.ptable__frame { position: absolute; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .45s ease; }
+.ptable__frame svg { display: block; width: 100%; height: 100%; }
+.ptable.is-assembling .ptable__count, .ptable.is-assembling .ptable__tip { opacity: 0; }
+.ptable.is-assembling .tp { transition: transform .6s cubic-bezier(.2, .7, .2, 1), filter .6s; pointer-events: none; }
+.ptable.is-assembling .tp.is-placed { filter: drop-shadow(0 1px 1px rgb(0 0 0 / .35)); }
+.ptable.is-assembled .ptable__frame { opacity: 1; animation: ptable-glow .9s ease-out both; }
+@keyframes ptable-glow { 0% { box-shadow: 0 0 0 0 rgb(241 230 210 / 0); } 45% { box-shadow: 0 0 0 1px rgb(255 255 255 / .55), 0 0 34px 8px rgb(241 230 210 / .5); } 100% { box-shadow: 0 0 0 1px rgb(255 255 255 / .35), 0 0 18px 2px rgb(241 230 210 / .25), 0 14px 30px rgb(0 0 0 / .4); } }
+/* 新的片：從上方落下，輕輕回彈一次 */
+.tp.is-waiting { opacity: 0; }
+.tp.is-dropping { animation: tp-drop .6s cubic-bezier(.33, .8, .35, 1) both; animation-delay: calc(var(--n, 0) * 110ms); }
+@keyframes tp-drop {
+  0% { opacity: 0; transform: translate(-50%, calc(-50% - 240px)) rotate(calc(var(--r) - 18deg)) scale(1.06); }
+  65% { opacity: 1; transform: translate(-50%, calc(-50% + 3px)) rotate(var(--r)); }
+  82% { transform: translate(-50%, calc(-50% - 4px)) rotate(var(--r)); }
+  100% { transform: translate(-50%, -50%) rotate(var(--r)); }
+}
+.ptable-actions { display: flex; flex-direction: column; align-items: center; gap: .4rem; margin-top: 1rem; }
+.ptable-actions p { margin: 0; }
+/* 「做拼圖」：從按鈕做出一片，轉正、放大，飛向桌子 */
+.make-fly { position: fixed; left: 0; top: 0; z-index: 1200; width: 84px; height: 84px; pointer-events: none; filter: drop-shadow(0 6px 10px rgb(0 0 0 / .35)); }
+@media (max-width: 640px) {
+  .maker-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .maker { padding: .45rem .3rem; }
+  .ptable { --ps: 15%; aspect-ratio: 3 / 4; }
+  .tp { left: var(--mx); top: var(--my); }
+  .ptable__helper { right: .6rem; bottom: .6rem; left: .6rem; justify-content: center; font-size: .85rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp.is-waiting { opacity: 1; }
+  .tp.is-dropping, .ptable__helper, .ptable.is-assembled .ptable__frame { animation: none; }
+}
 
 /* 上傳頁只上傳一種文件：說明這頁要放什麼 */
 .upload-kind { margin: 0; padding: .75rem 1rem; border-left: 4px solid var(--accent); background: var(--paper-deep); }

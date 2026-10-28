@@ -18,7 +18,6 @@ from app.services.agent_file_tool import document_tools
 from app.services.admission_service import published_programs
 from app.services.agent_engine import AiDecider, Tool, ToolError, fail_task, run, start_task
 from app.services.gemini_client import AIUnavailable, ai_ready
-from app.services.journey_home import board_block_reason
 from app.services.matching_service import rank_programs
 
 GOAL = ("請依我已確認的資料，推薦適合我的二技或插大校系並說明理由；"
@@ -114,9 +113,6 @@ def _tools(student, generate):
 
     def draft(program_id=""):
         reason = student_rules.review_block_reason(student)
-        if reason:
-            raise ToolError(reason)
-        reason = board_block_reason(student)  # 拼圖沒完成不能寫自傳，和自傳頁同一個閘門
         if reason:
             raise ToolError(reason)
         program = next((p for p in _targets(student) if str(p.id) == str(program_id).strip()), None)

@@ -43,7 +43,6 @@ from app.services.admission_links import admission_links, load_school_links
 from app.services.admission_schedule import CHECKED_ON, channel_label, latest_timeline, timeline
 from app.services.matching_service import rank_programs
 from app.services.gap_checklist import download_checklist, review_timeline
-from app.services.journey_home import board_block_reason, journey_home
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
@@ -1239,7 +1238,6 @@ def _render_autobiography(user, program, targets, error=None, answers=None, stat
         version=autobiography_service.version_of(draft) if draft else None,
         paragraph_reviews=paragraph_reviews,
         school_turns=ai_quota_service.remaining(user) if ai_ready() else None,
-        board=journey_home(user)["board"],
         review_note=student_rules.review_open_note(user),
         error=error,
         stale=stale,
@@ -1265,10 +1263,6 @@ def autobiography_generate():
     if reason:
         return _blocked(user, reason)
     answers = {key: request.form.get(key, "") for key, _, _ in autobiography_service.QUESTIONS}
-    # 拼圖沒完成就不能生成：伺服器端擋下，不呼叫 AI、不寫任何資料；學生打的答案留在表單裡
-    board_reason = board_block_reason(user)
-    if board_reason:
-        return _render_autobiography(user, program, targets, error=board_reason, answers=answers, status=409)
     # 學生自己的金鑰：只放在這個函式的變數裡用一次，不存資料庫、不放 session、不放網址
     own_key = "" if current_app.config.get("LOCAL_DEMO_MODE") else request.form.get("own_api_key", "").strip() or None
     used_own_key = bool(own_key)

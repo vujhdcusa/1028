@@ -57,12 +57,11 @@
       </details>
       {% else %}<p class="notice">本機展示模式不呼叫外部 AI；草稿只用合成資料在本機排列。</p>{% endif %}
       {% if school_turns is not none %}<p class="small muted">今天學校 AI 還能用 {{ school_turns }} 次（每人每天 {{ config.SCHOOL_AI_DAILY_LIMIT }} 次）；用自己的金鑰不限次數。</p>{% endif %}
-      {% if not board.complete %}<p class="notice" role="status">拼圖還差 {{ board.total - board.filled }} 格，完成後才能生成自傳。<a href="{{ url_for('main.student_dashboard') }}">回首頁補拼圖 →</a></p>{% endif %}
       {% if review_note %}<p class="notice" role="status">{{ review_note }}。</p>{% endif %}
       <div class="ask__nav">
         <button class="button button--line" type="button" data-step-prev>← 上一題</button>
         <button class="button button--line" type="button" data-step-next>下一題 →</button>
-        <button class="button" type="submit" data-step-submit{% if not board.complete or review_note %} disabled{% endif %}
+        <button class="button" type="submit" data-step-submit{% if review_note %} disabled{% endif %}
                 data-busy-text="{{ '正在整理本機示範草稿…' if config.LOCAL_DEMO_MODE else 'AI 正在寫草稿…（約 10～30 秒）' }}">
           {{ "產生示範草稿" if config.LOCAL_DEMO_MODE else "請 AI 寫草稿" }}
         </button>

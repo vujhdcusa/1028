@@ -36,25 +36,6 @@ def test_five_stops_and_current_year(app):
     assert view["stops"][2]["label"] == "專三"
 
 
-def test_this_year_puzzle_has_six_pieces_and_blanks(app):
-    with app.test_request_context():
-        user = student()
-        db.session.add(LearningCourseRecord(student_id=user.id, school_year=3, course_name="系統分析",
-                                            normalized_course_name="系統分析", score=80))
-        db.session.add(Portfolio(student_id=user.id, title="資訊週", category="service", school_year=3))
-        db.session.commit()
-        view = journey_home(user)
-    # 首頁畫的是桌板上「今年」那一塊（current），仍是六片；舊的 home["pieces"] 要和它一致
-    this_year = next(year for year in view["board"]["years"] if year["current"])
-    assert len(this_year["pieces"]) == 6
-    assert [p["slot_id"] for p in this_year["pieces"] if p["filled"]] == ["3-grades", "3-service"]
-    pieces = view["pieces"]
-    assert len(pieces) == 6
-    assert [p["key"] for p in pieces if p["filled"]] == ["grades", "service"]
-    assert view["blanks"] == 4
-    assert all(p["href"] for p in pieces if not p["filled"])
-
-
 def test_past_year_counts(app):
     with app.test_request_context():
         user = student()
@@ -89,7 +70,7 @@ def test_login_is_recorded_and_home_renders(app):
     page = client.get("/student/dashboard").get_data(as_text=True)
     assert page.count("data-stop=") == 5
     assert 'aria-current="step"' in page
-    assert page.count("data-piece=") == 6
+    assert page.count("data-make-piece=") == 6
     assert "你在這裡" in page
     assert "data-return" not in page
 
@@ -118,40 +99,6 @@ def test_home_has_walker_and_four_places(app):
     assert page.count("data-place=") == 4
     for href in ("/student/learning-profile", "/student/portfolio", "/student/targets"):
         assert f'href="{href}"' in page
-
-
-def test_blank_pieces_are_draggable(app):
-    client = app.test_client()
-    client.post("/login", data={"username": "stu", "password": "pw"})
-    page = client.get("/student/dashboard").get_data(as_text=True)
-
-    assert page.count("data-drag-piece") == 6  # 專三沒有資料：六塊都是洞，各有一片散在旁邊可以拖
-    assert page.count("data-hole=") == 6
-    assert "data-board" in page
-
-
-def test_jigsaw_pieces_interlock(app):
-    """六片拼圖的邊要咬合：相鄰兩片共用的那條邊，一片凸出、另一片凹進去。"""
-    from app.services.journey_home import jigsaw_pieces
-    pieces = jigsaw_pieces()
-    assert len(pieces) == 6
-    assert all(piece["d"].startswith("M") and piece["d"].endswith("Z") for piece in pieces)
-    # 3×2，每片 200×200
-    assert [(p["x"], p["y"]) for p in pieces] == [(0, 0), (200, 0), (400, 0), (0, 200), (200, 200), (400, 200)]
-    assert pieces[0]["d"] != pieces[1]["d"]
-
-
-def test_filled_pieces_show_the_picture(app):
-    with app.test_request_context():
-        user = student()
-        db.session.add(Portfolio(student_id=user.id, title="資訊週", category="service", school_year=3))
-        db.session.commit()
-    client = app.test_client()
-    client.post("/login", data={"username": "stu", "password": "pw"})
-    page = client.get("/student/dashboard").get_data(as_text=True)
-    assert page.count("data-filled") == 1
-    assert page.count("data-drag-piece") == 5
-    assert 'id="year-scene"' in page
 
 
 def test_mobile_route_list_and_place_grid(app):
@@ -192,35 +139,24 @@ def test_folders_drawer_comes_before_the_puzzle(app):
     assert page.index('id="today-title"') < page.index('id="folders"') < page.index('class="year-puzzle"')
 
 
-def test_loose_pieces_open_the_matching_upload_page(app):
-    """成績單與證照已分兩頁：成績、證照那兩片直接開對應類型的上傳頁。"""
+def _dashboard(app):
     client = app.test_client()
     client.post("/login", data={"username": "stu", "password": "pw"})
-    page = client.get("/student/dashboard").get_data(as_text=True)
-    assert 'href="/student/learning-profile/upload?type=transcript" data-loose="grades"' in page
-    assert 'href="/student/learning-profile/upload?type=credential" data-loose="credential"' in page
+    return client.get("/student/dashboard").get_data(as_text=True)
 
 
-def test_loose_pieces_sit_in_a_compact_tray():
-    """散落的片在旁邊是小尺寸（一列六格、手機三格），拖起來才放大到洞的大小；不再用和洞一樣大的片撐出很長的區塊。"""
-    from pathlib import Path
-    root = Path(__file__).resolve().parents[1] / "app" / "static"
-    css = (root / "css" / "design-system.css").read_text(encoding="utf-8")
-    js = (root / "js" / "components.js").read_text(encoding="utf-8")
-    assert ".jig__tray { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));" in css
-    assert "scale(${grow})" in js
+# ---------- 五年拼圖桌（試用版）----------
 
-
-def _journey_with(filled_slots, grade):
-    """組一份假的 journey：filled_slots 是 {(年級, 類別)}，用來測桌板的算法。"""
+def _journey_full(per_slot, grade):
+    """假的 journey：五年 × 六類，每格 per_slot 筆。"""
     from app.services.journey_service import CATEGORY_KEYS, GRADE_LABELS
     years = [{"grade": g, "label": GRADE_LABELS[g], "count": 0,
-              "categories": {key: ([{"title": "x"}] if (g, key) in filled_slots else []) for key in CATEGORY_KEYS}}
+              "categories": {key: [{"title": f"{g}{key}{n}"} for n in range(per_slot)] for key in CATEGORY_KEYS}}
              for g in range(1, 6)]
     return {"current_grade": grade, "years": years}
 
 
-def test_board_counts_filled_slots_across_years(app):
+def test_every_record_in_five_years_is_one_piece(app):
     with app.test_request_context():
         user = student()
         db.session.add(Portfolio(student_id=user.id, title="迎新", category="activity", school_year=1))
@@ -228,132 +164,82 @@ def test_board_counts_filled_slots_across_years(app):
         db.session.add(LearningCourseRecord(student_id=user.id, school_year=3, course_name="系統分析",
                                             normalized_course_name="系統分析", score=80))
         db.session.commit()
-        view = journey_home(user)
-    board = view["board"]
-    assert [year["grade"] for year in board["years"]] == [1, 2, 3]
-    assert [year["current"] for year in board["years"]] == [False, False, True]
-    assert board["total"] == 18
-    assert board["filled"] == 3
-    assert board["complete"] is False
-    assert [p["key"] for p in board["years"][2]["pieces"]] == ["grades", "credential", "activity", "competition", "service", "leadership"]
-    assert board["years"][0]["pieces"][2]["filled"] is True
-    assert board["years"][0]["pieces"][2]["slot_id"] == "1-activity"
-    assert [(p["key"], p["filled"]) for p in view["pieces"]] == [(p["key"], p["filled"]) for p in board["years"][2]["pieces"]]
+        table = journey_home(user)["table"]
+    assert table["count"] == 3
+    assert [(p["key"], p["grade_label"], p["title"]) for p in table["pieces"]] == [
+        ("activity", "專一", "迎新"), ("grades", "專三", "系統分析"), ("service", "專三", "資訊週")]
+    assert len({p["id"] for p in table["pieces"]}) == 3
 
 
-def test_board_complete_only_when_all_slots_filled(app):
-    from app.services.journey_service import CATEGORY_KEYS
+def test_piece_positions_are_stable_and_on_the_table_edges(app):
     with app.test_request_context():
-        slots = {(g, key) for g in (1, 2, 3) for key in CATEGORY_KEYS}
-        full = journey_home(student(), journey=_journey_with(slots, 3))["board"]
-        missing = journey_home(student(), journey=_journey_with(slots - {(2, "service")}, 3))["board"]
-    assert full["filled"] == full["total"] == 18 and full["complete"] is True
-    assert missing["filled"] == 17 and missing["complete"] is False
+        small = journey_home(student(), journey=_journey_full(1, 3))["table"]
+        big = journey_home(student(), journey=_journey_full(2, 3))["table"]
+    assert big["count"] == 60
+    by_id = {p["id"]: p for p in big["pieces"]}
+    for piece in small["pieces"]:  # 同一筆資料：片變多了，位置和角度也不變
+        same = by_id[piece["id"]]
+        assert (piece["x"], piece["y"], piece["mx"], piece["my"], piece["turn"]) == (same["x"], same["y"], same["mx"], same["my"], same["turn"])
+    for piece in big["pieces"]:
+        assert -40 <= piece["turn"] <= 40
+        for x, y in ((piece["x"], piece["y"]), (piece["mx"], piece["my"])):
+            assert 0 < x < 100 and 0 < y < 100
+        # 中間留空：電腦版桌子正中央 30%×30% 的範圍內沒有片
+        assert not (35 < piece["x"] < 65 and 35 < piece["y"] < 65)
 
 
-def _dashboard(app):
-    client = app.test_client()
-    client.post("/login", data={"username": "stu", "password": "pw"})
-    return client.get("/student/dashboard").get_data(as_text=True)
+def test_assembled_pieces_make_an_exact_rectangle(app):
+    """拼好時的格子剛好填滿一塊長方形：每列寬度加起來等於整張圖寬。"""
+    from app.services.journey_home import _rows_for
+    for count in (1, 2, 5, 7, 13, 30, 60, 61):
+        rows = _rows_for(count)
+        assert sum(rows) == count
+    with app.test_request_context():
+        table = journey_home(student(), journey=_journey_full(1, 3))["table"]
+    assert table["count"] == 30
+    cells = {(p["cx"], p["cy"]) for p in table["pieces"]}
+    assert len(cells) == 30
+    assert all(0 < p["cx"] < table["scene_w"] and 0 < p["cy"] < table["scene_h"] for p in table["pieces"])
+    assert all(p["d"].startswith("M") and p["d"].endswith("Z") for p in table["pieces"])
 
 
-def test_home_renders_board_slots(app):
-    """首頁桌板：走過的每一年、每一片都有 data-board-slot，總數＝board.total；空格可以點。"""
+def test_home_table_renders_pieces_buttons_and_count(app, monkeypatch):
     import re
-    with app.test_request_context():
-        total = journey_home(student())["board"]["total"]
+    from app.routes import main as main_routes
+    monkeypatch.setattr(main_routes, "journey_home",
+                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_full(1, 3), now=now))
     page = _dashboard(app)
-    assert total == 18
-    assert page.count("data-board-slot=") == total
-    slot_ids = re.findall(r'data-board-slot="([^"]+)"', page)
-    assert len(set(slot_ids)) == 18 and "1-grades" in slot_ids and "3-leadership" in slot_ids
-    gaps = re.findall(r"<a [^>]*data-board-slot=[^>]*>", page)
-    assert len(gaps) == 18  # 專三沒有任何資料：18 格都是可以點的空格
-    assert all('href="/' in tag for tag in gaps)
-    # 同一頁 clipPath id 不能重複
+    assert page.count("data-table-piece=") == 30
+    assert "已收集 <b class=\"mono\">30</b> 片" in page
+    assert 'id="year-scene"' in page
     clip_ids = re.findall(r'<clipPath id="([^"]+)"', page)
     assert len(clip_ids) == len(set(clip_ids))
-
-
-def test_home_shows_complete_state(app, monkeypatch):
-    """全部格都亮起：桌板發光、「拼圖完成！」、可以去生成自傳；還沒拼完就顯示還差幾格。"""
-    from app.routes import main as main_routes
-    from app.services.journey_service import CATEGORY_KEYS
-    slots = {(g, key) for g in (1, 2, 3) for key in CATEGORY_KEYS}
-
-    monkeypatch.setattr(main_routes, "journey_home",
-                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots, 3), now=now))
-    page = _dashboard(app)
-    assert "is-complete" in page
-    assert "拼圖完成" in page
-    assert 'href="/student/autobiography"' in page and "生成自傳" in page
-    # 只看桌板狀態列（助理建議問題本來就有「還差」二字，不能整頁比）
-    status = page.split('class="board__status"', 1)[1].split("</div>", 1)[0]
-    assert "拼圖完成" in status and "還差" not in status and "已拼" not in status
-    assert "錄取保證" not in page
-
-    monkeypatch.setattr(main_routes, "journey_home",
-                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots - {(2, "service")}, 3), now=now))
-    page = _dashboard(app)
-    assert "is-complete" not in page
-    status = page.split('class="board__status"', 1)[1].split("</div>", 1)[0]
-    assert "還差 1 格" in status and "已拼 17／18" in status and "拼圖完成" not in status
+    assert 'href="/student/learning-profile/upload?type=transcript" data-make-piece="grades"' in page
+    assert 'href="/student/learning-profile/upload?type=credential" data-make-piece="credential"' in page
+    assert 'href="/student/portfolio/new?category=leadership" data-make-piece="leadership"' in page
+    assert "data-assemble" in page and 'data-href="/student/autobiography"' in page
+    for gone in ("還差", "拼圖完成", "data-board-slot", "data-loose"):
+        assert gone not in page.split('class="year-puzzle"', 1)[1].split('</section>', 1)[0]
     assert "錄取保證" not in page
 
 
-def test_lit_slots_are_links_for_another_upload(app, monkeypatch):
-    """格子可以重複上傳：亮起的格（過去年級與今年）也能點，連到同一類的新增頁。"""
-    import re
-    from app.routes import main as main_routes
-    slots = {(1, "activity"), (3, "grades")}
-    monkeypatch.setattr(main_routes, "journey_home",
-                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots, 3), now=now))
+def test_empty_table_invites_first_piece(app):
     page = _dashboard(app)
-    tags = re.findall(r"<(\w+) [^>]*data-board-slot=[^>]*>", page)
-    assert len(tags) == 18 and all(tag == "a" for tag in tags)
-    for slot in ("1-activity", "3-grades"):
-        tag = re.search(rf'<a [^>]*data-board-slot="{slot}"[^>]*>', page).group(0)
-        assert "is-lit" in tag and 'href="/' in tag and "再上傳" in tag
-    assert re.search(r'<a [^>]*data-board-slot="1-activity"[^>]*href="/student/portfolio/new\?category=activity"', page)
+    assert "按上面的按鈕，做出第一片拼圖" in page
+    assert "已收集 <b class=\"mono\">0</b> 片" in page
+    assert "data-assemble data-href" not in page  # 0 片：按鈕停用
 
 
-def test_board_total_follows_walked_years(app):
-    with app.test_request_context():
-        first = journey_home(student(), journey=_journey_with(set(), 1))
-        third = journey_home(student(), journey=_journey_with(set(), 3))
-    assert first["board"]["total"] == 6
-    assert third["board"]["total"] == 18
-    ids = [p["slot_id"] for year in third["board"]["years"] for p in year["pieces"]]
-    assert len(ids) == len(set(ids)) == 18
-    assert first["board"]["complete"] is False
-
-
-def _complete_slots(grades):
-    from app.services.journey_service import CATEGORY_KEYS
-    return {(g, key) for g in grades for key in CATEGORY_KEYS}
-
-
-def test_grade_one_complete_board_says_grade_two_opens_autobiography(app, monkeypatch):
-    """專一拼完：照樣顯示「拼圖完成」，但不給生成自傳的連結，改說專二開放。"""
+def test_grade_one_assemble_button_shows_open_note(app, monkeypatch):
     from app.routes import main as main_routes
     with app.app_context():
         profile = student().student_profile
         profile.admission_year = academic_year_of(date.today())  # 專一
         db.session.commit()
-    slots = _complete_slots((1,))
     monkeypatch.setattr(main_routes, "journey_home",
-                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots, 1), now=now))
+                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_full(1, 1), now=now))
     page = _dashboard(app)
-    assert "拼圖完成" in page
     assert "專二開放" in page
+    assert "data-assemble data-href" not in page
     assert 'href="/student/autobiography"' not in page
 
-
-def test_board_svgs_are_groups_not_images(app):
-    """含連結的 SVG 不能是 role="img"（螢幕閱讀器會看不到裡面的連結）。"""
-    page = _dashboard(app)
-    assert 'class="jig__board"' in page and 'class="board__svg"' in page
-    assert "role=\"img\"" not in page
-    for cls in ("route-map__svg", "jig__board", "board__svg"):
-        tag = page.split(f'class="{cls}"', 1)[1].split(">", 1)[0]
-        assert 'role="group"' in tag and "aria-label=" in tag

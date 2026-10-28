@@ -38,7 +38,7 @@ def app(tmp_path):
         db.session.add(Portfolio(student_id=stu.id, title="校園黑客松", category="competition", school_year=3, status="confirmed",
                                  description="三人一組完成報名網站"))
         db.session.commit()
-        fill_board(stu)  # 拼圖要完成才能生成自傳；要測未完成的測試自己拿掉一格
+        fill_board(stu)  # 補滿五年資料（拼圖閘門已拿掉，這裡只是讓資料齊全）
     yield app
 
 
@@ -248,29 +248,12 @@ def _count_generate(monkeypatch):
     return calls
 
 
-def test_autobiography_blocked_until_board_complete(app, monkeypatch):
+def test_autobiography_no_longer_waits_for_the_puzzle(app, monkeypatch):
+    """試用版拿掉拼圖閘門：少了一類資料（服務學習）照樣可以生成自傳。"""
     calls = _count_generate(monkeypatch)
-    with app.app_context():  # 拿掉「服務學習」，拼圖就少了格子
+    with app.app_context():
         Portfolio.query.filter_by(category="service").delete()
         db.session.commit()
-    client = login(app)
-    choose_target(app, client)
-
-    page = client.get("/student/autobiography").get_data(as_text=True)
-    response = client.post("/student/autobiography/generate",
-                           data={"program_id": program(app), "own_api_key": "test-key", **ANSWERS})
-
-    assert "拼圖還差" in page and "disabled" in page
-    assert calls == []
-    assert response.status_code == 409
-    assert "拼圖還沒完成" in response.get_data(as_text=True)
-    assert "專二做網頁設計" in response.get_data(as_text=True)  # 學生打的答案不會白打
-    with app.app_context():
-        assert LearningProfileOutput.query.filter_by(output_type="autobiography_ai").count() == 0
-
-
-def test_autobiography_allowed_when_board_complete(app, monkeypatch):
-    calls = _count_generate(monkeypatch)
     client = login(app)
     choose_target(app, client)
 

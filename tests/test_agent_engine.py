@@ -42,7 +42,7 @@ def app(tmp_path):
             db.session.add(StudentProfile(user_id=student.id, student_no=number, class_name="資管科五甲",
                                           admission_year=111))
         db.session.commit()
-        fill_board(User.query.filter_by(username="stu").one())  # 拼圖要完成才能生成自傳
+        fill_board(User.query.filter_by(username="stu").one())  # 補滿五年資料
         yield app
 
 
@@ -254,22 +254,23 @@ def test_draft_tool_refuses_programs_outside_the_students_targets(app):
     assert LearningProfileOutput.query.filter(LearningProfileOutput.content_json.isnot(None)).count() == 1
 
 
-def test_draft_tool_refuses_when_board_is_incomplete(app, monkeypatch):
+def test_draft_tool_no_longer_waits_for_the_puzzle(app, monkeypatch):
+    """試用版拿掉拼圖閘門：少了一類資料，小幫手照樣可以寫自傳草稿。"""
     student = user("stu")
     choose_target(student)
     autobiography_service.generate_draft(student, program(), ANSWERS)
-    Portfolio.query.filter_by(student_id=student.id, category="service").delete()  # 拿掉一類，拼圖少格
+    Portfolio.query.filter_by(student_id=student.id, category="service").delete()
     db.session.commit()
-    before = LearningProfileOutput.query.count()
     calls = []
-    monkeypatch.setattr(autobiography_service, "generate_draft", lambda *a, **k: calls.append(1))
+    real = autobiography_service.generate_draft
+    monkeypatch.setattr(autobiography_service, "generate_draft", lambda *a, **k: calls.append(1) or real(*a, **k))
     decide = scripted({"tool": "draft_autobiography", "args": {"program_id": str(program().id)}}, {"finish": "好"})
 
     result = run_advisor(student, decide=decide)
 
-    assert "拼圖還沒完成" in result["steps"][0]["summary"]
-    assert calls == []
-    assert LearningProfileOutput.query.count() == before
+    assert "拼圖還沒完成" not in result["steps"][0]["summary"]
+    assert calls == [1]
+
 
 
 def test_advisor_never_sends_name_or_student_number_to_ai(app):
