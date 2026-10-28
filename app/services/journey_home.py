@@ -75,6 +75,19 @@ def away_days(user, now=None):
     return days if days >= RETURN_DAYS else None
 
 
+def _year_pieces(year, shapes, grade=None):
+    """某一年的六片拼圖（順序同 CATEGORY_KEYS）；grade 有給時多一個 slot_id 供大桌板用。"""
+    return [{
+        **({"slot_id": f"{grade}-{key}"} if grade is not None else {}),
+        "key": key,
+        "label": PIECE_LABELS[key],
+        "full_label": CATEGORY_LABELS[key],
+        "filled": len(year["categories"][key]) > 0,
+        "href": _add_link(key),
+        **shapes[index],
+    } for index, key in enumerate(CATEGORY_KEYS)]
+
+
 def journey_home(user, journey=None, now=None):
     journey = journey or build_journey(user)
     grade = journey["current_grade"] or 1
@@ -90,25 +103,27 @@ def journey_home(user, journey=None, now=None):
 
     this_year = next(year for year in journey["years"] if year["grade"] == grade)
     shapes = jigsaw_pieces()
-    pieces = [{
-        "key": key,
-        "label": PIECE_LABELS[key],
-        "full_label": CATEGORY_LABELS[key],
-        "filled": len(this_year["categories"][key]) > 0,
-        "href": _add_link(key),
-        **shapes[index],
-    } for index, key in enumerate(CATEGORY_KEYS)]
+    pieces = _year_pieces(this_year, shapes)
 
     previous = next((year for year in journey["years"] if year["grade"] == grade - 1), None)
 
     # 五年累積（Canva 第 11 頁）：走過的每一年 6 類，有資料的格數比例；不是錄取機率
     walked = [year for year in journey["years"] if year["grade"] <= grade]
-    filled_cells = sum(1 for year in walked for key in CATEGORY_KEYS if year["categories"][key])
+    board_years = [{
+        "grade": year["grade"],
+        "label": GRADE_LABELS[year["grade"]],
+        "current": year["grade"] == grade,
+        "pieces": _year_pieces(year, shapes, year["grade"]),
+    } for year in walked]
+    board_total = len(board_years) * len(CATEGORY_KEYS)
+    board_filled = sum(1 for year in board_years for piece in year["pieces"] if piece["filled"])
+    board = {"years": board_years, "total": board_total, "filled": board_filled,
+             "complete": board_total > 0 and board_filled == board_total}
     pending = (SourceDocument.query.filter(SourceDocument.owner_id == user.id, SourceDocument.status != "confirmed").count()
                + Portfolio.active().filter_by(student_id=user.id, status="draft").count())
     latest = Portfolio.active().filter_by(student_id=user.id).order_by(Portfolio.created_at.desc(), Portfolio.id.desc()).first()
     summary = {
-        "percent": round(filled_cells / (len(walked) * len(CATEGORY_KEYS)) * 100) if walked else 0,
+        "percent": round(board_filled / board_total * 100) if board_total else 0,
         "pending": pending,
         "latest": latest.title if latest else None,
     }
@@ -118,6 +133,7 @@ def journey_home(user, journey=None, now=None):
         "grade_label": GRADE_LABELS[grade],
         "stops": stops,
         "pieces": pieces,
+        "board": board,
         "blanks": sum(1 for piece in pieces if not piece["filled"]),
         "away_days": away_days(user, now),
         "previous": {"label": previous["label"], "count": previous["count"]} if previous else None,

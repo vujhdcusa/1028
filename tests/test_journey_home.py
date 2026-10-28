@@ -205,3 +205,54 @@ def test_loose_pieces_sit_in_a_compact_tray():
     js = (root / "js" / "components.js").read_text(encoding="utf-8")
     assert ".jig__tray { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));" in css
     assert "scale(${grow})" in js
+
+
+def _journey_with(filled_slots, grade):
+    """組一份假的 journey：filled_slots 是 {(年級, 類別)}，用來測桌板的算法。"""
+    from app.services.journey_service import CATEGORY_KEYS, GRADE_LABELS
+    years = [{"grade": g, "label": GRADE_LABELS[g], "count": 0,
+              "categories": {key: ([{"title": "x"}] if (g, key) in filled_slots else []) for key in CATEGORY_KEYS}}
+             for g in range(1, 6)]
+    return {"current_grade": grade, "years": years}
+
+
+def test_board_counts_filled_slots_across_years(app):
+    with app.test_request_context():
+        user = student()
+        db.session.add(Portfolio(student_id=user.id, title="迎新", category="activity", school_year=1))
+        db.session.add(Portfolio(student_id=user.id, title="資訊週", category="service", school_year=3))
+        db.session.add(LearningCourseRecord(student_id=user.id, school_year=3, course_name="系統分析",
+                                            normalized_course_name="系統分析", score=80))
+        db.session.commit()
+        view = journey_home(user)
+    board = view["board"]
+    assert [year["grade"] for year in board["years"]] == [1, 2, 3]
+    assert [year["current"] for year in board["years"]] == [False, False, True]
+    assert board["total"] == 18
+    assert board["filled"] == 3
+    assert board["complete"] is False
+    assert [p["key"] for p in board["years"][2]["pieces"]] == ["grades", "credential", "activity", "competition", "service", "leadership"]
+    assert board["years"][0]["pieces"][2]["filled"] is True
+    assert board["years"][0]["pieces"][2]["slot_id"] == "1-activity"
+    assert [(p["key"], p["filled"]) for p in view["pieces"]] == [(p["key"], p["filled"]) for p in board["years"][2]["pieces"]]
+
+
+def test_board_complete_only_when_all_slots_filled(app):
+    from app.services.journey_service import CATEGORY_KEYS
+    with app.test_request_context():
+        slots = {(g, key) for g in (1, 2, 3) for key in CATEGORY_KEYS}
+        full = journey_home(student(), journey=_journey_with(slots, 3))["board"]
+        missing = journey_home(student(), journey=_journey_with(slots - {(2, "service")}, 3))["board"]
+    assert full["filled"] == full["total"] == 18 and full["complete"] is True
+    assert missing["filled"] == 17 and missing["complete"] is False
+
+
+def test_board_total_follows_walked_years(app):
+    with app.test_request_context():
+        first = journey_home(student(), journey=_journey_with(set(), 1))
+        third = journey_home(student(), journey=_journey_with(set(), 3))
+    assert first["board"]["total"] == 6
+    assert third["board"]["total"] == 18
+    ids = [p["slot_id"] for year in third["board"]["years"] for p in year["pieces"]]
+    assert len(ids) == len(set(ids)) == 18
+    assert first["board"]["complete"] is False
