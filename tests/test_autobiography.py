@@ -325,3 +325,14 @@ def test_grade_three_can_still_submit_for_review(app):
         assert student_rules.review_block_reason(stu) is None
         assert "專五" in student_rules.autobiography_block_reason(stu)
 
+
+
+def test_grade_one_is_told_autobiography_opens_at_grade_five(app):
+    """專一的說明要講自傳專五才開放，不能沿用送審那句「專二」。"""
+    from app.services import student_rules
+    _set_grade(app, 1)
+    with app.app_context():
+        stu = User.query.filter_by(username="stu").one()
+        reason = student_rules.autobiography_block_reason(stu)
+        assert "專五" in reason and "專二" not in reason
+        assert student_rules.review_open_note(stu) == "專五開放生成自傳"

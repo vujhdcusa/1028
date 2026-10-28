@@ -47,16 +47,17 @@ def review_block_reason(student, today=None):
 
 
 def autobiography_block_reason(student, today=None):
-    """生成自傳前的檢查：先過送審的檢查，再要求到 AUTOBIOGRAPHY_OPEN_GRADE 年級。回傳提示文字，或 None。"""
-    reason = review_block_reason(student, today)
+    """生成自傳前的檢查：年級到 AUTOBIOGRAPHY_OPEN_GRADE 才開放，也要過送審的檢查。回傳提示文字，或 None。"""
+    reason = grade_block_reason(student, today)
     if reason:
         return reason
     opening = current_app.config.get("AUTOBIOGRAPHY_OPEN_GRADE", 5)
     grade = grade_of(student, today)
+    # 年級不到時先講自傳何時開放；不能用送審的說明，那句寫的是「專二」會誤導（10-28 審查）
     if grade < opening:
         return (f"你現在是{GRADE_LABELS[grade]}，先把五年的拼圖收集起來；"
                 f"生成自傳要到{GRADE_LABELS[opening]}才開放。")
-    return None
+    return review_block_reason(student, today)
 
 
 def review_open_note(student, today=None):
