@@ -326,3 +326,34 @@ def test_board_total_follows_walked_years(app):
     ids = [p["slot_id"] for year in third["board"]["years"] for p in year["pieces"]]
     assert len(ids) == len(set(ids)) == 18
     assert first["board"]["complete"] is False
+
+
+def _complete_slots(grades):
+    from app.services.journey_service import CATEGORY_KEYS
+    return {(g, key) for g in grades for key in CATEGORY_KEYS}
+
+
+def test_grade_one_complete_board_says_grade_two_opens_autobiography(app, monkeypatch):
+    """專一拼完：照樣顯示「拼圖完成」，但不給生成自傳的連結，改說專二開放。"""
+    from app.routes import main as main_routes
+    with app.app_context():
+        profile = student().student_profile
+        profile.admission_year = academic_year_of(date.today())  # 專一
+        db.session.commit()
+    slots = _complete_slots((1,))
+    monkeypatch.setattr(main_routes, "journey_home",
+                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots, 1), now=now))
+    page = _dashboard(app)
+    assert "拼圖完成" in page
+    assert "專二開放" in page
+    assert 'href="/student/autobiography"' not in page
+
+
+def test_board_svgs_are_groups_not_images(app):
+    """含連結的 SVG 不能是 role="img"（螢幕閱讀器會看不到裡面的連結）。"""
+    page = _dashboard(app)
+    assert 'class="jig__board"' in page and 'class="board__svg"' in page
+    assert "role=\"img\"" not in page
+    for cls in ("route-map__svg", "jig__board", "board__svg"):
+        tag = page.split(f'class="{cls}"', 1)[1].split(">", 1)[0]
+        assert 'role="group"' in tag and "aria-label=" in tag

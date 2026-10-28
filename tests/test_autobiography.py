@@ -1,4 +1,5 @@
 """AI 自傳小幫手：先回答問題，AI 只能用學生的資料與回答寫草稿。"""
+from datetime import date
 import io
 
 import pytest
@@ -10,6 +11,7 @@ from app.models import (AdmissionProgram, CredentialRecord, LearningCourseRecord
                         Portfolio, StudentProfile, StudentTarget, User)
 from app.services.admission_service import import_seed_programs
 from app.services.autobiography_service import build_facts, generate_draft
+from app.services.journey_service import academic_year_of
 from tests.board_helpers import fill_board
 
 ANSWERS = {
@@ -279,3 +281,18 @@ def test_autobiography_allowed_when_board_complete(app, monkeypatch):
     assert "拼圖還差" not in page
     assert response.status_code == 302
     assert len(calls) == 1
+
+
+def test_grade_one_autobiography_page_disables_generate_up_front(app):
+    with app.app_context():
+        stu = User.query.filter_by(username="stu").one()
+        stu.student_profile.admission_year = academic_year_of(date.today())  # 專一
+        db.session.commit()
+    client = login(app)
+    choose_target(app, client)
+
+    page = client.get("/student/autobiography").get_data(as_text=True)
+
+    assert "專二開放生成自傳" in page
+    submit = page.split("data-step-submit", 1)[1].split(">", 1)[0]
+    assert "disabled" in submit

@@ -10,7 +10,7 @@ from app.models import AuditLog, AwardCertificate, PortfolioSubmission, SourceDo
 from app.services.gap_service import analyze_gap
 from app.services.guide_service import CARD_IDS, guide_cards
 from app.services.journey_home import journey_home
-from app.services import photo_service
+from app.services import photo_service, student_rules
 from app.services.package_service import latest_review
 from app.services.teacher_scope import advised_classes, students_for_teacher
 from app.content.five_year_plan import FIVE_YEAR_PLAN, NEXT_STOPS
@@ -142,6 +142,7 @@ def student_dashboard():
         user=user,
         journey=journey,
         home=home,
+        autobiography_note=student_rules.review_open_note(user),
         show_return=show_return,
         photo_url=photo_url,
         semester_label="上學期" if semester == 1 else "下學期",

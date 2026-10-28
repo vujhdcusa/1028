@@ -34,7 +34,7 @@
   {# 五年路線：畫到「你在這裡」 #}
   <section class="route-map" aria-labelledby="route-title" data-tour="這條路是你的五年，小人物站在今年。" data-tour-order="1">
     <h1 id="route-title" class="route-map__title" tabindex="-1">{{ home.grade_label }}，你在這裡。</h1>
-    <svg class="route-map__svg" viewBox="0 0 1000 360" role="img" aria-label="專一到專五的路線，目前在{{ home.grade_label }}">
+    <svg class="route-map__svg" viewBox="0 0 1000 360" role="group" aria-label="專一到專五的路線，目前在{{ home.grade_label }}">
       {% for key, label, href, cx, cy, color in places %}
       <a href="{{ href }}" class="place" data-place="{{ key }}" data-x="{{ cx }}" data-y="{{ cy - 6 }}" style="--c: {{ color }}; --p: {{ loop.index0 }};">
         <line class="place__branch" x1="{{ cx }}" y1="{{ cy - 30 }}" x2="{{ cx }}" y2="{{ 150 if loop.index0 % 2 == 0 else 120 }}"/>
@@ -183,7 +183,8 @@
     <div class="board__status" aria-live="polite">
       {% if board.complete %}
       <p class="board__done">拼圖完成！走過的每一格都亮起來了。</p>
-      <a class="button" href="{{ url_for('student.autobiography') }}">生成自傳</a>
+      {% if autobiography_note %}<p class="small muted" data-autobiography-locked>{{ autobiography_note }}</p>
+      {% else %}<a class="button" href="{{ url_for('student.autobiography') }}">生成自傳</a>{% endif %}
       {% else %}
       <p><b>還差 {{ board.total - board.filled }} 格</b>　<span class="board__count">已拼 {{ board.filled }}／{{ board.total }}</span></p>
       {% endif %}
@@ -222,7 +223,7 @@
     </svg>
 
     <div class="jig" data-board data-grade="{{ home.grade }}" data-tour="缺的片拖回洞裡，就去補那一類資料。" data-tour-order="4">
-      <svg class="jig__board" viewBox="-30 -30 660 460" role="img" aria-label="{{ home.grade_label }}的拼圖，{{ 6 - home.blanks }} 片已拼上">
+      <svg class="jig__board" viewBox="-30 -30 660 460" role="group" aria-label="{{ home.grade_label }}的拼圖，{{ 6 - home.blanks }} 片已拼上">
         <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
         {% for piece in this_year.pieces %}
         {% if piece.filled %}
@@ -266,7 +267,7 @@
     <div class="board__years">
       {% for year in past_years %}
       <figure class="board__year" style="--year: var(--year-{{ year.grade }});">
-        <svg class="board__svg" viewBox="-30 -30 660 460" role="img" aria-label="{{ year.label }}的拼圖，{{ year.pieces | selectattr('filled') | list | length }} 片已亮起">
+        <svg class="board__svg" viewBox="-30 -30 660 460" role="group" aria-label="{{ year.label }}的拼圖，{{ year.pieces | selectattr('filled') | list | length }} 片已亮起">
           <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
           {% for piece in year.pieces %}
           {% if piece.filled %}

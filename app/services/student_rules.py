@@ -46,6 +46,16 @@ def review_block_reason(student, today=None):
     return None
 
 
+def review_open_note(student, today=None):
+    """生成自傳的年級還沒到時，回傳一句短說明（例如「專二開放生成自傳」）；可以用就回傳 None。"""
+    if review_block_reason(student, today) is None:
+        return None
+    if grade_of(student, today) is None:
+        return MISSING_ADMISSION_YEAR
+    minimum = current_app.config.get("MIN_REVIEW_GRADE", 2)
+    return f"{GRADE_LABELS[minimum]}開放生成自傳"
+
+
 def check_record_year(student, school_year, today=None):
     """填成績、經歷時，年級不能比現在高。年級可以是 1～5 或民國學年度；有問題時丟 ValueError。"""
     reason = grade_block_reason(student, today)
