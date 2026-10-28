@@ -1,5 +1,31 @@
 # 開發日誌
 
+## 2026-10-28 學生首頁大桌板與拼圖完成才能生成自傳（工作流 A）
+
+日期：2026-10-28（台灣時間）
+
+開發者：Claude（分支 `feat/google-docs-autobiography`；子代理逐任務實作與審查，另做一次整個分支的最終審查）
+
+目標：依 `docs/superpowers/plans/2026-10-28-guidance-screens.md` 工作流 A，把首頁「今年六片」拼圖擴成大桌板，並在拼圖完成後才開放生成自傳。B-1、B-3、Q5 使用者沒有定見，只要求手機版也要支援；這次採用 Claude 的建議並經使用者核准（決定寫在計畫檔 Blockers 表下方）。
+
+- A1 桌板資料（`app/services/journey_home.py`）：`journey_home()` 新增 `board`，格數為走過的年級數 × 6 類（專一 6 格、專五 30 格），每格有 `slot_id`（例如 `3-grades`）。建片邏輯抽成 `_year_pieces()`，今年六片與桌板共用。新增 `board_progress()`、`board_block_reason()` 供自傳閘門使用。
+- A2 桌板畫面（`student_home.html`、`components.js`、`design-system.css`）：今年那塊保留拖拉托盤，走過的年級另外排在下面。有資料的格亮起，亮起的格也能點，可再上傳一份。全部亮起時顯示「拼圖完成！」與「生成自傳」，否則顯示「還差 N 格」。回訪時新亮起的格會跳一下，並尊重「減少動態」設定。電腦版一列 3 個年級，手機版一個年級一塊、上下排列。
+- A3 拼圖完成才能生成自傳（`app/routes/student.py`、`app/services/agent_advisor.py`、`student_autobiography.html`）：網頁生成與 AI 小幫手的草稿工具都會先檢查 `board_block_reason`。未完成時不呼叫 AI、不扣額度、不寫入資料，網頁回 409，學生填的答案保留。審查發現 AI 小幫手原本可以繞過閘門，已補上。
+- 最終審查修正：專一學生拼完時改顯示「專二開放生成自傳」，不放用不了的按鈕。判斷沿用 `student_rules` 的 `MIN_REVIEW_GRADE`（新增 `review_open_note`）。含連結的拼圖 SVG 從 `role="img"` 改為 `role="group"`。
+- 測試共用的 `tests/board_helpers.py` 提供 `fill_board()`；既有自傳測試補滿拼圖後繼續通過。
+
+驗證：
+- 完整測試（`D:\democase\ai\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider --basetemp=logs/test-runs/a-final3`，提交 a39043f）：**939 passed, 2 skipped**，0 失敗；1 個既有的 `cache_dir` 設定警告。上一節為 927 passed。
+- 瀏覽器（本機展示站 5013、合成帳號 student_demo）：390px 的 `scrollWidth` 為 390、1280px 為 1265，都沒有水平捲動；手機版每格約 99–116px，電腦版約 120px；首頁 30 格都有 `data-board-slot`。
+
+已知未完成：
+- **示範帳號 student_demo（`app/demo.py`）是專五，拼圖 0／30 格，所以示範時無法生成自傳。** seed 沒有改，待使用者決定：補示範資料，或放寬「每一年六類都要有」的規則。
+- 只存成草稿的經歷也會讓格子亮起，但 AI 寫自傳只用已確認或已送出的資料。
+- 過去年級空格的連結不帶年級，學生補過去年級資料時要自己選學年。
+- `PuzzlePiece` 模型仍未使用，沒有整併。
+
+下一步：使用者決定示範帳號的處理方式；Q1（登入後引導）、Q4（C3 排序更新）。
+
 ## 2026-10-28 指導討論三畫面：OCR 左圖右表、排行篩選與細項、篩選選項後台
 
 日期：2026-10-28（台灣時間）

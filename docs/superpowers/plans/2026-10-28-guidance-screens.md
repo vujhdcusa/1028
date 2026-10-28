@@ -41,6 +41,11 @@
 | B-2 | 「地區」篩選需要資料：`AdmissionProgram` 目前沒有地區欄位，`admission_category` 與 `school_name` 無法代替 | C1、G1 |
 | B-3 | 兩套拼圖並存：`PuzzlePiece`（`piece_key` 為 course／work 等）與 `journey_home` 的六類拼圖鍵（`CATEGORY_KEYS`）不一致。需決定以哪一套為準 | A1 |
 
+**2026-10-28 決定（使用者沒有定見，核准 Claude 的建議）：**
+- B-1：格數＝走過的年級數 × 6 類（專一 6 格、專三 18 格、專五 30 格），每個年級一塊 3×2 拼圖。手機版一個年級一塊、上下排列，不水平捲動。
+- B-3：以 `CATEGORY_KEYS` 為準；`PuzzlePiece` 不動。
+- Q5：有資料的格亮起，亮起的格也能再上傳；走過年級的格全部亮起時顯示「拼圖完成！」，並開放生成自傳。
+
 ## 工作流 A：學生首頁大桌板
 
 **現況：** `app/services/journey_home.py` 的 `journey_home()` 產生「今年 6 片」與「五年 stops」；`app/templates/student_home.html` 顯示；`app/static/js/components.js` 約 536–623 行處理拼上動畫。`PuzzlePiece` 模型未被首頁使用。
