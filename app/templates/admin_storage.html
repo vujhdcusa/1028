@@ -17,6 +17,7 @@
   <section class="work-panel">
     <div class="work-panel__head"><div><h2>目前狀態</h2></div></div>
     <p><strong>目前存在：{{ "Google 雲端硬碟" if active == "google_drive" else "本機" }}</strong></p>
+    <p class="muted small">自傳備份也存在這裡：學生每產生或儲存一版自傳，系統會另存一份 Word 檔（檔名「自傳_學號_校系_第幾版.docx」）。Google 雲端硬碟模式放在「{{ folder_name }}」資料夾；本機模式放在上傳資料夾的 <code>autobiography</code> 子資料夾。正式版本仍以系統資料庫為準。</p>
     {% if not wants_drive %}
     <p class="muted small">設定是本機（<code>STORAGE_BACKEND=local</code>，預設）。要改存 Google 雲端硬碟，請依設定文件修改 <code>.env</code> 後重開網站。{% if not configured %}（Google 雲端硬碟 OAuth 尚未設定）{% endif %}</p>
     {% elif not configured %}

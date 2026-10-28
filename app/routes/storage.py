@@ -39,6 +39,7 @@ def settings_page():
         configured=storage_service.configured(config),
         connected=storage_service.token_holder(current_app).connected,
         message=MESSAGES.get(request.args.get("status", "")),
+        folder_name=storage_service.FOLDER_NAME,
     )
 
 

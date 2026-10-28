@@ -47,7 +47,7 @@ from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES,
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
 from app.services.record_status import learning_profile_state, portfolio_state
-from app.services import ai_quota_service, audit_service, autobiography_review, autobiography_service, ocr_queue, review_snapshot_service, storage_service, student_rules
+from app.services import ai_quota_service, audit_service, autobiography_backup, autobiography_review, autobiography_service, ocr_queue, review_snapshot_service, storage_service, student_rules
 from app.services.gemini_client import AIUnavailable, ai_ready
 from app.services.course_review_presentation import (
     build_course_review_groups,
@@ -1236,6 +1236,7 @@ def _render_autobiography(user, program, targets, error=None, answers=None, stat
         answers=answers or (draft.content_json.get("answers", {}) if draft else {}),
         facts=autobiography_service.build_facts(user, program) if program else None,
         version=autobiography_service.version_of(draft) if draft else None,
+        backup_label=autobiography_backup.status_label(draft) if draft else None,
         paragraph_reviews=paragraph_reviews,
         school_turns=ai_quota_service.remaining(user) if ai_ready() else None,
         review_note=student_rules.review_open_note(user),
@@ -1351,4 +1352,5 @@ def _version_view(student, program, selected_id):
         "diff": autobiography_service.version_diff(selected, previous),
         "editors": editors,
         "version_of": autobiography_service.version_of,
+        "backup_label": autobiography_backup.status_label,
     }
