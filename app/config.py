@@ -32,6 +32,10 @@ class Config:
     AI_PROVIDER = os.getenv("AI_PROVIDER", "none").lower()
     AI_API_KEY = os.getenv("AI_API_KEY", "")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    # Gemini 暫時額度不足或連線失敗時，助手可自動改用 OpenAI；兩把金鑰都只放 .env。
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+    OPENAI_ASSISTANT_MODEL = os.getenv("OPENAI_ASSISTANT_MODEL", "gpt-4.1-mini")
     # Google Drive 原型只在本機明確啟用，且 OAuth 與 Picker 設定齊全時開放。
     GOOGLE_DRIVE_PREVIEW_ENABLED = os.getenv("GOOGLE_DRIVE_PREVIEW_ENABLED", "false").lower() == "true"
     GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")

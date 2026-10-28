@@ -27,7 +27,19 @@ class AIUnavailable(RuntimeError):
 
 def ai_ready():
     config = current_app.config
-    return bool(config.get("AI_ENABLED") and config.get("AI_PROVIDER") == "gemini" and config.get("AI_API_KEY"))
+    if not config.get("AI_ENABLED"):
+        return False
+    if config.get("AI_PROVIDER") == "openai":
+        return bool(config.get("OPENAI_API_KEY"))
+    return bool(config.get("AI_API_KEY"))
+
+
+def _can_fallback(error, personal_key=False):
+    """學生自備 Gemini 金鑰不轉交給另一家服務；學校共用金鑰才可自動備援。"""
+    if personal_key or not current_app.config.get("OPENAI_API_KEY"):
+        return False
+    text = str(error)
+    return any(word in text for word in ("額度", "連不到", "回應錯誤", "沒有產生回答"))
 
 
 def _retry_delay(error_body):
@@ -75,15 +87,24 @@ def generate_json(prompt, schema, files=None, api_key=None, opener=urllib.reques
     opener：測試時可以換成假的，不會真的連網路。
     uploaded：已用 File API 上傳的大檔案 [(MIME 類型, file_uri), ...]
     """
+    if current_app.config.get("AI_PROVIDER") == "openai":
+        from app.services import openai_client
+        return openai_client.generate_json(prompt, schema, files=files, opener=opener)
     parts = [{"text": prompt}]
     for mime_type, data in files or []:
         parts.append({"inline_data": {"mime_type": mime_type, "data": base64.b64encode(data).decode("ascii")}})
     for mime_type, uri in uploaded or []:
         parts.append({"file_data": {"mime_type": mime_type, "file_uri": uri}})
-    payload = _post({
-        "contents": [{"role": "user", "parts": parts}],
-        "generationConfig": {"responseMimeType": "application/json", "responseSchema": schema, "temperature": 0.4},
-    }, api_key, opener)
+    try:
+        payload = _post({
+            "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {"responseMimeType": "application/json", "responseSchema": schema, "temperature": 0.4},
+        }, api_key, opener)
+    except AIUnavailable as exc:
+        if not _can_fallback(exc, personal_key=bool(api_key)):
+            raise
+        from app.services import openai_client
+        return openai_client.generate_json(prompt, schema, files=files, opener=opener)
     try:
         return json.loads(payload["candidates"][0]["content"]["parts"][0]["text"])
     except (KeyError, IndexError, json.JSONDecodeError):
@@ -96,12 +117,21 @@ def chat(contents, tools, system_instruction, api_key=None, opener=urllib.reques
     contents：對話紀錄，格式為 [{"role": "user"/"model", "parts": [...]}]
     tools：工具說明（functionDeclarations），讓 AI 自己決定要查什麼
     """
-    payload = _post({
-        "systemInstruction": {"parts": [{"text": system_instruction}]},
-        "contents": contents,
-        "tools": [{"functionDeclarations": tools}],
-        "generationConfig": {"temperature": 0.3},
-    }, api_key, opener, model=current_app.config.get("ASSISTANT_MODEL"))
+    if current_app.config.get("AI_PROVIDER") == "openai":
+        from app.services import openai_client
+        return openai_client.chat(contents, tools, system_instruction, opener=opener)
+    try:
+        payload = _post({
+            "systemInstruction": {"parts": [{"text": system_instruction}]},
+            "contents": contents,
+            "tools": [{"functionDeclarations": tools}],
+            "generationConfig": {"temperature": 0.3},
+        }, api_key, opener, model=current_app.config.get("ASSISTANT_MODEL"))
+    except AIUnavailable as exc:
+        if not _can_fallback(exc, personal_key=bool(api_key)):
+            raise
+        from app.services import openai_client
+        return openai_client.chat(contents, tools, system_instruction, opener=opener)
     try:
         return payload["candidates"][0]["content"]
     except (KeyError, IndexError):
