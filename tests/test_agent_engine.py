@@ -9,7 +9,7 @@ import pytest
 
 from app import create_app
 from app.extensions import db
-from app.models import (AdmissionProgram, AgentTask, LearningProfileOutput, PublicSourceChange, StudentProfile,
+from app.models import (AdmissionProgram, AgentTask, LearningProfileOutput, Portfolio, PublicSourceChange, StudentProfile,
                         StudentTarget, User)
 from app.services import admission_agent_service, autobiography_service
 from app.services.admission_service import import_seed_programs
@@ -17,6 +17,7 @@ from app.services.agent_advisor import advisor_decider, run_advisor
 from app.services.agent_engine import AiDecider, Tool, run
 from app.services.agent_patrol import run_patrol
 from app.services.gemini_client import AIUnavailable
+from tests.board_helpers import fill_board
 
 EXTRACTED = {"programs": [{"program_code": "208099", "admission_year": 116, "school_name": "測試科技大學",
                            "department_name": "資訊管理系", "admission_category": "管理類四",
@@ -41,6 +42,7 @@ def app(tmp_path):
             db.session.add(StudentProfile(user_id=student.id, student_no=number, class_name="資管科五甲",
                                           admission_year=111))
         db.session.commit()
+        fill_board(User.query.filter_by(username="stu").one())  # 拼圖要完成才能生成自傳
         yield app
 
 
@@ -250,6 +252,24 @@ def test_draft_tool_refuses_programs_outside_the_students_targets(app):
 
     assert "目標校系" in result["steps"][0]["summary"]
     assert LearningProfileOutput.query.filter(LearningProfileOutput.content_json.isnot(None)).count() == 1
+
+
+def test_draft_tool_refuses_when_board_is_incomplete(app, monkeypatch):
+    student = user("stu")
+    choose_target(student)
+    autobiography_service.generate_draft(student, program(), ANSWERS)
+    Portfolio.query.filter_by(student_id=student.id, category="service").delete()  # 拿掉一類，拼圖少格
+    db.session.commit()
+    before = LearningProfileOutput.query.count()
+    calls = []
+    monkeypatch.setattr(autobiography_service, "generate_draft", lambda *a, **k: calls.append(1))
+    decide = scripted({"tool": "draft_autobiography", "args": {"program_id": str(program().id)}}, {"finish": "好"})
+
+    result = run_advisor(student, decide=decide)
+
+    assert "拼圖還沒完成" in result["steps"][0]["summary"]
+    assert calls == []
+    assert LearningProfileOutput.query.count() == before
 
 
 def test_advisor_never_sends_name_or_student_number_to_ai(app):

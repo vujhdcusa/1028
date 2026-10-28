@@ -88,6 +88,24 @@ def _year_pieces(year, shapes, grade=None):
     } for index, key in enumerate(CATEGORY_KEYS)]
 
 
+def board_progress(journey):
+    """走過的每一年 × 六類，回傳（總格數, 已有資料格數）。不產生網址，背景工作（AI 小幫手）也能用。"""
+    grade = journey["current_grade"] or 1
+    walked = [year for year in journey["years"] if year["grade"] <= grade]
+    total = len(walked) * len(CATEGORY_KEYS)
+    filled = sum(1 for year in walked for key in CATEGORY_KEYS if year["categories"][key])
+    return total, filled
+
+
+BOARD_BLOCK_REASON = "拼圖還沒完成，完成後才能生成自傳"
+
+
+def board_block_reason(user):
+    """生成自傳的拼圖閘門：拼圖沒完成回傳說明文字，完成了回傳 None。網頁和 AI 小幫手共用。"""
+    total, filled = board_progress(build_journey(user))
+    return None if total > 0 and filled == total else BOARD_BLOCK_REASON
+
+
 def journey_home(user, journey=None, now=None):
     journey = journey or build_journey(user)
     grade = journey["current_grade"] or 1
@@ -115,8 +133,7 @@ def journey_home(user, journey=None, now=None):
         "current": year["grade"] == grade,
         "pieces": _year_pieces(year, shapes, year["grade"]),
     } for year in walked]
-    board_total = len(board_years) * len(CATEGORY_KEYS)
-    board_filled = sum(1 for year in board_years for piece in year["pieces"] if piece["filled"])
+    board_total, board_filled = board_progress(journey)
     board = {"years": board_years, "total": board_total, "filled": board_filled,
              "complete": board_total > 0 and board_filled == board_total}
     pending = (SourceDocument.query.filter(SourceDocument.owner_id == user.id, SourceDocument.status != "confirmed").count()

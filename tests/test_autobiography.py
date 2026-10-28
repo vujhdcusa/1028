@@ -255,12 +255,14 @@ def test_autobiography_blocked_until_board_complete(app, monkeypatch):
     choose_target(app, client)
 
     page = client.get("/student/autobiography").get_data(as_text=True)
-    response = client.post("/student/autobiography/generate", data={"program_id": program(app), "own_api_key": "test-key", **ANSWERS},
-                           follow_redirects=True)
+    response = client.post("/student/autobiography/generate",
+                           data={"program_id": program(app), "own_api_key": "test-key", **ANSWERS})
 
     assert "拼圖還差" in page and "disabled" in page
     assert calls == []
+    assert response.status_code == 409
     assert "拼圖還沒完成" in response.get_data(as_text=True)
+    assert "專二做網頁設計" in response.get_data(as_text=True)  # 學生打的答案不會白打
     with app.app_context():
         assert LearningProfileOutput.query.filter_by(output_type="autobiography_ai").count() == 0
 
