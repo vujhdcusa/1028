@@ -135,6 +135,11 @@ def main():
     from dotenv import load_dotenv
 
     load_dotenv(ENV_FILE, override=False)
+    # 正式版不能停在假辨識：.env 沒設或設成 fake 時，這次啟動改用本機 RapidOCR（只改這個行程，不寫回 .env）
+    from real_ocr import real_ocr_provider
+
+    os.environ["DOCUMENT_ANALYSIS_PROVIDER"] = real_ocr_provider(os.getenv("DOCUMENT_ANALYSIS_PROVIDER", ""))
+    print(f"OCR 模式：{os.environ['DOCUMENT_ANALYSIS_PROVIDER']}")
     from app.config import Config
 
     port = int(os.getenv("APP_PORT", "5013"))

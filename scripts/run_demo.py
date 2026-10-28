@@ -20,8 +20,10 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from app import create_app  # noqa: E402
+from real_ocr import real_ocr_provider  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.services.admission_service import import_seed_programs  # noqa: E402
 from app.services.transfer_exam import import_transfer_programs  # noqa: E402
@@ -148,6 +150,8 @@ def main():
         # 瀏覽器的 cookie 只分主機、不分埠：同時開 5020、5021 會互相蓋掉登入（10-27 實測問題 6）
         "SESSION_COOKIE_NAME": f"demo_session_{port}",
     })
+    app.config["DOCUMENT_ANALYSIS_PROVIDER"] = real_ocr_provider(app.config["DOCUMENT_ANALYSIS_PROVIDER"])
+    print(f"OCR 模式：{app.config['DOCUMENT_ANALYSIS_PROVIDER']}")
     with app.app_context():
         db.create_all()
         seed()
