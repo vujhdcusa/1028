@@ -31,7 +31,7 @@
 <div class="page journey-home{% if show_return %} is-waiting{% endif %}" data-journey-home>
   {# 五年路線：畫到「你在這裡」 #}
   <section class="route-map" aria-labelledby="route-title" data-tour="這條路是你的五年，小人物站在今年。" data-tour-order="1">
-    <h1 id="route-title" class="route-map__title" tabindex="-1">{{ home.grade_label }}，你在這裡。</h1>
+    <h1 id="route-title" class="route-map__title" tabindex="-1">{% if user.display_name %}<span class="route-map__name">{{ user.display_name }}</span>・{% endif %}{{ home.grade_label }}，你在這裡。</h1>
     <svg class="route-map__svg" viewBox="0 0 1000 360" role="group" aria-label="專一到專五的路線，目前在{{ home.grade_label }}">
       {% for key, label, href, cx, cy, color in places %}
       <a href="{{ href }}" class="place" data-place="{{ key }}" data-x="{{ cx }}" data-y="{{ cy - 6 }}" style="--c: {{ color }}; --p: {{ loop.index0 }};">

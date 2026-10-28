@@ -73,6 +73,8 @@ def test_login_is_recorded_and_home_renders(app):
     assert 'aria-current="step"' in page
     assert page.count("data-make-piece=") == 6
     assert "你在這裡" in page
+    # 標題帶學生姓名，導師或組員看畫面時才知道是誰
+    assert '<span class="route-map__name">stu</span>・' in page
     assert "data-return" not in page
 
 
