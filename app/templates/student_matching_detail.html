@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "partials/nav.html" import masthead, footer, page_band with context %}
+{% from "partials/matching_detail.html" import matching_detail %}
+{% set page_name = "student-matching-detail" %}
+
+{% block title %}{{ row.program.school_name }} {{ row.program.department_name }}｜資管科智慧學習歷程系統{% endblock %}
+
+{% block navigation %}{{ masthead(user, "目標校系") }}{% endblock %}
+
+{% block content %}
+{{ page_band("推薦排序細項") }}
+<div class="page page--banded">
+  <div class="record-card__actions mb-1">
+    <a class="button button--small button--quiet" href="{{ url_for('student.matching') }}">← 回推薦排序</a>
+  </div>
+  <div class="sheet mb-1">
+    <div class="sheet__head">
+      <h2>{{ row.program.school_name }} {{ row.program.department_name }}</h2>
+      <span class="tag">{{ row.channel_label }}</span>
+      <span class="tag {{ {'eligible': 'tag--info', 'needs_check': 'tag--warn', 'ineligible': 'tag--danger'}[row.status] }}">{{ row.status_label }}</span>
+    </div>
+    <p class="muted small">{{ row.program.admission_year }} 學年度</p>
+    {{ matching_detail(row, category_labels) }}
+    {% if row.status != "ineligible" and row.program.id in selected %}
+    <p class="mt-1"><a class="button button--small" href="{{ url_for('student.target_gap', program_id=row.program.id) }}">已是目標校系，看還缺什麼 →</a></p>
+    {% endif %}
+  </div>
+  <p class="muted small mt-1">準備度是依你已確認的資料和簡章加權算的建議值，不是錄取機率；能不能報與錄取結果以當年度招生簡章正式審核為準。</p>
+</div>
+{% endblock %}
+
+{% block footer %}{{ footer() }}{% endblock %}

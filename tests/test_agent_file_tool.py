@@ -88,6 +88,7 @@ def test_result_is_deidentified(app):
     with app.app_context():
         _, tools = tools_for("syn_owner")
         document = SourceDocument.query.filter_by(document_type="credential").one()
+        document.status = "confirmed"  # 未確認的檔案不回內容，去識別化要用確認後的檔案測
 
         result = tools["get_my_document"].run(document_id=str(document.id))
 

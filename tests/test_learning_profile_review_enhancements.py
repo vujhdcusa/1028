@@ -195,3 +195,35 @@ def test_all_fields_locked_confirmation_preserves_original_course_fields(tmp_pat
         assert (course.course_name, course.credits, course.score, course.semester, course.grade_level) == (
             "原始課名", 3, 85, "第二學期", "三年級",
         )
+
+
+def test_review_marks_low_confidence_rows(tmp_path):
+    app, client, document_id = _review_app(tmp_path, [
+        {"course_name": "資訊科技", "credits": 2, "score": 88, "semester": "第一學期",
+         "grade_level": "一年級",
+         "field_confidence": {"course_name": 0.95, "credits": 0.98, "score": 0.97}},
+        {"course_name": "程式設計", "credits": 3, "score": 76, "semester": "第一學期",
+         "grade_level": "一年級",
+         "field_confidence": {"course_name": 0.95, "credits": 0.6, "score": 0.97}},
+    ])
+    page = client.get(f"/student/learning-profile/documents/{document_id}/review").get_data(as_text=True)
+    assert page.count('class="needs-review"') == 1
+    assert "還有 1 列待確認" in page
+    assert 'class="review-layout"' in page
+    # 學期、年級沒有信心資料時不標橘色；只有低信心的學分欄標出
+    assert 'field-low" data-label="第幾學期"' not in page
+    assert 'field-low" data-label="年級"' not in page
+    assert page.count('field-low" data-label="學分"') == 1
+
+
+def test_review_unknown_confidence_is_not_orange(tmp_path):
+    app, client, document_id = _review_app(tmp_path, [
+        {"course_name": "資訊科技", "credits": 2, "score": 88, "semester": "第一學期",
+         "grade_level": "一年級",
+         "field_confidence": {"course_name": 0.95, "credits": 0.6}},
+    ])
+    page = client.get(f"/student/learning-profile/documents/{document_id}/review").get_data(as_text=True)
+    # 學分信心已知且偏低才標橘色；成績信心未知，只顯示「信心 未知」，不標橘色
+    assert page.count('field-low" data-label="學分"') == 1
+    assert 'field-low" data-label="成績"' not in page
+    assert "信心 未知" in page

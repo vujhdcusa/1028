@@ -152,7 +152,7 @@ def _summary(steps):
         top = [p for p in rank["result"]["programs"] if p["status"] == "可報"][:3]
         if top:
             lines.append("排在前面、可以報的校系：" + "、".join(
-                f"{p['school']} {p['department']}" + (f"（契合度 {p['fit']}%）" if p["fit"] is not None else "") for p in top) + "。")
+                f"{p['school']} {p['department']}" + (f"（準備度 {p['fit']}%）" if p["fit"] is not None else "") for p in top) + "。")
         transfer = rank["result"].get("transfer") or []
         if transfer:
             lines.append("也可以考慮插大（轉學考）：" + "、".join(
@@ -166,7 +166,7 @@ def _summary(steps):
         lines.append("你已經選了目標校系，但還沒回答自傳問題：請先到自傳頁回答 4 題，我才能依你的經驗寫草稿。")
     elif drafted:
         lines.append(drafted["summary"])
-    lines.append("契合度是依你的資料和簡章加權算的準備程度，不是錄取機率。")
+    lines.append("準備度是依你的資料和簡章加權算的準備程度，不是錄取機率。")
     return "\n".join(lines)
 
 

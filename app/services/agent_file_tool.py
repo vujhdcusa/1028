@@ -54,7 +54,9 @@ def document_tools(student):
             raise ToolError(NOT_FOUND)
         if document.status in PENDING:
             raise ToolError("這份檔案還在辨識，請等辨識完成再查。")
-        result = (document.extraction.result_json if document.extraction else None) or {}
+        # 未經學生確認的 OCR 資料不得進入 AI 分析：還沒確認就不回任何欄位內容
+        confirmed = document.status == "confirmed"
+        result = ((document.extraction.result_json if document.extraction else None) or {}) if confirmed else {}
         payload = {
             "document_id": str(document.id),
             "document_type": document.document_type,
@@ -67,15 +69,17 @@ def document_tools(student):
                 payload[key] = _pick(result[key], keys)
                 counts.append(f"{len(payload[key])} 筆")
         label = TYPE_LABELS.get(document.document_type, document.document_type)
-        payload["summary"] = (f"{label}（{STATUS_LABELS.get(document.status, document.status)}）"
-                              + (f"：{'、'.join(counts)}資料。" if counts else "：沒有辨識出資料。"))
-        if document.status != "confirmed":
-            payload["note"] = "學生還沒確認這份資料，只能當參考。"
+        if confirmed:
+            payload["summary"] = (f"{label}（{STATUS_LABELS.get(document.status, document.status)}）"
+                                  + (f"：{'、'.join(counts)}資料。" if counts else "：沒有辨識出資料。"))
+        else:
+            payload["summary"] = f"{label}（{STATUS_LABELS.get(document.status, document.status)}）：學生還沒確認，內容不提供。"
+            payload["note"] = "學生還沒確認這份資料，請提醒學生先到學習檔案確認，確認後才能使用。"
         return deidentify.redact(payload, known())
 
     return [
         Tool("list_my_documents", "查我的檔案", "列出學生自己上傳的檔案編號、類別、狀態與上傳日期（不含檔名）。", list_documents),
         Tool("get_my_document", "取檔案內容",
-             "依檔案編號取學生自己的一份檔案中，系統辨識或學生確認過的欄位（課程、證照、獎懲事由），已去識別化；不含原始檔。",
+             "依檔案編號取學生自己的一份檔案中，學生已確認的內容（課程、證照、獎懲事由），已去識別化；不含原始檔。尚未確認的檔案只回傳狀態與摘要。",
              get_document, params={"document_id": "檔案編號（從檔案清單取得）"}),
     ]

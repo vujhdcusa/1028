@@ -73,7 +73,7 @@
     <ol class="agent-steps" data-steps>
       {% for step in run.steps or [] %}<li style="--order: {{ loop.index0 }};"><strong>{{ step.label }}</strong>：{{ step.summary }}</li>{% endfor %}
     </ol>
-    <p class="small muted">{{ task.created_at|taipei_time }} 執行。Agent 只會排序、提醒、產生草稿；目標校系由你決定，草稿要你自己檢查修改後才算數。契合度不是錄取機率，能不能報與錄取以招生簡章為準。</p>
+    <p class="small muted">{{ task.created_at|taipei_time }} 執行。Agent 只會排序、提醒、產生草稿；目標校系由你決定，草稿要你自己檢查修改後才算數。準備度不是錄取機率，能不能報與錄取以招生簡章為準。</p>
   </section>
 </div>
 

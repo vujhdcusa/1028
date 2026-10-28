@@ -14,6 +14,7 @@ from app.models import (
     AdmissionRequirementItem,
     ClassAdvisor,
     CourseRule,
+    MatchFilterOption,
     ProjectType,
     RequirementItem,
     RequirementTemplate,
@@ -21,10 +22,11 @@ from app.models import (
     User,
 )
 from app.services import admission_agent_service as agent
-from app.services.admission_service import import_seed_programs
+from app.services.admission_service import import_seed_programs, published_programs
 from app.services.gemini_client import ai_ready
 from app.services.gap_service import ALL_LABELS
 from app.services.journey_service import academic_year_of
+from app.models.match_filter import MATCH_FILTER_CATEGORIES
 from app.routes.main import get_current_user, role_required
 
 
@@ -83,6 +85,86 @@ def toggle_course_rule_active(rule_id):
     rule.is_active = not rule.is_active
     db.session.commit()
     return redirect(url_for("admin.course_rules"))
+
+
+MATCH_FILTER_CATEGORY_LABELS = {"department": "科系", "region": "地區（尚未啟用）", "level": "學制", "eligible": "是否可報"}
+
+
+MATCH_FILTER_ELIGIBLE_VALUES = {"eligible": "可報", "needs_check": "需確認", "ineligible": "不可報"}
+
+
+def _check_match_filter_label(label):
+    limit = MatchFilterOption.label.type.length
+    if len(label) > limit:
+        abort(400, description=f"顯示名稱不可超過 {limit} 個字")
+
+
+@admin_bp.route("/admin/match-filters", methods=["GET", "POST"])
+@role_required("admin")
+def match_filters():
+    if request.method == "POST":
+        category = request.form.get("category", "").strip()
+        label = request.form.get("label", "").strip()
+        value = request.form.get("value", "").strip()
+        try:
+            sort_order = int(request.form.get("sort_order", "").strip() or 0)
+        except ValueError:
+            abort(400, description="Sort order must be a number")
+        if category not in MATCH_FILTER_CATEGORIES or not label or not value:
+            abort(400, description="Category, label, and value are required")
+        _check_match_filter_label(label)
+        if len(value) > MatchFilterOption.value.type.length:
+            abort(400, description=f"值不可超過 {MatchFilterOption.value.type.length} 個字")
+        if category == "eligible" and value not in MATCH_FILTER_ELIGIBLE_VALUES:
+            abort(400, description="「是否可報」的值只能是 eligible、needs_check、ineligible")
+        if MatchFilterOption.query.filter_by(category=category, value=value).first():
+            abort(400, description="This filter option already exists")
+        db.session.add(MatchFilterOption(
+            category=category, label=label, value=value, sort_order=sort_order, is_active=True,
+        ))
+        db.session.commit()
+        return redirect(url_for("admin.match_filters"))
+    return render_template(
+        "admin_match_filters.html",
+        user=get_current_user(),
+        options=MatchFilterOption.query.order_by(
+            MatchFilterOption.category.asc(), MatchFilterOption.sort_order.asc(), MatchFilterOption.id.asc()
+        ).all(),
+        category_labels=MATCH_FILTER_CATEGORY_LABELS,
+        eligible_values=MATCH_FILTER_ELIGIBLE_VALUES,
+        level_values=sorted({p.admission_category for p in published_programs() if p.admission_category}),
+    )
+
+
+@admin_bp.post("/admin/match-filters/<int:option_id>/edit")
+@role_required("admin")
+def edit_match_filter(option_id):
+    option = db.session.get(MatchFilterOption, option_id)
+    if not option:
+        abort(404)
+    label = request.form.get("label", "").strip()
+    if not label:
+        abort(400, description="顯示名稱不可空白")
+    _check_match_filter_label(label)
+    try:
+        sort_order = int(request.form.get("sort_order", "").strip() or 0)
+    except ValueError:
+        abort(400, description="Sort order must be a number")
+    option.label = label
+    option.sort_order = sort_order
+    db.session.commit()
+    return redirect(url_for("admin.match_filters"))
+
+
+@admin_bp.post("/admin/match-filters/<int:option_id>/toggle-active")
+@role_required("admin")
+def toggle_match_filter(option_id):
+    option = db.session.get(MatchFilterOption, option_id)
+    if not option:
+        abort(404)
+    option.is_active = not option.is_active
+    db.session.commit()
+    return redirect(url_for("admin.match_filters"))
 
 
 @admin_bp.get("/admin/accounts")

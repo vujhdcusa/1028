@@ -1461,3 +1461,42 @@ body[data-page="student-welcome"] .assistant { display: none; }
   .fit-pick, .fit-brief__name, .fit-bar i, .record-card-slot { transition: none; }
 }
 /* DEMO-03 活動適合學校 結束 */
+
+/* C2 推薦排序細項：電腦版展開兩欄，手機版改連到整頁 */
+.match-detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.match-detail__col { min-width: 0; overflow-wrap: anywhere; }
+.match-detail__col h3 { font-size: 1rem; margin: 0 0 .35rem; }
+.match-more summary { cursor: pointer; font-size: .85rem; color: var(--accent); }
+.match-more[open] summary { margin-bottom: .6rem; }
+.match-more-link { display: none; }
+@media (max-width: 720px) {
+  .match-detail { grid-template-columns: 1fr; }
+  .match-more { display: none; }
+  .match-more-link { display: block; }
+}
+
+/* 推薦排序頁：篩選列與準備度圖表（橫條／長條，純 CSS 寬高） */
+.match-filter { display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-end; }
+.match-filter__field { display: grid; gap: .2rem; font-size: .85rem; min-width: 0; }
+.match-filter__field select { max-width: 100%; }
+.match-chart-panel { border: 1px solid var(--line, #d9d9d9); padding: .8rem; }
+.match-chart-panel__head { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+.match-chart-panel__head h2 { font-size: 1rem; margin: 0; }
+.match-chart-toggle { display: flex; gap: .4rem; }
+.match-chart { margin: 0; padding: 0; list-style: none; }
+.match-chart__label { overflow-wrap: anywhere; font-size: .85rem; }
+.match-chart__track { display: block; background: rgba(0, 0, 0, .08); }
+.match-chart__fill { display: block; background: var(--accent); }
+.match-chart__value { font-size: .8rem; white-space: nowrap; }
+.match-chart--bar .match-chart__item { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: .5rem; align-items: center; margin-bottom: .4rem; }
+.match-chart--bar .match-chart__track { height: .7rem; }
+.match-chart--bar .match-chart__fill { height: 100%; width: var(--fit); }
+.match-chart--column { display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-end; }
+.match-chart--column .match-chart__item { display: flex; flex-direction: column-reverse; align-items: center; gap: .25rem; width: 5.5rem; min-width: 0; text-align: center; }
+.match-chart--column .match-chart__track { display: flex; align-items: flex-end; width: 1.6rem; height: 8rem; }
+.match-chart--column .match-chart__fill { width: 100%; height: var(--fit); }
+@media (max-width: 720px) {
+  .match-chart--bar .match-chart__item { grid-template-columns: minmax(0, 1fr) auto; }
+  .match-chart--bar .match-chart__track { grid-column: 1 / -1; grid-row: 2; }
+  .match-chart--column .match-chart__item { width: calc(33.333% - .4rem); }
+}

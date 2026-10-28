@@ -283,7 +283,7 @@ def test_student_runs_agent_and_sees_steps_only_on_their_own_run(app):
 
     assert response.status_code == 302
     page = client.get(response.headers["Location"]).get_data(as_text=True)
-    assert "排序校系" in page and "契合度不是錄取機率" in page
+    assert "排序校系" in page and "準備度不是錄取機率" in page
     assert login(app, "other").get(response.headers["Location"]).status_code == 404
 
 

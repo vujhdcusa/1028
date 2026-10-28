@@ -19,6 +19,7 @@ from app.models import (
     DocumentExtraction,
     LearningCourseRecord,
     LearningProfileOutput,
+    MatchFilterOption,
     Portfolio,
     PortfolioEvidence,
     SourceDocument,
@@ -1042,14 +1043,47 @@ def target_list():
 @student_bp.get("/student/matching")
 @role_required("student")
 def matching():
-    """A3 媒合排序：全部正式校系依可不可報與契合度排序，每一間都寫理由。"""
+    """A3 媒合排序：全部正式校系依可不可報與契合度排序，每一間都寫理由。可用科系、學制、是否可報篩選。"""
     user = get_current_user()
     selected = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id).all()}
+    active_filters = {key: request.args.get(key, "").strip() for key in ("department", "level", "eligible")}
+    rows = rank_programs(user, published_programs())
+    total = len(rows)
+    if active_filters["department"]:
+        rows = [r for r in rows if active_filters["department"] in (r["program"].department_name or "")]
+    if active_filters["level"]:
+        rows = [r for r in rows if r["program"].admission_category == active_filters["level"]]
+    if active_filters["eligible"]:
+        rows = [r for r in rows if r["status"] == active_filters["eligible"]]
+    filters = {category: MatchFilterOption.active_options(category) for category in ("department", "level", "eligible")}
+    chart = "column" if request.args.get("chart") == "column" else "bar"
     return render_template(
         "student_matching.html",
         user=user,
-        rows=rank_programs(user, published_programs()),
+        rows=rows,
+        total=total,
         selected=selected,
+        category_labels=CATEGORY_LABELS,
+        filters=filters,
+        active_filters={k: v for k, v in active_filters.items() if v},
+        chart=chart,
+    )
+
+
+@student_bp.get("/student/matching/<int:program_id>")
+@role_required("student")
+def matching_detail(program_id):
+    """排序細項整頁（手機用）：一律以登入者為準，不接受網址帶學生編號。"""
+    user = get_current_user()
+    program = _published_program_or_404(program_id)
+    row = rank_programs(user, [program])[0]
+    selected = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id).all()}
+    return render_template(
+        "student_matching_detail.html",
+        user=user,
+        row=row,
+        selected=selected,
+        category_labels=CATEGORY_LABELS,
     )
 
 
