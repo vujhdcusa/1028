@@ -34,7 +34,7 @@ def app(tmp_path):
             db.session.add(user)
         db.session.flush()
         stu = User.query.filter_by(username="stu").one()
-        db.session.add(StudentProfile(user_id=stu.id, student_no="111534100", class_name="資管科三甲", admission_year=113))
+        db.session.add(StudentProfile(user_id=stu.id, student_no="111534100", class_name="資管科三甲", admission_year=academic_year_of(date.today()) - 4))  # 專五
         db.session.add(Portfolio(student_id=stu.id, title="校園黑客松", category="competition", school_year=3, status="confirmed",
                                  description="三人一組完成報名網站"))
         db.session.commit()
@@ -276,6 +276,52 @@ def test_grade_one_autobiography_page_disables_generate_up_front(app):
 
     page = client.get("/student/autobiography").get_data(as_text=True)
 
-    assert "專二開放生成自傳" in page
+    assert "專五開放生成自傳" in page
     submit = page.split("data-step-submit", 1)[1].split(">", 1)[0]
     assert "disabled" in submit
+
+
+def _set_grade(app, grade):
+    with app.app_context():
+        stu = User.query.filter_by(username="stu").one()
+        stu.student_profile.admission_year = academic_year_of(date.today()) - (grade - 1)
+        db.session.commit()
+
+
+def test_grade_three_cannot_generate_autobiography(app, monkeypatch):
+    calls = _count_generate(monkeypatch)
+    _set_grade(app, 3)
+    client = login(app)
+    choose_target(app, client)
+
+    response = client.post("/student/autobiography/generate",
+                           data={"program_id": program(app), "own_api_key": "test-key", **ANSWERS})
+    page = client.get("/student/autobiography").get_data(as_text=True)
+
+    assert calls == []
+    assert "專五才開放" in response.get_data(as_text=True)
+    assert "專五開放生成自傳" in page
+
+
+def test_grade_five_can_generate_autobiography(app, monkeypatch):
+    calls = _count_generate(monkeypatch)
+    _set_grade(app, 5)
+    client = login(app)
+    choose_target(app, client)
+
+    response = client.post("/student/autobiography/generate",
+                           data={"program_id": program(app), "own_api_key": "test-key", **ANSWERS})
+
+    assert response.status_code == 302
+    assert len(calls) == 1
+
+
+def test_grade_three_can_still_submit_for_review(app):
+    """送審維持專二規則：專三不受自傳專五限制影響。"""
+    from app.services import student_rules
+    _set_grade(app, 3)
+    with app.app_context():
+        stu = User.query.filter_by(username="stu").one()
+        assert student_rules.review_block_reason(stu) is None
+        assert "專五" in student_rules.autobiography_block_reason(stu)
+

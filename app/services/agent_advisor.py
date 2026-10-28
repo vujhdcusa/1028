@@ -112,7 +112,7 @@ def _tools(student, generate):
         return result
 
     def draft(program_id=""):
-        reason = student_rules.review_block_reason(student)
+        reason = student_rules.autobiography_block_reason(student)
         if reason:
             raise ToolError(reason)
         program = next((p for p in _targets(student) if str(p.id) == str(program_id).strip()), None)

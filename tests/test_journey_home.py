@@ -210,6 +210,9 @@ def test_assembled_pieces_make_an_exact_rectangle(app):
 def test_home_table_renders_pieces_buttons_and_count(app, monkeypatch):
     import re
     from app.routes import main as main_routes
+    with app.app_context():  # 專五：自傳到專五才開放，按鈕才會是可按的連結
+        student().student_profile.admission_year = academic_year_of(date.today()) - 4
+        db.session.commit()
     monkeypatch.setattr(main_routes, "journey_home",
                         lambda user, journey=None, now=None: journey_home(user, journey=_journey_full(1, 3), now=now))
     page = _dashboard(app)
@@ -244,9 +247,22 @@ def test_grade_one_assemble_button_shows_open_note(app, monkeypatch):
     monkeypatch.setattr(main_routes, "journey_home",
                         lambda user, journey=None, now=None: journey_home(user, journey=_journey_full(1, 1), now=now))
     page = _dashboard(app)
-    assert "專二開放" in page
+    assert "專五開放" in page
     assert not re.search(r"<a\b[^>]*\bdata-assemble\b", page)
     assert 'href="/student/autobiography"' not in page
+
+
+def test_grade_three_assemble_button_is_disabled_until_grade_five(app, monkeypatch):
+    from app.routes import main as main_routes
+    with app.app_context():
+        profile = student().student_profile
+        profile.admission_year = academic_year_of(date.today()) - 2  # 專三
+        db.session.commit()
+    monkeypatch.setattr(main_routes, "journey_home",
+                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_full(1, 1), now=now))
+    page = _dashboard(app)
+    assert "專五開放生成自傳" in page
+    assert not re.search(r"<a[^>]*data-assemble", page)
 
 
 def test_renaming_a_record_keeps_its_piece_in_place(app):

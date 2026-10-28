@@ -30,6 +30,7 @@ from app.services.journey_service import academic_year_of
 from tests.board_helpers import fill_board
 
 GRADE3_ADMISSION_YEAR = academic_year_of(date.today()) - 2
+GRADE5_ADMISSION_YEAR = academic_year_of(date.today()) - 4  # 自傳到專五才開放生成
 STUDENT_NAME = "測試學生甲"
 STUDENT_NO = "111534188"
 BLOCKED_MESSAGE = "這筆已經送導師確認，不能刪除；如果內容有誤，請修改後再送一次"
@@ -52,7 +53,7 @@ def app(tmp_path):
         db.session.flush()
         stu = User.query.filter_by(username="stu").one()
         db.session.add(StudentProfile(user_id=stu.id, student_no=STUDENT_NO, class_name="資管科三甲",
-                                      admission_year=GRADE3_ADMISSION_YEAR))
+                                      admission_year=GRADE5_ADMISSION_YEAR))
         teacher = User.query.filter_by(username="teacher").one()
         db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name="資管科三甲", school_year=115))
         db.session.commit()

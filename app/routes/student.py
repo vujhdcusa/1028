@@ -1259,7 +1259,7 @@ def autobiography_generate():
     program, targets = _autobiography_program(user, request.form.get("program_id", type=int))
     if not program:
         return redirect(url_for("student.target_list"))
-    reason = student_rules.review_block_reason(user)
+    reason = student_rules.autobiography_block_reason(user)
     if reason:
         return _blocked(user, reason)
     answers = {key: request.form.get(key, "") for key, _, _ in autobiography_service.QUESTIONS}

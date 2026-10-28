@@ -35,6 +35,7 @@ from tests.board_helpers import fill_board
 
 # 讓學生不論哪一年跑測試都是專三（送導師確認、AI 自傳要二年級以上）
 GRADE3_ADMISSION_YEAR = academic_year_of(date.today()) - 2
+GRADE5_ADMISSION_YEAR = academic_year_of(date.today()) - 4  # 自傳到專五才開放生成
 PROGRAM_CODE = "208003"
 ANSWERS = {
     "motivation": "修程式設計時發現自己喜歡把流程整理清楚。",
@@ -60,9 +61,9 @@ def app(tmp_path):
         stu = User.query.filter_by(username="e2e_stu").one()
         other = User.query.filter_by(username="e2e_other").one()
         db.session.add(StudentProfile(user_id=stu.id, student_no="SYN9001", class_name="資管科三甲",
-                                      admission_year=GRADE3_ADMISSION_YEAR))
+                                      admission_year=GRADE5_ADMISSION_YEAR))
         db.session.add(StudentProfile(user_id=other.id, student_no="SYN9002", class_name="資管科三乙",
-                                      admission_year=GRADE3_ADMISSION_YEAR))
+                                      admission_year=GRADE5_ADMISSION_YEAR))
         db.session.add(ClassAdvisor(teacher_id=User.query.filter_by(username="e2e_teacher").one().id,
                                     class_name="資管科三甲", school_year=GRADE3_ADMISSION_YEAR + 2))
         db.session.add(ClassAdvisor(teacher_id=User.query.filter_by(username="e2e_stranger").one().id,

@@ -273,6 +273,24 @@ def test_draft_tool_no_longer_waits_for_the_puzzle(app, monkeypatch):
 
 
 
+def test_draft_tool_blocked_before_grade_five(app, monkeypatch):
+    """專三只能收集拼圖：小幫手的草稿工具也要擋，不呼叫 AI。"""
+    student = user("stu")
+    choose_target(student)
+    autobiography_service.generate_draft(student, program(), ANSWERS)
+    student.student_profile.admission_year = 113  # 專三（今天是 115 學年度）
+    db.session.commit()
+    calls = []
+    real = autobiography_service.generate_draft
+    monkeypatch.setattr(autobiography_service, "generate_draft", lambda *a, **k: calls.append(1) or real(*a, **k))
+    decide = scripted({"tool": "draft_autobiography", "args": {"program_id": str(program().id)}}, {"finish": "好"})
+
+    result = run_advisor(student, decide=decide)
+
+    assert "專五" in result["steps"][0]["summary"]
+    assert calls == []
+
+
 def test_advisor_never_sends_name_or_student_number_to_ai(app):
     student = user("stu")
     choose_target(student)

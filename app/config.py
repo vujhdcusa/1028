@@ -53,6 +53,8 @@ class Config:
     TARGET_LIMIT = int(os.getenv("TARGET_LIMIT", "5"))
     SCHOOL_AI_DAILY_LIMIT = int(os.getenv("SCHOOL_AI_DAILY_LIMIT", "5"))
     MIN_REVIEW_GRADE = int(os.getenv("MIN_REVIEW_GRADE", "2"))
+    # 生成自傳要到這個年級才開放（專一到專四只收集拼圖）；送審仍看 MIN_REVIEW_GRADE
+    AUTOBIOGRAPHY_OPEN_GRADE = int(os.getenv("AUTOBIOGRAPHY_OPEN_GRADE", "5"))
     DOCUMENT_ANALYSIS_PROVIDER = os.getenv("DOCUMENT_ANALYSIS_PROVIDER", "fake")
     # 離線 OCR 引擎：空白＝不啟用（上傳會標示 analysis_failed）；rapidocr＝本機 RapidOCR
     DOCUMENT_OCR_ENGINE = os.getenv("DOCUMENT_OCR_ENGINE", "")
