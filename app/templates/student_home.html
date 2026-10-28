@@ -176,7 +176,7 @@
   {% set board = home.board %}
   {% set this_year = board.years | selectattr("current") | first %}
   <section class="year-puzzle" aria-labelledby="puzzle-title">
-    <h2 id="puzzle-title" class="year-puzzle__title" data-board-title>{% if home.blanks %}還差 {{ home.blanks }} 片，就拼完{{ home.grade_label }}。{% else %}{{ home.grade_label }}拼完了。{% endif %}</h2>
+    <h2 id="puzzle-title" class="year-puzzle__title" data-board-title>{% if home.blanks %}{{ home.grade_label }}還有 {{ home.blanks }} 格空著。{% else %}{{ home.grade_label }}拼完了。{% endif %}</h2>
     {% if home.blanks %}<p class="year-puzzle__hint">把旁邊的拼圖拖回洞裡。</p>{% endif %}
 
     <div class="board{% if board.complete %} is-complete{% endif %}" data-journey-board>
@@ -226,11 +226,13 @@
         <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
         {% for piece in this_year.pieces %}
         {% if piece.filled %}
-        <g class="jig__piece is-lit" data-piece="{{ piece.key }}" data-board-slot="{{ piece.slot_id }}" data-filled style="--n: {{ loop.index0 }};">
+        {# 亮起的片也能點：格子可以重複上傳 #}
+        <a class="jig__piece is-lit" data-piece="{{ piece.key }}" data-board-slot="{{ piece.slot_id }}" data-filled href="{{ piece.href }}" style="--n: {{ loop.index0 }};" aria-label="再上傳一份{{ piece.full_label }}">
+          <title>再上傳一份{{ piece.full_label }}</title>
           <g clip-path="url(#jp-{{ this_year.grade }}-{{ loop.index0 }})"><use href="#year-scene" width="600" height="400"/></g>
           <path class="jig__edge" d="{{ piece.d }}"/>
           <text class="jig__tag" x="{{ piece.x + 100 }}" y="{{ piece.y + 186 }}" text-anchor="middle">{{ piece.label }}</text>
-        </g>
+        </a>
         {% else %}
         <a class="jig__hole" data-piece="{{ piece.key }}" data-board-slot="{{ piece.slot_id }}" data-hole="{{ piece.slot_id }}" href="{{ piece.href }}" aria-label="補上{{ piece.full_label }}">
           <path d="{{ piece.d }}"/>
@@ -268,10 +270,11 @@
           <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
           {% for piece in year.pieces %}
           {% if piece.filled %}
-          <g class="board__cell is-lit" data-board-slot="{{ piece.slot_id }}" style="--n: {{ loop.index0 }};">
+          <a class="board__cell is-lit" data-board-slot="{{ piece.slot_id }}" href="{{ piece.href }}" style="--n: {{ loop.index0 }};" aria-label="再上傳一份{{ year.label }}的{{ piece.full_label }}">
+            <title>再上傳一份{{ year.label }}的{{ piece.full_label }}</title>
             <path d="{{ piece.d }}"/>
             <text x="{{ piece.x + 100 }}" y="{{ piece.y + 116 }}" text-anchor="middle">{{ piece.label }}</text>
-          </g>
+          </a>
           {% else %}
           <a class="board__cell board__gap" data-board-slot="{{ piece.slot_id }}" href="{{ piece.href }}" aria-label="補上{{ year.label }}的{{ piece.full_label }}">
             <path d="{{ piece.d }}"/>

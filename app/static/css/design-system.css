@@ -991,6 +991,9 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .board__gap path { fill: rgba(28,34,48,.06); stroke-dasharray: 12 9; transition: fill .2s; }
 .board__gap text { font: 700 40px var(--font-sans); fill: var(--muted); }
 .board__gap:hover path, .board__gap:focus-visible path { fill: rgba(36,72,201,.14); }
+/* 亮起的格也能點（再上傳一份）：滑過或鍵盤停留時邊框變粗 */
+.board__cell.is-lit:hover path, .board__cell.is-lit:focus-visible path { stroke-width: 6; }
+a.jig__piece:hover .jig__edge, a.jig__piece:focus-visible .jig__edge { stroke-width: 5; }
 /* 全部亮起：整張桌板發光 */
 .board.is-complete { box-shadow: 0 0 0 3px var(--accent), 0 0 28px 6px rgba(243,197,91,.65); animation: board-glow 2.4s ease-in-out infinite alternate; }
 @keyframes board-glow { from { box-shadow: 0 0 0 3px var(--accent), 0 0 14px 2px rgba(243,197,91,.45); } to { box-shadow: 0 0 0 3px var(--accent), 0 0 34px 10px rgba(243,197,91,.8); } }

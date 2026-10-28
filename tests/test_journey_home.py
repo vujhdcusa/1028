@@ -287,16 +287,34 @@ def test_home_shows_complete_state(app, monkeypatch):
     assert "is-complete" in page
     assert "拼圖完成" in page
     assert 'href="/student/autobiography"' in page and "生成自傳" in page
-    assert "格</b>" not in page  # 完成時不顯示「還差 N 格」（助理建議問題本來就有「還差」二字，不能整頁比）
+    # 只看桌板狀態列（助理建議問題本來就有「還差」二字，不能整頁比）
+    status = page.split('class="board__status"', 1)[1].split("</div>", 1)[0]
+    assert "拼圖完成" in status and "還差" not in status and "已拼" not in status
     assert "錄取保證" not in page
 
     monkeypatch.setattr(main_routes, "journey_home",
                         lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots - {(2, "service")}, 3), now=now))
     page = _dashboard(app)
     assert "is-complete" not in page
-    assert "還差 1 格" in page
-    assert "已拼 17／18" in page
+    status = page.split('class="board__status"', 1)[1].split("</div>", 1)[0]
+    assert "還差 1 格" in status and "已拼 17／18" in status and "拼圖完成" not in status
     assert "錄取保證" not in page
+
+
+def test_lit_slots_are_links_for_another_upload(app, monkeypatch):
+    """格子可以重複上傳：亮起的格（過去年級與今年）也能點，連到同一類的新增頁。"""
+    import re
+    from app.routes import main as main_routes
+    slots = {(1, "activity"), (3, "grades")}
+    monkeypatch.setattr(main_routes, "journey_home",
+                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots, 3), now=now))
+    page = _dashboard(app)
+    tags = re.findall(r"<(\w+) [^>]*data-board-slot=[^>]*>", page)
+    assert len(tags) == 18 and all(tag == "a" for tag in tags)
+    for slot in ("1-activity", "3-grades"):
+        tag = re.search(rf'<a [^>]*data-board-slot="{slot}"[^>]*>', page).group(0)
+        assert "is-lit" in tag and 'href="/' in tag and "再上傳" in tag
+    assert re.search(r'<a [^>]*data-board-slot="1-activity"[^>]*href="/student/portfolio/new\?category=activity"', page)
 
 
 def test_board_total_follows_walked_years(app):
