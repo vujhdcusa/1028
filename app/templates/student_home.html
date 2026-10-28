@@ -170,17 +170,30 @@
     </div>
   </details>
 
-  {# 今年的拼圖：一張插畫切成六片，每片是一類資料。有資料的拼在圖上，沒有的是洞，
-     那一片散在旁邊，拖回洞裡就拼上並打開新增（直接點也可以）。 #}
+  {# 大桌板：走過的每一年一塊 3×2 拼圖，每片是一類資料（每一格都有 data-board-slot）。
+     今年那塊大：一張插畫切成六片，有資料的拼在圖上，沒有的是洞，那一片散在旁邊，拖回洞裡就拼上並打開新增（直接點也可以）。
+     過去年級較小：亮起的是有資料的格，空格點了去補。全部亮起就是「拼圖完成」，可以去生成自傳。 #}
+  {% set board = home.board %}
+  {% set this_year = board.years | selectattr("current") | first %}
   <section class="year-puzzle" aria-labelledby="puzzle-title">
     <h2 id="puzzle-title" class="year-puzzle__title" data-board-title>{% if home.blanks %}還差 {{ home.blanks }} 片，就拼完{{ home.grade_label }}。{% else %}{{ home.grade_label }}拼完了。{% endif %}</h2>
     {% if home.blanks %}<p class="year-puzzle__hint">把旁邊的拼圖拖回洞裡。</p>{% endif %}
+
+    <div class="board{% if board.complete %} is-complete{% endif %}" data-journey-board>
+    <div class="board__status" aria-live="polite">
+      {% if board.complete %}
+      <p class="board__done">拼圖完成！走過的每一格都亮起來了。</p>
+      <a class="button" href="{{ url_for('student.autobiography') }}">生成自傳</a>
+      {% else %}
+      <p><b>還差 {{ board.total - board.filled }} 格</b>　<span class="board__count">已拼 {{ board.filled }}／{{ board.total }}</span></p>
+      {% endif %}
+    </div>
 
     {# 整張插畫與六片的形狀，只定義一次，下面的圖和散落的片都拿來用 #}
     <svg class="jig-defs" width="0" height="0" aria-hidden="true" style="--year: var(--year-{{ home.grade }});">
       <defs>
         <linearGradient id="scene-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe7fb"/><stop offset="1" stop-color="#fbf6ea"/></linearGradient>
-        {% for piece in home.pieces %}<clipPath id="jp-{{ loop.index0 }}"><path d="{{ piece.d }}"/></clipPath>{% endfor %}
+        {% for piece in this_year.pieces %}<clipPath id="jp-{{ this_year.grade }}-{{ loop.index0 }}"><path d="{{ piece.d }}"/></clipPath>{% endfor %}
         <symbol id="year-scene" viewBox="0 0 600 400" overflow="visible">
           {% if photo_url %}
           {# 學生自己上傳的這學期照片（已裁成 3:2）；外圈補底色，讓凸出的拼圖邊不是空的 #}
@@ -211,15 +224,15 @@
     <div class="jig" data-board data-grade="{{ home.grade }}" data-tour="缺的片拖回洞裡，就去補那一類資料。" data-tour-order="4">
       <svg class="jig__board" viewBox="-30 -30 660 460" role="img" aria-label="{{ home.grade_label }}的拼圖，{{ 6 - home.blanks }} 片已拼上">
         <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
-        {% for piece in home.pieces %}
+        {% for piece in this_year.pieces %}
         {% if piece.filled %}
-        <g class="jig__piece" data-piece="{{ piece.key }}" data-filled style="--n: {{ loop.index0 }};">
-          <g clip-path="url(#jp-{{ loop.index0 }})"><use href="#year-scene" width="600" height="400"/></g>
+        <g class="jig__piece is-lit" data-piece="{{ piece.key }}" data-board-slot="{{ piece.slot_id }}" data-filled style="--n: {{ loop.index0 }};">
+          <g clip-path="url(#jp-{{ this_year.grade }}-{{ loop.index0 }})"><use href="#year-scene" width="600" height="400"/></g>
           <path class="jig__edge" d="{{ piece.d }}"/>
           <text class="jig__tag" x="{{ piece.x + 100 }}" y="{{ piece.y + 186 }}" text-anchor="middle">{{ piece.label }}</text>
         </g>
         {% else %}
-        <a class="jig__hole" data-piece="{{ piece.key }}" data-hole="{{ piece.key }}" href="{{ piece.href }}" aria-label="補上{{ piece.full_label }}">
+        <a class="jig__hole" data-piece="{{ piece.key }}" data-board-slot="{{ piece.slot_id }}" data-hole="{{ piece.slot_id }}" href="{{ piece.href }}" aria-label="補上{{ piece.full_label }}">
           <path d="{{ piece.d }}"/>
           <text x="{{ piece.x + 100 }}" y="{{ piece.y + 110 }}" text-anchor="middle">＋{{ piece.label }}</text>
         </a>
@@ -229,18 +242,49 @@
 
       {% if home.blanks %}
       <div class="jig__tray" aria-label="還沒拼上的拼圖">
-        {% for piece in home.pieces if not piece.filled %}
-        <a class="jig__loose" href="{{ piece.href }}" data-loose="{{ piece.key }}" data-x="{{ piece.x }}" data-y="{{ piece.y }}"
-           style="--r: {{ [-12, 9, -6, 14, -10, 7][loop.index0] }}deg; --n: {{ loop.index0 }};" aria-label="補上{{ piece.full_label }}">
+        {% set tilts = [-12, 9, -6, 14, -10, 7] %}
+        {% for piece in this_year.pieces %}{% if not piece.filled %}
+        <a class="jig__loose" href="{{ piece.href }}" data-loose="{{ piece.key }}" data-slot="{{ piece.slot_id }}" data-x="{{ piece.x }}" data-y="{{ piece.y }}"
+           style="--r: {{ tilts[loop.index0 % tilts|length] }}deg; --n: {{ loop.index0 }};" aria-label="補上{{ piece.full_label }}">
           <svg data-drag-piece viewBox="{{ piece.x - 30 }} {{ piece.y - 30 }} 260 260" aria-hidden="true">
-            <g clip-path="url(#jp-{{ home.pieces.index(piece) }})"><use href="#year-scene" width="600" height="400"/></g>
+            <g clip-path="url(#jp-{{ this_year.grade }}-{{ loop.index0 }})"><use href="#year-scene" width="600" height="400"/></g>
             <path class="jig__edge" d="{{ piece.d }}"/>
           </svg>
           <span>{{ piece.label }}</span>
         </a>
-        {% endfor %}
+        {% endif %}{% endfor %}
       </div>
       {% endif %}
+    </div>
+
+    {# 走過的年級：小一點的拼圖，亮起的是有資料的格；空格可以點（格子可以重複上傳） #}
+    {% set past_years = board.years | rejectattr("current") | list %}
+    {% if past_years %}
+    <h3 class="board__past-title">走過的年級</h3>
+    <div class="board__years">
+      {% for year in past_years %}
+      <figure class="board__year" style="--year: var(--year-{{ year.grade }});">
+        <svg class="board__svg" viewBox="-30 -30 660 460" role="img" aria-label="{{ year.label }}的拼圖，{{ year.pieces | selectattr('filled') | list | length }} 片已亮起">
+          <rect x="0" y="0" width="600" height="400" class="jig__frame"/>
+          {% for piece in year.pieces %}
+          {% if piece.filled %}
+          <g class="board__cell is-lit" data-board-slot="{{ piece.slot_id }}" style="--n: {{ loop.index0 }};">
+            <path d="{{ piece.d }}"/>
+            <text x="{{ piece.x + 100 }}" y="{{ piece.y + 116 }}" text-anchor="middle">{{ piece.label }}</text>
+          </g>
+          {% else %}
+          <a class="board__cell board__gap" data-board-slot="{{ piece.slot_id }}" href="{{ piece.href }}" aria-label="補上{{ year.label }}的{{ piece.full_label }}">
+            <path d="{{ piece.d }}"/>
+            <text x="{{ piece.x + 100 }}" y="{{ piece.y + 116 }}" text-anchor="middle">＋{{ piece.label }}</text>
+          </a>
+          {% endif %}
+          {% endfor %}
+        </svg>
+        <figcaption>{{ year.label }}</figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+    {% endif %}
     </div>
 
     {# 換成自己的照片：只有自己看得到 #}

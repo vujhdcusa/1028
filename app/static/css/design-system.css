@@ -972,6 +972,34 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .jig__loose span { margin-top: -.3rem; font-size: .8rem; }
 @media (max-width: 520px) { .jig__tray { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem 1rem; } }
 
+/* 大桌板：今年那塊大（上面的 .jig），走過的年級一列最多三塊、較小；手機一個年級一塊上下堆疊，不水平捲動 */
+.board { max-width: 60rem; margin: 0 auto; padding: .75rem; border-radius: var(--radius, 12px); min-width: 0; }
+.board__status { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem; margin: 0 0 .75rem; text-align: center; }
+.board__status p { margin: 0; }
+.board__count { color: var(--muted); }
+.board__done { font-weight: 900; font-size: 1.15rem; }
+.board__past-title { margin: 1.5rem 0 .5rem; text-align: center; font-size: 1rem; color: var(--ink-soft); }
+.board__years { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.board__year { margin: 0; min-width: 0; text-align: center; }
+.board__year figcaption { font-weight: 700; color: var(--ink-soft); font-size: .9rem; }
+.board__svg { display: block; width: 100%; height: auto; overflow: visible; }
+.board__cell path { stroke: #1c2230; stroke-width: 3; stroke-linejoin: round; }
+.board__cell.is-lit path { fill: var(--year); }
+.board__cell.is-lit text { font: 700 44px var(--font-sans); fill: #fff; paint-order: stroke; stroke: #1c2230; stroke-width: 6px; }
+.board__cell.is-new { transform-box: fill-box; transform-origin: center; animation: jig-in .6s cubic-bezier(.2,.9,.3,1.5) both; }
+/* 空格：手機上每格約 110px、電腦版三塊一列時約 65px 以上，都大於 44px 的點擊大小 */
+.board__gap path { fill: rgba(28,34,48,.06); stroke-dasharray: 12 9; transition: fill .2s; }
+.board__gap text { font: 700 40px var(--font-sans); fill: var(--muted); }
+.board__gap:hover path, .board__gap:focus-visible path { fill: rgba(36,72,201,.14); }
+/* 全部亮起：整張桌板發光 */
+.board.is-complete { box-shadow: 0 0 0 3px var(--accent), 0 0 28px 6px rgba(243,197,91,.65); animation: board-glow 2.4s ease-in-out infinite alternate; }
+@keyframes board-glow { from { box-shadow: 0 0 0 3px var(--accent), 0 0 14px 2px rgba(243,197,91,.45); } to { box-shadow: 0 0 0 3px var(--accent), 0 0 34px 10px rgba(243,197,91,.8); } }
+@media (max-width: 720px) {
+  .board { padding: .5rem; }
+  .board__years { grid-template-columns: minmax(0, 1fr); max-width: 34rem; margin: 0 auto; }
+}
+@media (prefers-reduced-motion: reduce) { .board.is-complete, .board__cell.is-new { animation: none !important; } }
+
 /* 上傳頁只上傳一種文件：說明這頁要放什麼 */
 .upload-kind { margin: 0; padding: .75rem 1rem; border-left: 4px solid var(--accent); background: var(--paper-deep); }
 

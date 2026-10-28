@@ -44,6 +44,10 @@ def test_this_year_puzzle_has_six_pieces_and_blanks(app):
         db.session.add(Portfolio(student_id=user.id, title="資訊週", category="service", school_year=3))
         db.session.commit()
         view = journey_home(user)
+    # 首頁畫的是桌板上「今年」那一塊（current），仍是六片；舊的 home["pieces"] 要和它一致
+    this_year = next(year for year in view["board"]["years"] if year["current"])
+    assert len(this_year["pieces"]) == 6
+    assert [p["slot_id"] for p in this_year["pieces"] if p["filled"]] == ["3-grades", "3-service"]
     pieces = view["pieces"]
     assert len(pieces) == 6
     assert [p["key"] for p in pieces if p["filled"]] == ["grades", "service"]
@@ -245,6 +249,54 @@ def test_board_complete_only_when_all_slots_filled(app):
         missing = journey_home(student(), journey=_journey_with(slots - {(2, "service")}, 3))["board"]
     assert full["filled"] == full["total"] == 18 and full["complete"] is True
     assert missing["filled"] == 17 and missing["complete"] is False
+
+
+def _dashboard(app):
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    return client.get("/student/dashboard").get_data(as_text=True)
+
+
+def test_home_renders_board_slots(app):
+    """首頁桌板：走過的每一年、每一片都有 data-board-slot，總數＝board.total；空格可以點。"""
+    import re
+    with app.test_request_context():
+        total = journey_home(student())["board"]["total"]
+    page = _dashboard(app)
+    assert total == 18
+    assert page.count("data-board-slot=") == total
+    slot_ids = re.findall(r'data-board-slot="([^"]+)"', page)
+    assert len(set(slot_ids)) == 18 and "1-grades" in slot_ids and "3-leadership" in slot_ids
+    gaps = re.findall(r"<a [^>]*data-board-slot=[^>]*>", page)
+    assert len(gaps) == 18  # 專三沒有任何資料：18 格都是可以點的空格
+    assert all('href="/' in tag for tag in gaps)
+    # 同一頁 clipPath id 不能重複
+    clip_ids = re.findall(r'<clipPath id="([^"]+)"', page)
+    assert len(clip_ids) == len(set(clip_ids))
+
+
+def test_home_shows_complete_state(app, monkeypatch):
+    """全部格都亮起：桌板發光、「拼圖完成！」、可以去生成自傳；還沒拼完就顯示還差幾格。"""
+    from app.routes import main as main_routes
+    from app.services.journey_service import CATEGORY_KEYS
+    slots = {(g, key) for g in (1, 2, 3) for key in CATEGORY_KEYS}
+
+    monkeypatch.setattr(main_routes, "journey_home",
+                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots, 3), now=now))
+    page = _dashboard(app)
+    assert "is-complete" in page
+    assert "拼圖完成" in page
+    assert 'href="/student/autobiography"' in page and "生成自傳" in page
+    assert "格</b>" not in page  # 完成時不顯示「還差 N 格」（助理建議問題本來就有「還差」二字，不能整頁比）
+    assert "錄取保證" not in page
+
+    monkeypatch.setattr(main_routes, "journey_home",
+                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_with(slots - {(2, "service")}, 3), now=now))
+    page = _dashboard(app)
+    assert "is-complete" not in page
+    assert "還差 1 格" in page
+    assert "已拼 17／18" in page
+    assert "錄取保證" not in page
 
 
 def test_board_total_follows_walked_years(app):

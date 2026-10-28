@@ -533,7 +533,8 @@ document.querySelectorAll("[data-walker]").forEach((walker) => {
   });
 });
 
-// 拼圖：把旁邊散落的那片拖回圖上的洞裡（或直接點），拼上後打開新增
+// 拼圖：把旁邊散落的那片拖回圖上的洞裡（或直接點），拼上後打開新增。
+// 拖拉與 snap 只作用在今年那塊（[data-board]）；過去年級的空格是一般連結。
 document.querySelectorAll("[data-board]").forEach((board) => {
   const boardSvg = board.querySelector(".jig__board");
   // 洞在畫面上的寬度：整張圖 viewBox 寬 660，每片的 viewBox 寬 260。
@@ -548,7 +549,8 @@ document.querySelectorAll("[data-board]").forEach((board) => {
 
   board.querySelectorAll("[data-loose]").forEach((loose) => {
     const piece = loose.querySelector("[data-drag-piece]");
-    const hole = board.querySelector(`[data-hole="${loose.dataset.loose}"]`);
+    // 以 slot_id（例如 3-grades）找洞：桌板上有好幾個年級，用類別找會找錯年級
+    const hole = board.querySelector(`[data-hole="${loose.dataset.slot}"]`);
     let start = null;
     let moved = false;
     let grow = 1;  // 拖曳時放大幾倍才和洞一樣大
@@ -619,21 +621,24 @@ document.querySelectorAll("[data-board]").forEach((board) => {
     // 滑鼠或手指放開後瀏覽器還會送一次 click，交給上面處理；鍵盤 Enter 的 click（detail 為 0）照常換頁
     loose.addEventListener("click", (event) => { if (event.detail !== 0) event.preventDefault(); });
   });
+});
 
-  // 回到首頁時：比對上次看到的拼圖，新拼上的那片跳一下，標題變成「又留下了一塊。」
-  const key = `journey-pieces-${board.dataset.grade}`;
-  const filled = [...board.querySelectorAll("[data-filled]")].map((el) => el.dataset.piece);
+// 回到首頁時：比對上次看到的整張桌板（已亮起的 slot_id，例如 1-activity），
+// 新亮起的格跳一下（is-new，沿用拼上動畫），標題變成「又留下了一塊。」
+document.querySelectorAll("[data-journey-board]").forEach((board) => {
+  const key = "journey-board";
+  const lit = [...board.querySelectorAll("[data-board-slot].is-lit")].map((el) => el.dataset.boardSlot);
   let before = null;
   try { before = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (e) { before = null; }
   if (Array.isArray(before)) {
-    const fresh = filled.filter((piece) => !before.includes(piece));
+    const fresh = lit.filter((slot) => !before.includes(slot));
     if (fresh.length) {
-      fresh.forEach((piece) => board.querySelector(`[data-piece="${piece}"]`)?.classList.add("is-new"));
+      fresh.forEach((slot) => board.querySelector(`[data-board-slot="${slot}"]`)?.classList.add("is-new"));
       const title = document.querySelector("[data-board-title]");
       if (title) title.textContent = "又留下了一塊。";
     }
   }
-  try { sessionStorage.setItem(key, JSON.stringify(filled)); } catch (e) { /* 存不了也沒關係 */ }
+  try { sessionStorage.setItem(key, JSON.stringify(lit)); } catch (e) { /* 存不了也沒關係 */ }
 });
 
 // 學期照片：選好檔案就直接上傳
