@@ -27,6 +27,7 @@ from app.models import (
 )
 from app.services.admission_service import import_seed_programs
 from app.services.journey_service import academic_year_of
+from tests.board_helpers import fill_board
 
 GRADE3_ADMISSION_YEAR = academic_year_of(date.today()) - 2
 STUDENT_NAME = "測試學生甲"
@@ -55,6 +56,7 @@ def app(tmp_path):
         teacher = User.query.filter_by(username="teacher").one()
         db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name="資管科三甲", school_year=115))
         db.session.commit()
+        fill_board(stu)  # 拼圖要完成才能生成自傳
         yield app
 
 

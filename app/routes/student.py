@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 from urllib.parse import urlparse
 
-from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 
 from app.extensions import db
 from app.models import (
@@ -43,6 +43,7 @@ from app.services.admission_links import admission_links, load_school_links
 from app.services.admission_schedule import CHECKED_ON, channel_label, latest_timeline, timeline
 from app.services.matching_service import rank_programs
 from app.services.gap_checklist import download_checklist, review_timeline
+from app.services.journey_home import journey_home
 from app.services.journey_service import CATEGORY_LABELS, EXPERIENCE_CATEGORIES, build_journey
 from app.services.package_service import build_package_docx, latest_review
 from app.services.file_preview import inline_file
@@ -1238,6 +1239,7 @@ def _render_autobiography(user, program, targets, error=None, answers=None, stat
         version=autobiography_service.version_of(draft) if draft else None,
         paragraph_reviews=paragraph_reviews,
         school_turns=ai_quota_service.remaining(user) if ai_ready() else None,
+        board=journey_home(user)["board"],
         error=error,
         stale=stale,
     ), (409 if stale else status if error else 200)
@@ -1261,6 +1263,10 @@ def autobiography_generate():
     reason = student_rules.review_block_reason(user)
     if reason:
         return _blocked(user, reason)
+    # 拼圖沒完成就不能生成：伺服器端擋下，不呼叫 AI、不寫任何資料
+    if not journey_home(user)["board"]["complete"]:
+        flash("拼圖還沒完成，完成後才能生成自傳")
+        return redirect(url_for("student.autobiography", program_id=program.id))
     answers = {key: request.form.get(key, "") for key, _, _ in autobiography_service.QUESTIONS}
     # 學生自己的金鑰：只放在這個函式的變數裡用一次，不存資料庫、不放 session、不放網址
     own_key = "" if current_app.config.get("LOCAL_DEMO_MODE") else request.form.get("own_api_key", "").strip() or None

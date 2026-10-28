@@ -10,6 +10,7 @@ from app.models import (AdmissionProgram, CredentialRecord, LearningCourseRecord
                         Portfolio, StudentProfile, StudentTarget, User)
 from app.services.admission_service import import_seed_programs
 from app.services.autobiography_service import build_facts, generate_draft
+from tests.board_helpers import fill_board
 
 ANSWERS = {
     "motivation": "專二做網頁設計時發現自己喜歡把需求變成系統。",
@@ -35,6 +36,7 @@ def app(tmp_path):
         db.session.add(Portfolio(student_id=stu.id, title="校園黑客松", category="competition", school_year=3, status="confirmed",
                                  description="三人一組完成報名網站"))
         db.session.commit()
+        fill_board(stu)  # 拼圖要完成才能生成自傳；要測未完成的測試自己拿掉一格
     yield app
 
 
@@ -113,7 +115,7 @@ def test_generate_keeps_only_known_fact_ids(app):
         assert output.output_type == "autobiography_ai"
         assert output.content_json["paragraphs"][0]["sources"] == ["F1"]
         assert output.content_json["provider"] == "gemini"
-        assert output.source_snapshot_json["evidence_package"]["items"][0]["evidence_id"].startswith("portfolio:")
+        assert any(item["evidence_id"].startswith("portfolio:") for item in output.source_snapshot_json["evidence_package"]["items"])
 
 
 def test_without_api_key_uses_labelled_demo_draft(app):
@@ -231,3 +233,47 @@ def test_draft_page_shows_review_evidence_and_ai_limits(app):
     assert "AI 不能做的事" in html
     assert "給分" in html and "退件" in html and "核定資格" in html and "發布招生規則" in html
     assert "送出前要你自己確認" in html
+
+
+def _count_generate(monkeypatch):
+    calls = []
+
+    def fake(prompt, schema, files=None, api_key=None, opener=None):
+        calls.append(1)
+        return {"paragraphs": [{"title": "動機", "text": "我想讀資管。", "sources": []}]}
+
+    monkeypatch.setattr("app.services.autobiography_service.generate_json", fake)
+    return calls
+
+
+def test_autobiography_blocked_until_board_complete(app, monkeypatch):
+    calls = _count_generate(monkeypatch)
+    with app.app_context():  # 拿掉「服務學習」，拼圖就少了格子
+        Portfolio.query.filter_by(category="service").delete()
+        db.session.commit()
+    client = login(app)
+    choose_target(app, client)
+
+    page = client.get("/student/autobiography").get_data(as_text=True)
+    response = client.post("/student/autobiography/generate", data={"program_id": program(app), "own_api_key": "test-key", **ANSWERS},
+                           follow_redirects=True)
+
+    assert "拼圖還差" in page and "disabled" in page
+    assert calls == []
+    assert "拼圖還沒完成" in response.get_data(as_text=True)
+    with app.app_context():
+        assert LearningProfileOutput.query.filter_by(output_type="autobiography_ai").count() == 0
+
+
+def test_autobiography_allowed_when_board_complete(app, monkeypatch):
+    calls = _count_generate(monkeypatch)
+    client = login(app)
+    choose_target(app, client)
+
+    page = client.get("/student/autobiography").get_data(as_text=True)
+    response = client.post("/student/autobiography/generate",
+                           data={"program_id": program(app), "own_api_key": "test-key", **ANSWERS})
+
+    assert "拼圖還差" not in page
+    assert response.status_code == 302
+    assert len(calls) == 1

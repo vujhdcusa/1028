@@ -31,6 +31,7 @@ from app.services import autobiography_service
 from app.services.admission_service import import_seed_programs
 from app.services.gap_service import ALL_LABELS, analyze_gap
 from app.services.journey_service import academic_year_of
+from tests.board_helpers import fill_board
 
 # 讓學生不論哪一年跑測試都是專三（送導師確認、AI 自傳要二年級以上）
 GRADE3_ADMISSION_YEAR = academic_year_of(date.today()) - 2
@@ -217,7 +218,9 @@ def test_one_student_walks_the_whole_main_line(app, fake_ai):
     with zipfile.ZipFile(io.BytesIO(package.data)) as docx:
         assert "word/document.xml" in docx.namelist()
 
-    # 7. 自傳小幫手：回答 4 題 → 假 AI 產生草稿，每段都有 F 編號；改一段存成第 2 版
+    # 7. 自傳小幫手：拼圖要先完成；回答 4 題 → 假 AI 產生草稿，每段都有 F 編號；改一段存成第 2 版
+    with app.app_context():
+        fill_board(db.session.get(User, stu_id))
     assert 'name="motivation"' in text(stu.get(f"/student/autobiography?program_id={pid}"))
     response = stu.post("/student/autobiography/generate", data={"program_id": pid, **ANSWERS})
     assert response.status_code == 302, text(response)
