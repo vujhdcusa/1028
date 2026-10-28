@@ -872,23 +872,13 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .stop-node__bit { fill: var(--year); stroke: var(--ink); stroke-width: 1.5; opacity: 0; animation: bit-in .6s cubic-bezier(.3,.8,.3,1) both; animation-delay: var(--b); }
 .year-puzzle { text-align: center; margin-bottom: 2.5rem; }
 .year-puzzle__title { margin: 0 0 1rem; font-family: var(--font-serif); font-size: clamp(1.4rem, 3.5vw, 2rem); animation: welcome-in .6s ease-out 1.8s both; }
-.year-puzzle__board { display: grid; grid-template-columns: repeat(6, minmax(3.5rem, 7rem)); justify-content: center; gap: .6rem; }
-.puzzle-piece { display: grid; justify-items: center; gap: .2rem; text-decoration: none; color: var(--ink); font-size: .9rem; }
-.puzzle-piece svg { width: 100%; height: auto; overflow: visible; }
-.puzzle-piece path { stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; transition: transform .2s; }
-.puzzle-piece--filled path { fill: var(--c); animation: snap-in .5s cubic-bezier(.2,.9,.3,1.3) both; animation-delay: calc(2s + var(--n) * .12s); }
-.puzzle-piece--filled span { font-weight: 700; }
-.puzzle-piece--blank path { fill: var(--sheet); stroke-dasharray: 7 6; }
-.puzzle-piece--blank span { color: var(--muted); }
-.puzzle-piece--blank:hover path, .puzzle-piece--blank:focus-visible path { fill: var(--c); fill-opacity: .25; transform: translateY(-4px); }
 .folders-drawer { margin: 0 0 2rem; }
 .folders-drawer > summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: .5rem 0; }
 @keyframes route-draw { from { stroke-dashoffset: 100; } }
 @keyframes node-pop { from { transform: scale(0); } 70% { transform: scale(1.2); } to { transform: none; } }
 @keyframes node-pulse { 0% { opacity: .8; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.7); } }
 @keyframes bit-in { from { opacity: 0; transform: translate(var(--from-x), var(--from-y)) rotate(40deg); } 60% { opacity: 1; } to { opacity: 0; transform: none; } }
-@keyframes snap-in { from { opacity: 0; transform: translateY(-30px) rotate(-10deg) scale(.7); } to { opacity: 1; transform: none; } }
-@media (max-width: 640px) { .year-puzzle__board { grid-template-columns: repeat(3, minmax(3.5rem, 6rem)); } .stop-node__word { display: none; } }
+@media (max-width: 640px) { .stop-node__word { display: none; } }
 
 /* 好久不見 */
 .return { position: fixed; inset: 0; z-index: 1000; display: grid; place-content: center; justify-items: center; gap: 1rem; text-align: center; background: var(--paper); transition: opacity .6s; }
@@ -898,7 +888,7 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .return__note { margin: 0; font-size: 1.3rem; color: var(--ink-soft); animation: welcome-in .6s ease-out 1.2s both; }
 .return__go { margin-top: 1rem; background: none; border: 0; font: inherit; color: var(--muted); cursor: pointer; text-decoration: underline; animation: welcome-in .6s ease-out 1.8s both; }
 @media (prefers-reduced-motion: reduce) {
-  .route-map__walked, .stop-node__dot, .stop-node__pulse, .stop-node__bit, .puzzle-piece path, .route-map__title, .year-puzzle__title, .return__note, .return__go { animation: none !important; }
+  .route-map__walked, .stop-node__dot, .stop-node__pulse, .stop-node__bit, .route-map__title, .year-puzzle__title, .return__note, .return__go { animation: none !important; }
   .stop-node__bit { display: none; }
 }
 /* 「好久不見」播放時，路線動畫先暫停，關掉後才開始 */
@@ -964,7 +954,7 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .ptable__count { color: rgb(236 232 224 / .6); font-size: .85rem; letter-spacing: .04em; }
 .ptable__count b { color: #f1ede6; font-weight: 600; font-size: 1.05rem; }
 .ptable__empty { width: 80%; transform: translate(-50%, -160%); color: #ebe7df; font-weight: 700; }
-.ptable__tip { position: absolute; z-index: 9; max-width: 16rem; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: 6px; background: var(--sheet); color: var(--ink); font-size: .88rem; line-height: 1.45; box-shadow: 0 10px 24px rgb(0 0 0 / .35); transform: translate(-50%, calc(-100% - 14px)); pointer-events: none; }
+.ptable__tip { position: absolute; z-index: 160; max-width: 16rem; padding: .5rem .75rem; border: 1px solid var(--line); border-radius: 6px; background: var(--sheet); color: var(--ink); font-size: .88rem; line-height: 1.45; box-shadow: 0 10px 24px rgb(0 0 0 / .35); transform: translate(-50%, calc(-100% - 14px)); pointer-events: none; }
 .ptable__tip.is-below { transform: translate(-50%, 14px); }
 .ptable__tip small { display: block; font-family: var(--font-mono); font-size: .74rem; color: var(--muted); }
 /* 小助手泡泡：和右下角「資管科小助手」同一款 */
@@ -975,19 +965,22 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .ptable__frame { position: absolute; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .45s ease; }
 .ptable__frame svg { display: block; width: 100%; height: 100%; }
 .ptable.is-assembling .ptable__count, .ptable.is-assembling .ptable__tip { opacity: 0; }
-.ptable.is-assembling .tp { transition: transform .6s cubic-bezier(.2, .7, .2, 1), filter .6s; pointer-events: none; }
+.ptable.is-assembling .tp { transition: transform .6s cubic-bezier(.2, .7, .2, 1); pointer-events: none; }
 .ptable.is-assembling .tp.is-placed { filter: drop-shadow(0 1px 1px rgb(0 0 0 / .35)); }
 .ptable.is-assembled .ptable__frame { opacity: 1; animation: ptable-glow .9s ease-out both; }
 @keyframes ptable-glow { 0% { box-shadow: 0 0 0 0 rgb(241 230 210 / 0); } 45% { box-shadow: 0 0 0 1px rgb(255 255 255 / .55), 0 0 34px 8px rgb(241 230 210 / .5); } 100% { box-shadow: 0 0 0 1px rgb(255 255 255 / .35), 0 0 18px 2px rgb(241 230 210 / .25), 0 14px 30px rgb(0 0 0 / .4); } }
 /* 新的片：從上方落下，輕輕回彈一次 */
-.tp.is-waiting { opacity: 0; }
-.tp.is-dropping { animation: tp-drop .6s cubic-bezier(.33, .8, .35, 1) both; animation-delay: calc(var(--n, 0) * 110ms); }
+.tp.is-waiting { opacity: 0; pointer-events: none; }
+.tp.is-dropping { animation: tp-drop .6s cubic-bezier(.33, .8, .35, 1) both; animation-delay: var(--delay, 0ms); }
 @keyframes tp-drop {
   0% { opacity: 0; transform: translate(-50%, calc(-50% - 240px)) rotate(calc(var(--r) - 18deg)) scale(1.06); }
   65% { opacity: 1; transform: translate(-50%, calc(-50% + 3px)) rotate(var(--r)); }
   82% { transform: translate(-50%, calc(-50% - 4px)) rotate(var(--r)); }
   100% { transform: translate(-50%, -50%) rotate(var(--r)); }
 }
+/* 細噪點蓋在整張桌子上一層（片上不再各自跑濾鏡，片多時才不會卡） */
+.ptable::after { content: ""; position: absolute; inset: 0; z-index: 150; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .075 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.button.is-disabled { opacity: .45; cursor: not-allowed; }
 .ptable-actions { display: flex; flex-direction: column; align-items: center; gap: .4rem; margin-top: 1rem; }
 .ptable-actions p { margin: 0; }
 /* 「做拼圖」：從按鈕做出一片，轉正、放大，飛向桌子 */
@@ -1011,7 +1004,7 @@ body[data-page="student-welcome"] .assistant { display: none; }
 .jig-photo { display: flex; align-items: center; justify-content: center; gap: .75rem; flex-wrap: wrap; margin-top: 1rem; }
 .jig-photo__pick { cursor: pointer; font-weight: 700; color: var(--accent); }
 .jig-photo__pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.jig-photo__pick span::before { content: "📷 "; }
+.jig-photo__pick span::before { content: ""; display: inline-block; width: 1.05em; height: 1.05em; margin-right: .35em; vertical-align: -.15em; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.5h3l1.5-2h6l1.5 2h3v9h-15z'/%3E%3Ccircle cx='10' cy='11' r='3'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.5h3l1.5-2h6l1.5 2h3v9h-15z'/%3E%3Ccircle cx='10' cy='11' r='3'/%3E%3C/svg%3E") center / contain no-repeat; }
 .jig-photo__pick:focus-within span { outline: 2px solid var(--accent); outline-offset: 3px; }
 .jig-photo small { color: var(--muted); }
 .js .jig-photo [data-photo-submit] { display: none; }

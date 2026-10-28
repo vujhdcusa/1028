@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
@@ -184,8 +185,9 @@ def test_piece_positions_are_stable_and_on_the_table_edges(app):
         assert -40 <= piece["turn"] <= 40
         for x, y in ((piece["x"], piece["y"]), (piece["mx"], piece["my"])):
             assert 0 < x < 100 and 0 < y < 100
-        # 中間留空：電腦版桌子正中央 30%×30% 的範圍內沒有片
+        # 中間留空：電腦版、手機版桌子的正中央都沒有片
         assert not (35 < piece["x"] < 65 and 35 < piece["y"] < 65)
+        assert not (30 < piece["mx"] < 70 and 25 < piece["my"] < 75)
 
 
 def test_assembled_pieces_make_an_exact_rectangle(app):
@@ -217,7 +219,7 @@ def test_home_table_renders_pieces_buttons_and_count(app, monkeypatch):
     assert 'href="/student/learning-profile/upload?type=transcript" data-make-piece="grades"' in page
     assert 'href="/student/learning-profile/upload?type=credential" data-make-piece="credential"' in page
     assert 'href="/student/portfolio/new?category=leadership" data-make-piece="leadership"' in page
-    assert "data-assemble" in page and 'data-href="/student/autobiography"' in page
+    assert '<a class="button" href="/student/autobiography" data-assemble>' in page  # 沒有 JS 也是一般連結
     for gone in ("還差", "拼圖完成", "data-board-slot", "data-loose"):
         assert gone not in page.split('class="year-puzzle"', 1)[1].split('</section>', 1)[0]
     assert "錄取保證" not in page
@@ -226,8 +228,9 @@ def test_home_table_renders_pieces_buttons_and_count(app, monkeypatch):
 def test_empty_table_invites_first_piece(app):
     page = _dashboard(app)
     assert "按上面的按鈕，做出第一片拼圖" in page
-    assert "已收集 <b class=\"mono\">0</b> 片" in page
-    assert "data-assemble data-href" not in page  # 0 片：按鈕停用
+    assert re.search(r"已收集\s*<b[^>]*>0</b>\s*片", page)
+    assert not re.search(r"<a\b[^>]*\bdata-assemble\b", page)  # 0 片：按鈕停用，不是連結
+    assert re.search(r'<span\b[^>]*aria-disabled="true"[^>]*>請小助手拼好拼圖', page)
 
 
 def test_grade_one_assemble_button_shows_open_note(app, monkeypatch):
@@ -240,6 +243,48 @@ def test_grade_one_assemble_button_shows_open_note(app, monkeypatch):
                         lambda user, journey=None, now=None: journey_home(user, journey=_journey_full(1, 1), now=now))
     page = _dashboard(app)
     assert "專二開放" in page
-    assert "data-assemble data-href" not in page
+    assert not re.search(r"<a\b[^>]*\bdata-assemble\b", page)
     assert 'href="/student/autobiography"' not in page
+
+
+def test_renaming_a_record_keeps_its_piece_in_place(app):
+    """片的 id 用資料庫編號：改標題後位置、角度、id 都不變（不會重播落下）。"""
+    with app.test_request_context():
+        user = student()
+        record = Portfolio(student_id=user.id, title="資訊週", category="service", school_year=3)
+        db.session.add(record)
+        db.session.commit()
+        before = journey_home(user)["table"]["pieces"][0]
+        record.title = "資訊週志工（改名）"
+        db.session.commit()
+        after = journey_home(user)["table"]["pieces"][0]
+    assert before["id"] == after["id"] == f"portfolio-{record.id}"
+    assert (before["x"], before["y"], before["mx"], before["my"], before["turn"]) == (after["x"], after["y"], after["mx"], after["my"], after["turn"])
+    assert after["title"] == "資訊週志工（改名）"
+
+
+def test_piece_titles_are_escaped(app):
+    with app.test_request_context():
+        user = student()
+        db.session.add(Portfolio(student_id=user.id, title='<script>alert(1)</script> "引號"', category="activity", school_year=3))
+        db.session.commit()
+    page = _dashboard(app)
+    table = page.split("data-ptable", 1)[1].split('class="ptable-actions"', 1)[0]
+    assert "<script>alert(1)" not in table
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in table
+    assert '"引號"' not in table and "&#34;引號&#34;" in table
+
+
+def test_150_pieces_render_without_per_piece_filters(app, monkeypatch):
+    """片很多（150 片）時頁面照常：每片都畫出來、clipPath 不重複；噪點濾鏡只在拼好的整張圖上用一次。"""
+    from app.routes import main as main_routes
+    monkeypatch.setattr(main_routes, "journey_home",
+                        lambda user, journey=None, now=None: journey_home(user, journey=_journey_full(5, 3), now=now))
+    page = _dashboard(app)
+    assert page.count("data-table-piece=") == 150
+    clip_ids = re.findall(r'<clipPath id="([^"]+)"', page)
+    assert len(clip_ids) == len(set(clip_ids)) >= 150
+    assert page.count('filter="url(#ts-grain)"') == 1
+    scene = page.split('<g id="year-scene">', 1)[1].split("</defs>", 1)[0]
+    assert "filter=" not in scene
 

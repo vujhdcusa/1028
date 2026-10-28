@@ -101,9 +101,9 @@ def _rows_for(count):
     return [cols] * (rows - 1) + [last]
 
 
-def _bump(*parts):
-    """格子之間凸耳的方向（固定的規則，不用亂數）。"""
-    return 1 if sum((i + 3) * p for i, p in enumerate(parts)) % 2 else -1
+def _bump(row, col, kind):
+    """格子之間凸耳的方向：依列、欄、邊的種類混出 +1／-1（固定規則），同一列的片形狀才不會都一樣。"""
+    return 1 if (row * 7 + col * 5 + row * col * 3 + kind * 11) % 3 else -1
 
 
 def table_pieces(journey):
@@ -114,9 +114,14 @@ def table_pieces(journey):
             seen = {}
             for item in year["categories"][key]:
                 title = item.get("title") or ""
-                seen[title] = seen.get(title, 0) + 1
+                # 片的 id＝資料來源＋資料庫編號（改標題、換年級都不變）；沒有編號的假資料才退回用標題
+                if item.get("id"):
+                    piece_id = item["id"]
+                else:
+                    seen[title] = seen.get(title, 0) + 1
+                    piece_id = f"{year['grade']}-{key}-{zlib.crc32(title.encode('utf-8')):08x}-{seen[title]}"
                 items.append({
-                    "id": f"{year['grade']}-{key}-{zlib.crc32(title.encode('utf-8')):08x}-{seen[title]}",
+                    "id": piece_id,
                     "key": key,
                     "label": PIECE_LABELS[key],
                     "grade_label": GRADE_LABELS[year["grade"]],

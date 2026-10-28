@@ -240,7 +240,6 @@
             </g>
             <path d="M1600 760 C1460 780 1380 840 1340 1000 H1600Z" fill="#4a5452"/>
             <rect width="1600" height="1000" fill="url(#ts-vignette)"/>
-            <rect width="1600" height="1000" filter="url(#ts-grain)"/>
           </svg>
           {% endif %}
         </g>
@@ -255,7 +254,7 @@
       {% for piece in table.pieces %}
       <button type="button" class="tp" data-table-piece="{{ piece.id }}" data-cx="{{ piece.cx }}" data-cy="{{ piece.cy }}" data-bw="{{ piece.box_w }}"
               data-tip="{{ piece.label }}・{{ piece.grade_label }}" data-tip-title="{{ piece.title }}"
-              style="--x: {{ piece.x }}%; --y: {{ piece.y }}%; --mx: {{ piece.mx }}%; --my: {{ piece.my }}%; --r: {{ piece.turn }}deg; --kw: {{ (piece.box_w / 160) | round(3) }}; --cat: var(--cat-{{ piece.key }}); --i: {{ loop.index0 }};"
+              style="--x: {{ piece.x }}%; --y: {{ piece.y }}%; --mx: {{ piece.mx }}%; --my: {{ piece.my }}%; --r: {{ piece.turn }}deg; --kw: {{ (piece.box_w / 160) | round(3) }}; --cat: var(--cat-{{ piece.key }});"
               aria-label="{{ piece.label }}，{{ piece.grade_label }}：{{ piece.title }}">
         <svg class="tp__svg" viewBox="{{ piece.box }}" aria-hidden="true" focusable="false">
           <clipPath id="tp-{{ loop.index0 }}"><path d="{{ piece.d }}"/></clipPath>
@@ -274,20 +273,20 @@
       <p class="ptable__count">已收集 <b class="mono">{{ table.count }}</b> 片</p>
       <div class="ptable__tip" data-table-tip role="status" hidden></div>
       <div class="ptable__frame" data-assembled-frame aria-hidden="true">
-        <svg viewBox="0 0 {{ table.scene_w }} {{ table.scene_h }}" preserveAspectRatio="none"><g clip-path="url(#ts-whole)"><use href="#year-scene"/></g></svg>
+        <svg viewBox="0 0 {{ table.scene_w }} {{ table.scene_h }}" preserveAspectRatio="none"><g clip-path="url(#ts-whole)"><use href="#year-scene"/></g><rect width="{{ table.scene_w }}" height="{{ table.scene_h }}" filter="url(#ts-grain)"/></svg>
       </div>
       <p class="ptable__helper" data-table-helper hidden><span class="assistant__dot" aria-hidden="true"></span>資管科小助手：我來幫你拼！</p>
     </div>
 
     <div class="ptable-actions">
       {% if autobiography_note %}
-      <button class="button" type="button" disabled>請小助手拼好拼圖、生成自傳</button>
+      <span class="button is-disabled" role="link" aria-disabled="true">請小助手拼好拼圖、生成自傳</span>
       <p class="small muted" data-autobiography-locked>{{ autobiography_note }}</p>
       {% elif not table.count %}
-      <button class="button" type="button" disabled>請小助手拼好拼圖、生成自傳</button>
+      <span class="button is-disabled" role="link" aria-disabled="true">請小助手拼好拼圖、生成自傳</span>
       <p class="small muted">先做出至少一片拼圖，小助手才能幫你拼。</p>
       {% else %}
-      <button class="button" type="button" data-assemble data-href="{{ url_for('student.autobiography') }}">請小助手拼好拼圖、生成自傳</button>
+      <a class="button" href="{{ url_for('student.autobiography') }}" data-assemble>請小助手拼好拼圖、生成自傳</a>
       {% endif %}
     </div>
 

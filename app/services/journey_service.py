@@ -65,6 +65,7 @@ def build_journey(student, today=None):
     courses = LearningCourseRecord.query.filter_by(student_id=student.id).order_by(LearningCourseRecord.id).all()
     for course in courses:
         place(grade_for(course.year_for_placement, admission_year), "grades", {
+            "id": f"course-{course.id}",  # 來源＋資料庫編號：改標題也不會變（首頁拼圖桌的片靠它固定位置）
             "title": course.course_name,
             "detail": " · ".join(part for part in (
                 f"{course.credits} 學分" if course.credits is not None else "",
@@ -76,6 +77,7 @@ def build_journey(student, today=None):
     for credential in credentials:
         year = academic_year_of(credential.issue_date) if credential.issue_date else None
         place(grade_for(year, admission_year), "credential", {
+            "id": f"credential-{credential.id}",
             "title": credential.credential_name,
             "detail": credential.level or "",
         })
@@ -87,6 +89,7 @@ def build_journey(student, today=None):
             unsorted_count += 1
             continue
         place(grade_for(record.school_year, admission_year), record.category, {
+            "id": f"portfolio-{record.id}",
             "title": record.title,
             "detail": record.description or "",
             "source": "" if record.source == "student" else record.source_label,

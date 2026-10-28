@@ -595,12 +595,14 @@ document.querySelectorAll("[data-walker]").forEach((walker) => {
       tip.append(head, title);
       const t = table.getBoundingClientRect();
       const p = piece.getBoundingClientRect();
-      const x = Math.min(Math.max(p.left + p.width / 2 - t.left, 110), t.width - 110);
+      tip.hidden = false;
+      // 依浮層實際寬度的一半夾住水平位置，才不會被桌邊切掉
+      const half = Math.min(tip.offsetWidth / 2 + 8, t.width / 2);
+      const x = Math.min(Math.max(p.left + p.width / 2 - t.left, half), t.width - half);
       const below = p.top - t.top < t.height * 0.3;
       tip.style.left = `${x}px`;
       tip.style.top = `${(below ? p.bottom : p.top) - t.top}px`;
       tip.classList.toggle("is-below", below);
-      tip.hidden = false;
     });
   });
   document.addEventListener("click", hideTip);
@@ -615,7 +617,9 @@ document.querySelectorAll("[data-walker]").forEach((walker) => {
   if (Array.isArray(before) && !reduce) {
     const fresh = pieces.filter((piece) => !before.includes(piece.dataset.tablePiece));
     if (fresh.length) {
-      fresh.forEach((piece, n) => { piece.style.setProperty("--n", n); piece.classList.add("is-waiting"); });
+      // 一片一片落下，但全部最多約 1.5 秒播完（片很多時間隔縮短）
+      const step = Math.min(110, 1500 / fresh.length);
+      fresh.forEach((piece, n) => { piece.style.setProperty("--delay", `${Math.round(n * step)}ms`); piece.classList.add("is-waiting"); });
       const drop = () => fresh.forEach((piece) => {
         piece.classList.remove("is-waiting");
         piece.classList.add("is-dropping");
@@ -636,42 +640,57 @@ document.querySelectorAll("[data-walker]").forEach((walker) => {
   // 小助手拼好拼圖：所有片依序飛到桌子中央排成長方形，整塊發光，再去自傳頁
   const assemble = document.querySelector("[data-assemble]");
   if (!assemble) return;
-  assemble.addEventListener("click", () => {
-    const href = assemble.dataset.href;
-    if (reduce || !pieces.length) { window.location.href = href; return; }
-    assemble.disabled = true;
-    hideTip();
-    const helper = table.querySelector("[data-table-helper]");
-    if (helper) helper.hidden = false;
-    table.scrollIntoView({ block: "center", behavior: "smooth" });
+  // 按鈕本身是連到自傳頁的連結：沒有 JS、減少動態效果或動畫出錯時，照常換頁
+  assemble.addEventListener("click", (event) => {
+    if (reduce || !pieces.length || !plainClick(event)) return;
+    event.preventDefault();
+    const href = assemble.getAttribute("href");
+    const go = () => { window.location.href = href; };
+    try {
+      if (assemble.dataset.busy) return;
+      assemble.dataset.busy = "1";
+      assemble.setAttribute("aria-disabled", "true");
+      hideTip();
+      const helper = table.querySelector("[data-table-helper]");
+      if (helper) helper.hidden = false;
+      table.scrollIntoView({ block: "center", behavior: "smooth" });
 
-    const sceneW = Number(table.dataset.sceneW);
-    const sceneH = Number(table.dataset.sceneH);
-    const rect = table.getBoundingClientRect();
-    const unit = Math.min(rect.width * 0.64 / sceneW, rect.height * 0.62 / sceneH);  // 圖上 1 單位＝幾 px
-    const ox = rect.width / 2 - sceneW * unit / 2;
-    const oy = rect.height / 2 - sceneH * unit / 2;
-    const frame = table.querySelector("[data-assembled-frame]");
-    if (frame) Object.assign(frame.style, { left: `${ox}px`, top: `${oy}px`, width: `${sceneW * unit}px`, height: `${sceneH * unit}px` });
+      const sceneW = Number(table.dataset.sceneW);
+      const sceneH = Number(table.dataset.sceneH);
+      const rect = table.getBoundingClientRect();
+      const unit = Math.min(rect.width * 0.64 / sceneW, rect.height * 0.62 / sceneH);  // 圖上 1 單位＝幾 px
+      if (!(unit > 0)) { go(); return; }
+      const ox = rect.width / 2 - sceneW * unit / 2;
+      const oy = rect.height / 2 - sceneH * unit / 2;
+      const frame = table.querySelector("[data-assembled-frame]");
+      if (frame) Object.assign(frame.style, { left: `${ox}px`, top: `${oy}px`, width: `${sceneW * unit}px`, height: `${sceneH * unit}px` });
 
-    const move = 600;
-    const stagger = Math.min(160, Math.max(22, (1700 - move) / Math.max(pieces.length - 1, 1)));
-    setTimeout(() => {
-      table.classList.add("is-assembling");
-      pieces.forEach((piece, i) => {
-        // 片的中心點在 left/top（CSS 用 translate(-50%,-50%) 置中），算出要移多少、放大幾倍
-        const dx = ox + Number(piece.dataset.cx) * unit - piece.offsetLeft;
-        const dy = oy + Number(piece.dataset.cy) * unit - piece.offsetTop;
-        const scale = Number(piece.dataset.bw) * unit / (piece.offsetWidth || 1);
-        piece.style.transitionDelay = `${i * stagger}ms`;
-        piece.style.zIndex = String(2 + i);
-        piece.style.transform = `translate(${dx}px, ${dy}px) translate(-50%, -50%) scale(${scale}) rotate(0deg)`;
-        piece.classList.add("is-placed");
-      });
-      const done = 300 + (pieces.length - 1) * stagger + move;
-      setTimeout(() => table.classList.add("is-assembled"), done - 250);
-      setTimeout(() => { window.location.href = href; }, done + 900);
-    }, 350);
+      // 全部片在 1.5～2.5 秒內飛完：片越多間隔越短
+      const move = 600;
+      const stagger = Math.min(160, Math.max(6, (1700 - move) / Math.max(pieces.length - 1, 1)));
+      setTimeout(() => {
+        try {
+          table.classList.add("is-assembling");
+          pieces.forEach((piece, i) => {
+            // 片的中心點在 left/top（CSS 用 translate(-50%,-50%) 置中），算出要移多少、放大幾倍
+            const dx = ox + Number(piece.dataset.cx) * unit - piece.offsetLeft;
+            const dy = oy + Number(piece.dataset.cy) * unit - piece.offsetTop;
+            const scale = Number(piece.dataset.bw) * unit / (piece.offsetWidth || 1);
+            piece.style.transitionDelay = `${i * stagger}ms`;
+            piece.style.zIndex = String(2 + Math.min(i, 97));  // 上限 99：整張圖（200）和小助手泡泡（210）永遠在最上面
+            piece.style.transform = `translate(${dx}px, ${dy}px) translate(-50%, -50%) scale(${scale}) rotate(0deg)`;
+            piece.classList.add("is-placed");
+          });
+          const done = 300 + (pieces.length - 1) * stagger + move;
+          setTimeout(() => table.classList.add("is-assembled"), done - 250);
+          setTimeout(go, done + 900);
+        } catch (error) {
+          go();
+        }
+      }, 350);
+    } catch (error) {
+      go();
+    }
   });
 })();
 
