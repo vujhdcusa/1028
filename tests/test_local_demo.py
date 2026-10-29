@@ -2,7 +2,7 @@ import re
 
 from app.demo import create_local_demo_app
 from app.extensions import db
-from app.models import AdmissionProgram, StudentTarget, User
+from app.models import AdmissionProgram, CredentialRecord, LearningCourseRecord, Portfolio, StudentTarget, User
 
 
 def test_local_demo_app_uses_isolated_synthetic_data_and_demo_ocr():
@@ -56,11 +56,28 @@ def test_local_demo_login_page_shows_the_current_synthetic_credentials():
 
     page = client.get("/login").get_data(as_text=True)
 
-    for username in ("student_demo", "teacher_demo", "staff_demo", "admin_demo"):
+    for username in ("student_demo", "student_showcase", "teacher_demo", "staff_demo", "admin_demo"):
         assert username in page
     assert "demo2026" in page
     assert "demo1234" not in page
     assert "111534105" not in page
+
+
+def test_local_demo_has_a_separate_complete_fifth_year_showcase_student():
+    app = create_local_demo_app()
+
+    with app.app_context():
+        newcomer = User.query.filter_by(username="student_demo").one()
+        showcase = User.query.filter_by(username="student_showcase").one()
+
+        assert newcomer.student_profile.admission_year > showcase.student_profile.admission_year
+        assert showcase.student_profile.admission_year == 111
+        assert LearningCourseRecord.query.filter_by(student_id=newcomer.id).count() == 0
+        assert LearningCourseRecord.query.filter_by(student_id=showcase.id).count() == 10
+        assert CredentialRecord.query.filter_by(student_id=showcase.id).count() == 1
+        assert {row.category for row in Portfolio.query.filter_by(student_id=showcase.id).all()} == {
+            "activity", "competition", "service", "leadership",
+        }
 
 
 def test_local_demo_login_page_hides_credentials_in_production():

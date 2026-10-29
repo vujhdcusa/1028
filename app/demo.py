@@ -6,7 +6,17 @@ from sqlalchemy.pool import StaticPool
 
 from app import create_app
 from app.extensions import db
-from app.models import AuditLog, ClassAdvisor, StudentProfile, User
+from app.models import (
+    AdmissionProgram,
+    AuditLog,
+    ClassAdvisor,
+    CredentialRecord,
+    LearningCourseRecord,
+    Portfolio,
+    StudentProfile,
+    StudentTarget,
+    User,
+)
 from app.services.admission_service import import_seed_programs
 from app.services.journey_service import academic_year_of
 
@@ -15,7 +25,8 @@ DEMO_PASSWORD = "demo2026"
 
 # 登入頁「Demo 快速登入」列出的帳號（只有設定 DEMO_ACCOUNTS 的展示站會顯示）
 DEMO_ACCOUNTS = [
-    {"role": "student", "label": "學生", "username": "student_demo", "password": DEMO_PASSWORD, "name": "合成學生"},
+    {"role": "student", "label": "學生", "username": "student_demo", "password": DEMO_PASSWORD, "name": "合成新生", "note": "專一新生・從零開始整理"},
+    {"role": "student", "label": "學生", "username": "student_showcase", "password": DEMO_PASSWORD, "name": "合成專五學生", "note": "專五完整示範・五年資料已整理"},
     {"role": "teacher", "label": "導師", "username": "teacher_demo", "password": DEMO_PASSWORD, "name": "合成導師"},
     {"role": "staff", "label": "科辦", "username": "staff_demo", "password": DEMO_PASSWORD, "name": "合成科助"},
     {"role": "admin", "label": "管理者", "username": "admin_demo", "password": DEMO_PASSWORD, "name": "合成管理者"},
@@ -81,7 +92,7 @@ def create_local_demo_app():
             user_id=users["student"].id,
             student_no="DEMO-0001",
             class_name="資管科測試班",
-            admission_year=current_year - 4,
+            admission_year=current_year,
         ))
         db.session.add(ClassAdvisor(
             teacher_id=users["teacher"].id,
@@ -90,6 +101,51 @@ def create_local_demo_app():
         ))
         db.session.add(AuditLog(user_id=users["student"].id, action="student.welcome_done"))
         import_seed_programs()
+        showcase = User(username="student_showcase", display_name="合成專五學生", role="student")
+        showcase.set_password(DEMO_PASSWORD)
+        db.session.add(showcase)
+        db.session.flush()
+        db.session.add(StudentProfile(
+            user_id=showcase.id,
+            student_no="DEMO-0002",
+            class_name="資管科展示班",
+            admission_year=current_year - 4,
+        ))
+        db.session.add(ClassAdvisor(
+            teacher_id=users["teacher"].id,
+            class_name="資管科展示班",
+            school_year=current_year,
+        ))
+        courses = (
+            (1, "上", "計算機概論", 90), (1, "下", "程式設計", 88),
+            (2, "上", "網頁設計", 85), (2, "下", "管理資訊系統", 82),
+            (3, "上", "資料庫管理", 89), (3, "下", "系統分析與設計", 86),
+            (4, "上", "行動裝置程式設計", 91), (4, "下", "網路管理實務", 84),
+            (5, "上", "專題製作", 93), (5, "上", "資訊專題研究", 90),
+        )
+        for grade_level, semester, course_name, score in courses:
+            db.session.add(LearningCourseRecord(
+                student_id=showcase.id, school_year=grade_level, semester=semester,
+                course_name=course_name, normalized_course_name=course_name,
+                credits=3, score=score,
+            ))
+        db.session.add(CredentialRecord(
+            student_id=showcase.id, credential_name="電腦軟體應用丙級", level="丙級",
+            issuing_organization="勞動部", issue_date=date(2025, 4, 12),
+        ))
+        for category, grade_level, title in (
+            ("activity", 1, "資管科迎新活動"),
+            ("competition", 2, "全國商業類技藝競賽佳作"),
+            ("service", 3, "資訊志工服務"),
+            ("leadership", 4, "班級學藝股長"),
+        ):
+            db.session.add(Portfolio(
+                student_id=showcase.id, category=category, school_year=grade_level,
+                semester=1, title=title, status="confirmed",
+            ))
+        program = AdmissionProgram.query.filter_by(program_code="208003").one()
+        db.session.add(StudentTarget(student_id=showcase.id, rule_version_id=program.id))
+        db.session.add(AuditLog(user_id=showcase.id, action="student.welcome_done"))
         db.session.commit()
     app.wsgi_app = SerializedWSGI(app.wsgi_app)
     return app

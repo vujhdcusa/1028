@@ -1043,7 +1043,7 @@ def target_list():
 @student_bp.get("/student/matching")
 @role_required("student")
 def matching():
-    """A3 媒合排序：全部正式校系依可不可報與契合度排序，每一間都寫理由。可用科系、學制、是否可報篩選。"""
+    """A3 媒合排序：全部正式校系依可不可報與準備度排序，每一間都寫理由。可用科系、學制、是否可報篩選。"""
     user = get_current_user()
     selected = {t.rule_version_id for t in StudentTarget.query.filter_by(student_id=user.id).all()}
     active_filters = {key: request.args.get(key, "").strip() for key in ("department", "level", "eligible")}

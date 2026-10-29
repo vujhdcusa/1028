@@ -5,8 +5,8 @@
 然後打開 http://127.0.0.1:5000
 
 展示帳號（皆為假資料）：
-    學生  111534105 / demo1234（王小明，還沒選目標校系）
-    學生  111534107 / demo1234（林小美，已送導師確認）
+    學生  111534105 / demo1234（王小明，專一、零資料的新生引導）
+    學生  111534107 / demo1234（林小美，專五、完整學習歷程與已送導師確認）
     導師  teacher01 / demo1234（負責資管科三甲）
     科辦  staff01   / demo1234（林科助，核准電子獎狀）
     管理者 admin     / demo1234
@@ -45,9 +45,9 @@ DEMO_PASSWORD = "demo1234"
 # 登入頁「Demo 快速登入」列出的帳號，和 seed() 建立的帳號一致
 DEMO_ACCOUNTS = [
     {"role": "student", "label": "學生", "username": "111534105", "password": DEMO_PASSWORD,
-     "name": "王小明", "note": "還沒選目標校系"},
+     "name": "王小明", "note": "專一新生・從零開始整理"},
     {"role": "student", "label": "學生", "username": "111534107", "password": DEMO_PASSWORD,
-     "name": "林小美", "note": "已送導師確認"},
+     "name": "林小美", "note": "專五完整示範・已送導師確認"},
     {"role": "teacher", "label": "導師", "username": "teacher01", "password": DEMO_PASSWORD,
      "name": "陳導師", "note": "負責資管科三甲"},
     {"role": "staff", "label": "科辦", "username": "staff01", "password": DEMO_PASSWORD,
@@ -65,31 +65,8 @@ def seed():
         user.set_password(DEMO_PASSWORD)
         db.session.add(user)
     db.session.flush()
-    db.session.add(StudentProfile(user_id=student.id, student_no="111534105", class_name="資管科三甲", admission_year=113))
-
-    courses = [
-        (1, "上", "計算機概論", 3, 88), (1, "下", "程式設計（一）", 3, 91), (1, "下", "國文", 2, 82),
-        (2, "上", "資料庫管理實務(SQL)", 3, 85), (2, "下", "網頁設計", 3, 93), (3, "上", "系統分析與設計", 3, 79),
-    ]
-    for year, semester, name, credits, score in courses:
-        db.session.add(LearningCourseRecord(
-            student_id=student.id, school_year=year, semester=semester, course_name=name,
-            normalized_course_name="".join(name.split()), credits=credits, score=score,
-        ))
-    db.session.add(CredentialRecord(student_id=student.id, credential_name="電腦軟體應用丙級", level="丙級",
-                                    issuing_organization="勞動部", issue_date=date(2025, 5, 20)))
-    db.session.add(CredentialRecord(student_id=student.id, credential_name="網頁設計乙級", level="乙級",
-                                    issuing_organization="勞動部", issue_date=date(2025, 11, 2)))
-    # 最後一筆還沒確認：展示「確認過的經歷才會被 AI 寫進自傳」
-    records = [
-        ("activity", 1, 1, "資管科迎新宿營", "擔任小隊輔，帶領新生認識校園。", "confirmed"),
-        ("service", 2, 1, "資訊週志工", "協助活動報到與場地引導。", "confirmed"),
-        ("leadership", 2, 2, "班級學藝股長", "負責班級公告與學習資料整理。", "confirmed"),
-        ("activity", 3, 1, "校園黑客松", "三人一組，兩天內完成活動報名網站。", "draft"),
-    ]
-    for category, year, semester, title, description, status in records:
-        db.session.add(Portfolio(student_id=student.id, category=category, school_year=year, semester=semester,
-                                 title=title, description=description, status=status))
+    # 新手帳號刻意保留零資料：用來展示第一次登入時，系統如何引導學生開始。
+    db.session.add(StudentProfile(user_id=student.id, student_no="111534105", class_name="資管科一甲", admission_year=115))
     db.session.commit()
 
     # 主線後半：校系資料、導師班級，以及一位已送導師確認的同學
@@ -99,20 +76,30 @@ def seed():
     import_seed_programs(PROJECT_ROOT / "app" / "content" / "admission_demo_dayapply_115.csv")
     # 插大（轉學考）：北中南資訊相關科系的示範資料（官方簡章，見 CSV 的出處欄）
     import_transfer_programs()
-    db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name="資管科三甲", school_year=115))
+    db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name="資管科一甲", school_year=115))
+    db.session.add(ClassAdvisor(teacher_id=teacher.id, class_name="資管科五甲", school_year=115))
     classmate = User(username="111534107", display_name="林小美", role="student")
     classmate.set_password(DEMO_PASSWORD)
     db.session.add(classmate)
     db.session.flush()
-    db.session.add(StudentProfile(user_id=classmate.id, student_no="111534107", class_name="資管科三甲", admission_year=113))
-    db.session.add(LearningCourseRecord(student_id=classmate.id, school_year=1, semester="上", course_name="計算機概論",
-                                        normalized_course_name="計算機概論", credits=3, score=90))
-    # 113 學年度課綱的資訊類專業科目各一門，學群才判斷得出來（只有計算機概論時對不到課綱，推薦排序會亂）
-    for year, semester, name, score in ((1, "下", "程式設計", 88), (2, "上", "網頁設計", 85), (2, "下", "管理資訊系統", 82)):
+    db.session.add(StudentProfile(user_id=classmate.id, student_no="111534107", class_name="資管科五甲", admission_year=111))
+    # 專五示範帳號：資料仍是一門課一筆，讓 OCR 核對、成績統計與校系分析都能使用；畫面會依年級、學期收納。
+    courses = (
+        (1, "上", "計算機概論", 90), (1, "下", "程式設計", 88),
+        (2, "上", "網頁設計", 85), (2, "下", "管理資訊系統", 82),
+        (3, "上", "資料庫管理", 89), (3, "下", "系統分析與設計", 86),
+        (4, "上", "行動裝置程式設計", 91), (4, "下", "網路管理實務", 84),
+        (5, "上", "專題製作", 93), (5, "上", "資訊專題研究", 90),
+    )
+    for year, semester, name, score in courses:
         db.session.add(LearningCourseRecord(student_id=classmate.id, school_year=year, semester=semester, course_name=name,
                                             normalized_course_name=name, credits=3, score=score))
     db.session.add(CredentialRecord(student_id=classmate.id, credential_name="電腦軟體應用丙級", level="丙級",
                                     issuing_organization="勞動部", issue_date=date(2025, 4, 12)))
+    db.session.add(CredentialRecord(student_id=classmate.id, credential_name="網頁設計乙級", level="乙級",
+                                    issuing_organization="勞動部", issue_date=date(2026, 2, 8)))
+    db.session.add(Portfolio(student_id=classmate.id, category="activity", school_year=1, semester=1,
+                             title="資管科迎新活動", description="協助新生認識校園與科上資源。", status="confirmed"))
     db.session.add(Portfolio(student_id=classmate.id, category="competition", school_year=2, semester=2,
                              title="全國商業類技藝競賽 佳作", description="電腦軟體應用組。", status="confirmed"))
     # 從學校獎懲記錄匯入的科上派服務，已申請電子獎狀，等科辦核准
@@ -124,6 +111,8 @@ def seed():
     db.session.add(AwardCertificate(student_id=classmate.id, portfolio=service_record, status="pending",
                                     title=certificate_service.KINDS["service"], issuer=certificate_service.DEFAULT_ISSUER,
                                     body=certificate_service.default_body(service_record)))
+    db.session.add(Portfolio(student_id=classmate.id, category="leadership", school_year=4, semester=2,
+                             title="班級學藝股長", description="整理班級學習資料並協助活動公告。", status="confirmed"))
     program = AdmissionProgram.query.filter_by(program_code="208003").one()
     db.session.add(StudentTarget(student_id=classmate.id, rule_version_id=program.id))
     db.session.flush()
