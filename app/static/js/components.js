@@ -289,6 +289,61 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
       });
       box.append(list);
     }
+    if (extra.links && extra.links.length) {
+      const links = document.createElement("div");
+      links.className = "assistant__links";
+      extra.links.forEach((link) => {
+        if (!link || typeof link.url !== "string" || !link.url.startsWith("/")) return;
+        const anchor = document.createElement("a");
+        anchor.className = "button button--small button--line";
+        anchor.href = link.url;
+        anchor.textContent = `${link.label || "前往下一步"} →`;
+        links.append(anchor);
+      });
+      if (links.children.length) box.append(links);
+    }
+    if (extra.plan && extra.plan.status === "pending") {
+      const plan = document.createElement("section");
+      plan.className = "assistant__plan";
+      const title = document.createElement("b");
+      title.textContent = `Agent 計畫：${extra.plan.title}`;
+      const reason = document.createElement("p");
+      reason.textContent = extra.plan.reason;
+      const steps = document.createElement("ol");
+      (extra.plan.steps || []).forEach((step) => {
+        const item = document.createElement("li");
+        item.textContent = step;
+        steps.append(item);
+      });
+      const actions = document.createElement("div");
+      actions.className = "assistant__plan-actions";
+      const decide = async (url, accepted) => {
+        const data = new FormData();
+        data.append("csrf_token", form.querySelector("[name=csrf_token]").value);
+        try {
+          const response = await fetch(url, { method: "POST", body: data, credentials: "same-origin" });
+          if (!response.ok) throw new Error(String(response.status));
+          const result = await response.json();
+          plan.remove();
+          add("bot", result.message || (accepted ? "計畫已完成。" : "計畫沒有執行。"), result);
+        } catch (error) {
+          add("bot", "這份計畫暫時無法處理，請稍後再試。");
+        }
+      };
+      const approve = document.createElement("button");
+      approve.type = "button";
+      approve.className = "button button--small";
+      approve.textContent = "同意執行";
+      approve.addEventListener("click", () => decide(extra.plan.action_url, true));
+      const reject = document.createElement("button");
+      reject.type = "button";
+      reject.className = "button button--small button--quiet";
+      reject.textContent = "先不要";
+      reject.addEventListener("click", () => decide(extra.plan.reject_url, false));
+      actions.append(approve, reject);
+      plan.append(title, reason, steps, actions);
+      box.append(plan);
+    }
     log.append(box);
     log.scrollTop = log.scrollHeight;
     return box;

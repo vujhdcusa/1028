@@ -737,6 +737,12 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .assistant__steps { font-size: .78rem; color: var(--accent); font-weight: 700; }
 .assistant__sources { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; margin-top: .5rem; font-size: .78rem; color: var(--muted); }
 .assistant__sources a.tag { text-decoration: none; }
+.assistant__links { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.assistant__links .button { text-decoration: none; }
+.assistant__plan { margin-top: .75rem; padding: .7rem; border: 1px solid var(--accent); background: var(--accent-soft); }
+.assistant__plan > p { margin-top: .35rem; font-size: .84rem; }
+.assistant__plan ol { margin: .35rem 0 .6rem; padding-left: 1.25rem; font-size: .84rem; }
+.assistant__plan-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
 .assistant__chips { display: grid; gap: .4rem; margin-top: .5rem; }
 .assistant__chip { text-align: left; padding: .45rem .7rem; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font: inherit; font-size: .85rem; cursor: pointer; }
 .assistant__chip:hover { background: var(--accent); color: var(--sheet); }

@@ -6,16 +6,16 @@
 }[user.role] %}
 <div class="assistant" data-assistant data-endpoint="{{ url_for('assistant.assistant_ask') }}">
   <button class="assistant__toggle" type="button" data-assistant-toggle aria-expanded="false" aria-controls="assistant-panel">
-    <span class="assistant__dot" aria-hidden="true"></span>資管科小助手
+    <span class="assistant__dot" aria-hidden="true"></span>學習歷程資料 Agent
   </button>
-  <section class="assistant__panel" id="assistant-panel" hidden aria-label="資管科小助手">
+  <section class="assistant__panel" id="assistant-panel" hidden aria-label="學習歷程資料 Agent">
     <header class="assistant__head">
-      <div><b>資管科小助手</b><small>問操作、規定、進度</small></div>
+      <div><b>學習歷程資料 Agent</b><small>分析、規劃、導引；行動前會先徵求同意</small></div>
       <button class="assistant__close" type="button" data-assistant-toggle aria-label="關閉">×</button>
     </header>
     <div class="assistant__log" data-assistant-log aria-live="polite">
       <div class="assistant__msg assistant__msg--bot">
-        <p>嗨 {{ user.display_name }}，想問什麼？點一個就好。</p>
+        <p>嗨 {{ user.display_name }}，我可以幫你查進度、規劃下一步，並帶你到正確頁面。任何資料異動都會先問你。</p>
         <div class="assistant__chips">
           {% for text in suggestions %}<button type="button" class="assistant__chip" data-assistant-suggest>{{ text }}</button>{% endfor %}
         </div>
@@ -27,6 +27,6 @@
       <textarea id="assistant-input" name="message" rows="1" maxlength="1500" placeholder="輸入問題，Enter 送出" required></textarea>
       <button class="button button--small" type="submit">送出</button>
     </form>
-    <p class="assistant__note">AI 回答僅供參考，以科辦公告為準。</p>
+    <p class="assistant__note">AI 回答與準備度僅供參考，以科辦公告與招生簡章為準。</p>
   </section>
 </div>
