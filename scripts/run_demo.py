@@ -26,6 +26,7 @@ from app import create_app  # noqa: E402
 from real_ocr import real_ocr_provider  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.services.admission_service import import_seed_programs  # noqa: E402
+from app.services.demo_showcase import seed_pending_ocr_review  # noqa: E402
 from app.services.transfer_exam import import_transfer_programs  # noqa: E402
 from app.services import certificate_service, review_snapshot_service  # noqa: E402
 from app.models import (  # noqa: E402
@@ -47,7 +48,7 @@ DEMO_ACCOUNTS = [
     {"role": "student", "label": "學生", "username": "111534105", "password": DEMO_PASSWORD,
      "name": "王小明", "note": "專一新生・從零開始整理"},
     {"role": "student", "label": "學生", "username": "111534107", "password": DEMO_PASSWORD,
-     "name": "林小美", "note": "專五完整示範・已送導師確認"},
+     "name": "林小美", "note": "專五完整示範・含待核對 OCR 與 Agent 流程"},
     {"role": "teacher", "label": "導師", "username": "teacher01", "password": DEMO_PASSWORD,
      "name": "陳導師", "note": "負責資管科三甲"},
     {"role": "staff", "label": "科辦", "username": "staff01", "password": DEMO_PASSWORD,
@@ -115,6 +116,8 @@ def seed():
                              title="班級學藝股長", description="整理班級學習資料並協助活動公告。", status="confirmed"))
     program = AdmissionProgram.query.filter_by(program_code="208003").one()
     db.session.add(StudentTarget(student_id=classmate.id, rule_version_id=program.id))
+    # 展示 Agent 的安全邊界：這份 OCR 草稿可供學生核對，確認前不會計入五年資料或校系分析。
+    seed_pending_ocr_review(classmate)
     db.session.flush()
     db.session.commit()
     review_snapshot_service.request_review(classmate, program)  # 送審時存快照

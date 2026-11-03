@@ -18,6 +18,7 @@ from app.models import (
     User,
 )
 from app.services.admission_service import import_seed_programs
+from app.services.demo_showcase import seed_pending_ocr_review
 from app.services.journey_service import academic_year_of
 
 
@@ -26,7 +27,7 @@ DEMO_PASSWORD = "demo2026"
 # 登入頁「Demo 快速登入」列出的帳號（只有設定 DEMO_ACCOUNTS 的展示站會顯示）
 DEMO_ACCOUNTS = [
     {"role": "student", "label": "學生", "username": "student_demo", "password": DEMO_PASSWORD, "name": "合成新生", "note": "專一新生・從零開始整理"},
-    {"role": "student", "label": "學生", "username": "student_showcase", "password": DEMO_PASSWORD, "name": "合成專五學生", "note": "專五完整示範・五年資料已整理"},
+    {"role": "student", "label": "學生", "username": "student_showcase", "password": DEMO_PASSWORD, "name": "合成專五學生", "note": "專五完整示範・含待核對 OCR 與 Agent 流程"},
     {"role": "teacher", "label": "導師", "username": "teacher_demo", "password": DEMO_PASSWORD, "name": "合成導師"},
     {"role": "staff", "label": "科辦", "username": "staff_demo", "password": DEMO_PASSWORD, "name": "合成科助"},
     {"role": "admin", "label": "管理者", "username": "admin_demo", "password": DEMO_PASSWORD, "name": "合成管理者"},
@@ -145,6 +146,7 @@ def create_local_demo_app():
             ))
         program = AdmissionProgram.query.filter_by(program_code="208003").one()
         db.session.add(StudentTarget(student_id=showcase.id, rule_version_id=program.id))
+        seed_pending_ocr_review(showcase)
         db.session.add(AuditLog(user_id=showcase.id, action="student.welcome_done"))
         db.session.commit()
     app.wsgi_app = SerializedWSGI(app.wsgi_app)
