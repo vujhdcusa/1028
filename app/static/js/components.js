@@ -243,6 +243,7 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
   const input = form.querySelector("textarea");
   const send = form.querySelector("button[type=submit]");
   const toggles = root.querySelectorAll("[data-assistant-toggle]");
+  const historyButton = root.querySelector("[data-assistant-history]");
   const KEY = "assistant-history";
   let history = [];
   try { history = JSON.parse(sessionStorage.getItem(KEY) || "[]"); } catch (e) { history = []; }
@@ -308,6 +309,28 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
       });
       if (links.children.length) box.append(links);
     }
+    if (extra.todos && extra.todos.length) {
+      const todos = document.createElement("section");
+      todos.className = "assistant__todos";
+      const heading = document.createElement("b");
+      heading.textContent = "已建立的下一步";
+      const list = document.createElement("ol");
+      extra.todos.forEach((todo) => {
+        if (!todo || typeof todo.url !== "string" || !todo.url.startsWith("/")) return;
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = todo.url;
+        link.textContent = todo.title || "前往處理";
+        item.append(link);
+        if (todo.note) {
+          const note = document.createElement("small");
+          note.textContent = todo.note;
+          item.append(note);
+        }
+        list.append(item);
+      });
+      if (list.children.length) { todos.append(heading, list); box.append(todos); }
+    }
     if (extra.plan && extra.plan.status === "pending") {
       const plan = document.createElement("section");
       plan.className = "assistant__plan";
@@ -365,6 +388,27 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
   };
   toggles.forEach((button) => button.addEventListener("click", () => setOpen(panel.hidden)));
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !panel.hidden) setOpen(false); });
+
+  if (historyButton) {
+    historyButton.addEventListener("click", async () => {
+      try {
+        const response = await fetch("/assistant/plans", { credentials: "same-origin" });
+        if (!response.ok) throw new Error(String(response.status));
+        const data = await response.json();
+        if (!data.plans || !data.plans.length) {
+          add("bot", "目前還沒有 Agent 行動紀錄。你可以輸入「幫我規劃下一步」開始。"
+          );
+          return;
+        }
+        data.plans.forEach((plan) => {
+          const status = plan.status === "succeeded" ? "已執行" : plan.status === "cancelled" ? "未執行" : "等待你同意";
+          add("bot", `Agent 計畫：${plan.title}（${status}）`, { todos: plan.todos || [] });
+        });
+      } catch (error) {
+        add("bot", "暫時無法讀取 Agent 行動紀錄，請稍後再試。");
+      }
+    });
+  }
 
   const submit = async (raw) => {
     const text = raw.trim();

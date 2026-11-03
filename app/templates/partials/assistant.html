@@ -11,6 +11,7 @@
   <section class="assistant__panel" id="assistant-panel" hidden aria-label="學習歷程資料 Agent">
     <header class="assistant__head">
       <div><b>學習歷程資料 Agent</b><small>分析、規劃、導引；行動前會先徵求同意</small></div>
+      {% if user.role == "student" %}<button class="assistant__history-button" type="button" data-assistant-history>查看紀錄</button>{% endif %}
       <button class="assistant__close" type="button" data-assistant-toggle aria-label="關閉">×</button>
     </header>
     <div class="assistant__log" data-assistant-log aria-live="polite">

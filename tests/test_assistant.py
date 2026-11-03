@@ -197,3 +197,30 @@ def test_student_must_approve_agent_plan_before_it_runs(app):
     assert response.get_json()["status"] == "succeeded"
     with app.app_context():
         assert db.session.get(AgentTask, plan["id"]).status == "succeeded"
+
+
+def test_approved_agent_plan_saves_todos_and_student_can_read_history(app):
+    chat = scripted(text("我會先幫你整理。"))
+    with app.app_context():
+        plan = assistant_service.ask(user(app, "stu"), "幫我規劃下一步", chat=chat)["plan"]
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+
+    approved = client.post(f"/assistant/plans/{plan['id']}/approve").get_json()
+    history = client.get("/assistant/plans").get_json()["plans"]
+
+    assert approved["status"] == "succeeded"
+    assert approved["todos"]
+    assert all(todo["url"].startswith("/student/") for todo in approved["todos"])
+    assert history[0]["id"] == plan["id"]
+    assert history[0]["todos"] == approved["todos"]
+
+
+def test_agent_plan_history_is_private_to_each_student(app):
+    chat = scripted(text("我會先幫你整理。"))
+    with app.app_context():
+        plan = assistant_service.ask(user(app, "stu"), "幫我規劃下一步", chat=chat)["plan"]
+    client = app.test_client()
+    client.post("/login", data={"username": "other", "password": "pw"})
+
+    assert client.get("/assistant/plans").get_json()["plans"] == []

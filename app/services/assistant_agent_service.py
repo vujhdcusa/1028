@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from app.extensions import db
 from app.models import AgentTask, SourceDocument, StudentTarget
 from app.services.gap_service import analyze_gap
-from app.services.journey_service import build_journey
+from app.services.journey_service import CATEGORY_LABELS, build_journey
 
 
 PLAN_WORDS = ("規劃", "計畫", "待辦", "下一步", "幫我安排", "重新分析", "更新準備度")
@@ -56,7 +56,8 @@ def navigation_links(user, message):
 
 
 def _plan_payload(task):
-    payload = task.result_json or {}
+    # JSON 欄位不可原地修改；建立新 dict 才能讓 SQLAlchemy 確實寫入待辦與執行結果。
+    payload = dict(task.result_json or {})
     return {
         "id": task.id,
         "title": payload.get("title", "整理我的學習歷程計畫"),
@@ -68,6 +69,63 @@ def _plan_payload(task):
     }
 
 
+def _todo(title, note, path_name):
+    """待辦只連到站內白名單頁面，不能由模型或資料庫任意指定網址。"""
+    return {"title": title, "note": note, "url": SAFE_PATHS[path_name]}
+
+
+def _unconfirmed_document_count(user):
+    return SourceDocument.query.filter(
+        SourceDocument.owner_id == user.id, SourceDocument.status != "confirmed"
+    ).count()
+
+
+def _build_todos(user, journey, targets, unconfirmed):
+    """根據已確認資料建立學生自己可追蹤的下一步，不改動任何學習歷程。"""
+    todos = []
+    if unconfirmed:
+        todos.append(_todo("核對 OCR 資料", f"還有 {unconfirmed} 份上傳資料尚未確認；確認前不會納入分析。", "grades"))
+
+    if not targets:
+        todos.append(_todo("選擇目標校系", "先選擇想申請的校系，Agent 才能依實際加權整理缺件。", "targets"))
+    else:
+        missing = set()
+        for target in targets:
+            gap = analyze_gap(user, target.program, journey)
+            missing.update(gap["missing_keys"])
+        target_label = "、".join(CATEGORY_LABELS[key] for key in sorted(missing)[:3])
+        if target_label:
+            todos.append(_todo("補強目標校系缺件", f"已依目標校系加權整理，優先補強：{target_label}。", "targets"))
+
+    if journey["totals"]["grades"] == 0:
+        todos.append(_todo("補上成績資料", "上傳成績單後，請逐筆核對 OCR 結果。", "grades"))
+    if journey["totals"]["credential"] == 0:
+        todos.append(_todo("整理證照資料", "新增或確認已取得的證照，讓準備度分析更完整。", "credentials"))
+    if not any(journey["totals"][key] for key in ("activity", "competition", "service", "leadership")):
+        todos.append(_todo("補充活動與經歷", "填入已確認的活動、競賽、服務或幹部經歷。", "activities"))
+    if targets:
+        todos.append(_todo("檢查備審與自傳", "依目標校系加權檢查缺件與自傳佐證。", "autobiography"))
+    return todos[:5]
+
+
+def plan_history(user, limit=8):
+    """學生只讀取自己的 Agent 計畫紀錄；不回傳對話內容。"""
+    rows = (AgentTask.query.filter_by(task_type="assistant_plan", requester_id=user.id)
+            .order_by(AgentTask.created_at.desc()).limit(limit).all())
+    entries = []
+    for task in rows:
+        payload = task.result_json or {}
+        entries.append({
+            "id": task.id,
+            "title": payload.get("title", "整理我的下一步計畫"),
+            "status": task.status,
+            "created_at": task.created_at.isoformat() if task.created_at else "",
+            "executed_at": payload.get("executed_at", ""),
+            "todos": payload.get("todos", []) if task.status == "succeeded" else [],
+        })
+    return entries
+
+
 def propose_plan(user, message):
     """只提出可控計畫；同一位學生先前尚未決定的計畫不重複建立。"""
     if user.role != "student" or not any(word in (message or "") for word in PLAN_WORDS):
@@ -77,9 +135,7 @@ def propose_plan(user, message):
     if pending:
         return _plan_payload(pending)
 
-    unconfirmed = SourceDocument.query.filter(
-        SourceDocument.owner_id == user.id, SourceDocument.status != "confirmed"
-    ).count()
+    unconfirmed = _unconfirmed_document_count(user)
     target_count = StudentTarget.query.filter_by(student_id=user.id).count()
     steps = ["讀取你的已確認成績、證照與學習歷程資料"]
     if unconfirmed:
@@ -118,6 +174,7 @@ def decide_plan(user, plan_id, decision):
 
     journey = build_journey(user)
     targets = StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
+    todos = _build_todos(user, journey, targets, _unconfirmed_document_count(user))
     if targets:
         readiness = [analyze_gap(user, target.program, journey)["readiness"] for target in targets]
         summary = f"已依 {len(targets)} 所目標校系與已確認資料完成本次準備度整理。"
@@ -127,10 +184,15 @@ def decide_plan(user, plan_id, decision):
         summary = "已完成資料盤點；你還沒有選目標校系，選定後我才能做個人化準備度分析。"
         result = {"target_count": 0, "readiness": []}
         links = [_link("前往選擇目標校系", "targets")]
-    payload = task.result_json or {}
-    payload.update({"executed_at": datetime.now(timezone.utc).isoformat(), "result": result})
+    # JSON 欄位不可原地修改；建立新 dict 才能讓 SQLAlchemy 確實寫入待辦與執行結果。
+    payload = dict(task.result_json or {})
+    payload.update({
+        "executed_at": datetime.now(timezone.utc).isoformat(),
+        "result": result,
+        "todos": todos,
+    })
     task.result_json = payload
     task.status = "succeeded"
     task.finished_at = datetime.now(timezone.utc)
     db.session.commit()
-    return {"status": "succeeded", "message": summary, "links": links}
+    return {"status": "succeeded", "message": summary, "links": links, "todos": todos}
