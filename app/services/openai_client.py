@@ -111,7 +111,7 @@ def chat(contents, declarations, system_instruction, opener=urllib.request.urlop
         except json.JSONDecodeError:
             args = {}
         parts.append({"functionCall": {"name": call["function"].get("name", ""), "args": args}})
-    return {"role": "model", "parts": parts}
+    return {"role": "model", "parts": parts, "_provider": "openai"}
 
 
 def generate_json(prompt, schema, files=None, opener=urllib.request.urlopen):

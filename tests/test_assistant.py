@@ -1,13 +1,13 @@
 """資管科小助手（AI Agent）：會呼叫工具查資料、守權限、不保存對話內容。"""
 import json
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
 from app import create_app
 from app.extensions import db
 from app.models import AdmissionProgram, AgentTask, ClassAdvisor, CredentialRecord, StudentProfile, StudentTarget, User
-from app.services import assistant_service
+from app.services import assistant_agent_service, assistant_service
 from app.services.admission_service import import_seed_programs
 from app.services.knowledge_service import search
 
@@ -92,6 +92,19 @@ def test_agent_can_cite_published_admission_source_with_year_and_checked_date(ap
     assert result["steps"] == ["查官方招生來源"]
     assert any(source["url"] == "https://official.example.edu.tw/116-brochure.pdf" for source in result["sources"])
     assert any("資料年度：" in source["detail"] and "最後查核：2026-11-04" in source["detail"]
+               for source in result["sources"])
+
+
+def test_agent_marks_stale_admission_source_and_discloses_provider(app):
+    with app.app_context():
+        program = AdmissionProgram.query.first()
+        program.source_url = "https://official.example.edu.tw/old-brochure.pdf"
+        program.checked_at = date(2020, 1, 1)
+        db.session.commit()
+        result = assistant_service.ask(user(app, "stu"), "最新招生簡章在哪裡？", chat=scripted(text("請看原文。")))
+
+    assert result["provider"] == "Gemini"
+    assert any(source["freshness"] == "stale" and "超過 45 天" in source["detail"]
                for source in result["sources"])
 
 
@@ -257,3 +270,16 @@ def test_agent_plan_history_is_private_to_each_student(app):
     client.post("/login", data={"username": "other", "password": "pw"})
 
     assert client.get("/assistant/plans").get_json()["plans"] == []
+
+
+def test_expired_unapproved_agent_plan_is_cancelled_before_creating_a_new_one(app):
+    with app.app_context():
+        student = user(app, "stu")
+        old = assistant_agent_service.propose_plan(student, "幫我規劃下一步")
+        task = db.session.get(AgentTask, old["id"])
+        task.created_at = datetime.now(timezone.utc) - timedelta(hours=25)
+        db.session.commit()
+        new = assistant_agent_service.propose_plan(student, "幫我規劃下一步")
+
+        assert db.session.get(AgentTask, old["id"]).status == "cancelled"
+        assert new["id"] != old["id"]

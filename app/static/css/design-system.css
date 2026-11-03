@@ -738,6 +738,7 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .assistant__sources { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; margin-top: .5rem; font-size: .78rem; color: var(--muted); }
 .assistant__sources a.tag { text-decoration: none; }
 .assistant__source-detail { color: var(--muted); margin-right: .35rem; }
+.assistant__provider { margin: 0 0 .35rem; font-size: .75rem; color: var(--muted); }
 .assistant__history-button { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: .8rem; cursor: pointer; text-decoration: underline; }
 .assistant__todos { margin-top: .6rem; padding: .55rem .7rem; border-left: 3px solid var(--accent); background: #f4f6ff; }
 .assistant__todos ol { margin: .35rem 0 0 1.1rem; padding: 0; }

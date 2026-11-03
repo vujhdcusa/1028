@@ -4,7 +4,7 @@ AI 可以閱讀資料、提出下一步；但建立可追蹤的規劃紀錄前�
 站內連結完全由伺服器產生，模型不會提供任意 URL。
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.extensions import db
 from app.models import AgentTask, SourceDocument, StudentTarget
@@ -13,6 +13,7 @@ from app.services.journey_service import CATEGORY_LABELS, build_journey
 
 
 PLAN_WORDS = ("規劃", "計畫", "待辦", "下一步", "幫我安排", "重新分析", "更新準備度")
+PLAN_EXPIRY = timedelta(hours=24)
 
 
 SAFE_PATHS = {
@@ -180,7 +181,16 @@ def propose_plan(user, message):
     pending = (AgentTask.query.filter_by(task_type="assistant_plan", requester_id=user.id, status="pending")
                .order_by(AgentTask.id.desc()).first())
     if pending:
-        return _plan_payload(pending)
+        created_at = pending.created_at
+        # SQLite 會讀回沒有 tzinfo 的時間；系統所有 Agent 時間都以 UTC 儲存。
+        if created_at and created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        if created_at and created_at < datetime.now(timezone.utc) - PLAN_EXPIRY:
+            pending.status = "cancelled"
+            pending.finished_at = datetime.now(timezone.utc)
+            db.session.commit()
+        else:
+            return _plan_payload(pending)
 
     unconfirmed = _unconfirmed_document_count(user)
     target_count = StudentTarget.query.filter_by(student_id=user.id).count()

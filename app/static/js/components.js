@@ -277,6 +277,12 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
       steps.textContent = "查了：" + extra.steps.join("、");
       box.prepend(steps);
     }
+    if (extra.provider) {
+      const provider = document.createElement("p");
+      provider.className = "assistant__provider";
+      provider.textContent = `本次由 ${extra.provider} 處理`;
+      box.prepend(provider);
+    }
     if (extra.sources && extra.sources.length) {
       const list = document.createElement("p");
       list.className = "assistant__sources";

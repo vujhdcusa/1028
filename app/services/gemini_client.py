@@ -133,6 +133,7 @@ def chat(contents, tools, system_instruction, api_key=None, opener=urllib.reques
         from app.services import openai_client
         return openai_client.chat(contents, tools, system_instruction, opener=opener)
     try:
-        return payload["candidates"][0]["content"]
+        content = payload["candidates"][0]["content"]
+        return {**content, "_provider": "gemini"}
     except (KeyError, IndexError):
         raise AIUnavailable("小助手這次沒有產生回答，請換個方式再問一次。") from None

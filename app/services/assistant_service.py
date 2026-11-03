@@ -33,7 +33,7 @@ def system_instruction(user, page=""):
 
 你可以使用工具查資料。規則：
 1. 問到科上規定（畢業門檻、重補修、專題、轉科、二技時程等）一定要先用 search_department_rules 查，依查到的段落回答，並說出是哪一份文件。查不到就換關鍵字再查一次；還是查不到就說「文件裡沒有寫到」，建議詢問科辦或導師，不可以自己編。
-1-1. 問到「最新」、招生簡章、報名日期、招生時程或資料來源時，一定要先用 get_latest_admission_sources；回答要說明資料學年度與最後查核日期，並提醒以招生單位正式公告為準。沒有官方來源時要直接說明，不可以推測日期。
+1-1. 問到「最新」、招生簡章、報名日期、招生時程或資料來源時，一定要先用 get_latest_admission_sources；回答要說明資料學年度與最後查核日期，並提醒以招生單位正式公告為準。來源被標示超過 45 天或未記錄查核日期時，必須明確提醒可能過期。沒有官方來源時要直接說明，不可以推測日期。
 2. 問到個人進度、缺件、準備度、自傳，一定要先用工具查，不要猜數字。
 3. 給建議（例如先考哪張證照、先補什麼）時，要根據目標校系的加權和缺件比對說明理由。
 4. 檢查自傳一致性時，逐句對照已確認資料，明確列出「找不到依據的句子」和「沒有佐證檔案的經歷」。
@@ -73,6 +73,9 @@ def _run_tool(user, registry, name, args):
         return {"error": str(exc)}
     except TypeError:
         return {"error": "工具參數不正確。"}
+    except Exception:
+        # 工具失敗不應讓聊天 API 變成 500；原始例外不回傳，避免洩漏資料庫或個資。
+        return {"error": "資料暫時無法讀取，請稍後再試。"}
 
 
 def _collect_sources(result, sources):
@@ -90,6 +93,7 @@ def _collect_sources(result, sources):
             "title": str(source["title"])[:180],
             "url": str(source.get("url") or "")[:500],
             "detail": str(source.get("detail") or "")[:160],
+            "freshness": str(source.get("freshness") or ""),
         }
         if normalized not in sources:
             sources.append(normalized)
@@ -140,16 +144,21 @@ def ask(user, message, history=None, page="", chat=None):
 
     task = AgentTask(task_type="assistant_chat", requester_id=user.id, target_type="page",
                      status="running", started_at=datetime.now(timezone.utc))
-    steps, sources, answer = list(prefetch_steps), list(prefetch_sources), None
+    steps, sources, answer, providers = list(prefetch_steps), list(prefetch_sources), None, []
     try:
         for _ in range(MAX_STEPS):
             content = chat(contents, declarations, instruction)
-            parts = content.get("parts", [])
+            provider = content.get("_provider", "gemini")
+            if provider not in providers:
+                providers.append(provider)
+            # _provider 是本機顯示用中繼資料，不能跟著下一輪對話送回外部 AI API。
+            model_content = {key: value for key, value in content.items() if key != "_provider"}
+            parts = model_content.get("parts", [])
             calls = [part["functionCall"] for part in parts if "functionCall" in part]
             if not calls:
                 answer = "".join(part.get("text", "") for part in parts).strip()
                 break
-            contents.append(content)
+            contents.append(model_content)
             responses = []
             for call in calls:
                 result = _run_tool(user, registry, call.get("name"), call.get("args"))
@@ -166,6 +175,7 @@ def ask(user, message, history=None, page="", chat=None):
     task.finished_at = datetime.now(timezone.utc)
     db.session.add(task)
     db.session.commit()
+    provider_label = " → ".join("GPT" if provider == "openai" else "Gemini" for provider in providers)
     return {"answer": answer or "這個問題我查了很多次還是沒有結論，請換個問法，或直接詢問導師／科辦。",
             "steps": steps, "sources": sources, "links": navigation_links(user, message),
-            "plan": propose_plan(user, message)}
+            "plan": propose_plan(user, message), "provider": provider_label}

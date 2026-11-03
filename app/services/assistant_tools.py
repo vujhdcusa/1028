@@ -9,6 +9,7 @@
 
 from app.extensions import db
 import re
+from datetime import date, timedelta
 
 from app.models import AdmissionScheduleEvent, CredentialRecord, Portfolio, StudentProfile, StudentTarget, User
 from app.services import knowledge_service
@@ -142,11 +143,19 @@ def get_latest_admission_sources(user):
         if key in seen:
             continue
         seen.add(key)
-        checked = program.checked_at.isoformat() if program.checked_at else "未記錄查核日期"
+        checked = program.checked_at
+        freshness = "fresh" if checked and checked >= date.today() - timedelta(days=45) else "stale"
+        if not checked:
+            detail = f"資料年度：{program.admission_year}；尚未記錄查核日期，請開啟原文確認"
+        elif freshness == "stale":
+            detail = f"資料年度：{program.admission_year}；最後查核：{checked.isoformat()}（超過 45 天，請開啟原文確認）"
+        else:
+            detail = f"資料年度：{program.admission_year}；最後查核：{checked.isoformat()}"
         sources.append({
             "title": f"{program.school_name}{program.department_name}（{program.admission_year} 學年度）",
             "url": url,
-            "detail": f"資料年度：{program.admission_year}；最後查核：{checked}",
+            "detail": detail,
+            "freshness": freshness,
         })
 
     events = (AdmissionScheduleEvent.query.filter_by(status="published")
@@ -158,10 +167,16 @@ def get_latest_admission_sources(user):
         if key in seen:
             continue
         seen.add(key)
+        checked = event.reviewed_at.date() if event.reviewed_at else event.created_at.date()
+        freshness = "fresh" if checked >= date.today() - timedelta(days=45) else "stale"
+        detail = f"資料年度：{event.admission_year}；最後核准：{checked.isoformat()}"
+        if freshness == "stale":
+            detail += "（超過 45 天，請開啟原文確認）"
         sources.append({
             "title": f"{event.channel}時程（{event.admission_year} 學年度）",
             "url": event.source_url,
-            "detail": f"資料年度：{event.admission_year}；已發布時程",
+            "detail": detail,
+            "freshness": freshness,
         })
     return {
         "sources": sources[:12],
