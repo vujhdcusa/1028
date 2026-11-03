@@ -8,10 +8,12 @@
 """
 
 from app.extensions import db
-from app.models import CredentialRecord, Portfolio, StudentProfile, StudentTarget, User
+import re
+
+from app.models import AdmissionScheduleEvent, CredentialRecord, Portfolio, StudentProfile, StudentTarget, User
 from app.services import knowledge_service
 from app.services.admission_service import published_programs
-from app.services.autobiography_service import build_facts, latest_draft
+from app.services.autobiography_service import CONFIRMED_PORTFOLIO_STATUSES, build_facts, latest_draft
 from app.services.gap_service import ALL_LABELS, analyze_gap
 from app.services.journey_service import CATEGORY_KEYS, CATEGORY_LABELS, build_journey
 from app.services.package_service import latest_review
@@ -56,7 +58,8 @@ def _overview(student):
         "current_grade": f"專{'一二三四五'[journey['current_grade'] - 1]}" if journey.get("current_grade") else "未知",
         "record_counts": {CATEGORY_LABELS[k]: journey["totals"][k] for k in CATEGORY_KEYS},
         "credentials": [c.credential_name + (f"（{c.level}）" if c.level else "")
-                        for c in CredentialRecord.query.filter_by(student_id=student.id)],
+                        for c in CredentialRecord.query.filter_by(
+                            student_id=student.id, confirmation_status="confirmed")],
         "targets": targets,
     }
 
@@ -84,7 +87,8 @@ def _consistency(student, program):
     if not draft:
         return {"autobiography": None, "note": "這個校系還沒有自傳草稿，請先用「自傳小幫手」寫。"}
     facts = build_facts(student, program)["items"]
-    records = Portfolio.active().filter_by(student_id=student.id).all()
+    records = (Portfolio.active().filter_by(student_id=student.id)
+               .filter(Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES)).all())
     return {
         "autobiography_paragraphs": [{"title": p["title"], "text": p["text"]} for p in draft.content_json["paragraphs"]],
         "confirmed_facts": [f["text"] for f in facts],
@@ -110,6 +114,54 @@ def list_admission_programs(user):
         "school_department": f"{p.school_name} {p.department_name}", "category": p.admission_category,
         "weights": [f"{i.source_item_name} {i.weight_percent}%" for i in p.items],
     } for p in published_programs()]}
+
+
+def _official_url(program):
+    """種子資料有些把網址留在來源備註，統一只取 http(s) 官方連結。"""
+    if program.source_url and program.source_url.startswith(("https://", "http://")):
+        return program.source_url
+    match = re.search(r"https?://[^\s)）]+", program.source_note or "")
+    return match.group(0) if match else ""
+
+
+def get_latest_admission_sources(user):
+    """回傳學生目前可看的已發布招生資料及其可追溯來源。
+
+    學生只能讀取管理者已發布的版本；候選資料、未審核的 Agent 擷取結果不會出現在回答裡。
+    """
+    sources = []
+    seen = set()
+    for program in published_programs():
+        url = _official_url(program)
+        key = (url, program.admission_year, program.school_name, program.department_name)
+        if key in seen:
+            continue
+        seen.add(key)
+        checked = program.checked_at.isoformat() if program.checked_at else "未記錄查核日期"
+        sources.append({
+            "title": f"{program.school_name}{program.department_name}（{program.admission_year} 學年度）",
+            "url": url,
+            "detail": f"資料年度：{program.admission_year}；最後查核：{checked}",
+        })
+
+    events = (AdmissionScheduleEvent.query.filter_by(status="published")
+              .order_by(AdmissionScheduleEvent.admission_year.desc(), AdmissionScheduleEvent.start_at).all())
+    for event in events:
+        if not event.source_url or not event.source_url.startswith(("https://", "http://")):
+            continue
+        key = (event.source_url, event.admission_year, event.channel)
+        if key in seen:
+            continue
+        seen.add(key)
+        sources.append({
+            "title": f"{event.channel}時程（{event.admission_year} 學年度）",
+            "url": event.source_url,
+            "detail": f"資料年度：{event.admission_year}；已發布時程",
+        })
+    return {
+        "sources": sources[:12],
+        "notice": "僅列出管理者已發布的資料。正式報名資格與日期仍以連結中的招生單位公告為準。",
+    }
 
 
 # ---------- 學生 ----------
@@ -166,12 +218,17 @@ def _decl(name, description, **params):
 SEARCH = _decl("search_department_rules", "查詢資管科／學校的規定文件：畢業門檻、重補修選課、專題繳交與評分、轉科、二技甄審時程等。",
                query="要查的關鍵字，使用文件可能出現的詞，例如「畢業門檻 證照」")
 PROGRAMS = _decl("list_admission_programs", "列出系統中所有正式的二技校系、志願代碼與備審加權。")
+ADMISSION_SOURCES = _decl(
+    "get_latest_admission_sources",
+    "查詢目前已發布招生資料的學年度、最後查核日期與官方來源連結。問到最新簡章、報名日期、招生時程或資料來源時必須先使用。",
+)
 PROGRAM_CODE = "6 位數志願代碼，例如 208003"
 STUDENT_NO = "學生學號"
 
 STUDENT_TOOLS = {
     "search_department_rules": (search_department_rules, SEARCH, "查科上規定"),
     "list_admission_programs": (list_admission_programs, PROGRAMS, "查校系加權"),
+    "get_latest_admission_sources": (get_latest_admission_sources, ADMISSION_SOURCES, "查官方招生來源"),
     "get_my_overview": (get_my_overview, _decl(
         "get_my_overview", "查詢目前登入學生自己的資料：年級、六類資料筆數、證照、已選的目標校系、準備度、導師確認與自傳狀態。"),
         "查你的資料"),
@@ -186,6 +243,7 @@ STUDENT_TOOLS = {
 TEACHER_TOOLS = {
     "search_department_rules": (search_department_rules, SEARCH, "查科上規定"),
     "list_admission_programs": (list_admission_programs, PROGRAMS, "查校系加權"),
+    "get_latest_admission_sources": (get_latest_admission_sources, ADMISSION_SOURCES, "查官方招生來源"),
     "list_my_class_students": (list_my_class_students, _decl(
         "list_my_class_students", "列出導師負責班級的所有學生：資料筆數、目標校系、準備度、是否等待導師確認。"),
         "查本班學生"),

@@ -1,11 +1,12 @@
 """資管科小助手（AI Agent）：會呼叫工具查資料、守權限、不保存對話內容。"""
 import json
+from datetime import date
 
 import pytest
 
 from app import create_app
 from app.extensions import db
-from app.models import AgentTask, ClassAdvisor, CredentialRecord, StudentProfile, User
+from app.models import AdmissionProgram, AgentTask, ClassAdvisor, CredentialRecord, StudentProfile, User
 from app.services import assistant_service
 from app.services.admission_service import import_seed_programs
 from app.services.knowledge_service import search
@@ -77,6 +78,21 @@ def test_student_agent_calls_tools_then_answers(app):
     tool_reply = chat.seen[2]["contents"][-1]["parts"][0]["functionResponse"]
     assert tool_reply["name"] == "get_my_overview"
     assert "網頁設計丙級" in json.dumps(tool_reply, ensure_ascii=False)
+
+
+def test_agent_can_cite_published_admission_source_with_year_and_checked_date(app):
+    with app.app_context():
+        program = AdmissionProgram.query.first()
+        program.source_url = "https://official.example.edu.tw/116-brochure.pdf"
+        program.checked_at = date(2026, 11, 4)
+        db.session.commit()
+        chat = scripted(call("get_latest_admission_sources"), text("請以官方簡章為準。"))
+        result = assistant_service.ask(user(app, "stu"), "最新二技簡章和報名日期在哪裡？", chat=chat)
+
+    assert result["steps"] == ["查官方招生來源"]
+    assert any(source["url"] == "https://official.example.edu.tw/116-brochure.pdf" for source in result["sources"])
+    assert any("資料年度：" in source["detail"] and "最後查核：2026-11-04" in source["detail"]
+               for source in result["sources"])
 
 
 def test_student_tools_do_not_include_teacher_tools(app):

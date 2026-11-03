@@ -61,8 +61,9 @@ def test_build_journey_puts_each_record_in_its_year_and_category():
         db.session.add(CredentialRecord(
             student_id=student.id, credential_name="網頁設計丙級", issue_date=date(2024, 3, 2),
         ))
-        db.session.add(Portfolio(student_id=student.id, title="迎新活動", category="activity", school_year=1))
-        db.session.add(Portfolio(student_id=student.id, title="舊資料", category="其他"))
+        db.session.add(Portfolio(student_id=student.id, title="迎新活動", category="activity", school_year=1,
+                                 status="confirmed"))
+        db.session.add(Portfolio(student_id=student.id, title="舊資料", category="其他", status="confirmed"))
         db.session.commit()
 
         journey = build_journey(student, today=date(2024, 9, 1))
@@ -84,3 +85,25 @@ def test_build_journey_puts_each_record_in_its_year_and_category():
     assert years[2]["categories"]["grades"][0]["id"] == f"course-{course.id}"
     assert years[2]["categories"]["credential"][0]["id"] == f"credential-{credential.id}"
     assert years[1]["categories"]["activity"][0]["id"] == f"portfolio-{activity.id}"
+
+
+def test_build_journey_excludes_records_not_confirmed_by_student():
+    app = journey_app()
+    with app.app_context():
+        student = User(username="s2", display_name="學生", role="student")
+        student.set_password("pw")
+        db.session.add(student)
+        db.session.flush()
+        db.session.add(StudentProfile(user_id=student.id, student_no="111534198", admission_year=111))
+        db.session.add_all([
+            LearningCourseRecord(student_id=student.id, school_year=1, course_name="待核對成績",
+                                 normalized_course_name="待核對成績", score=95, confirmation_status="pending"),
+            CredentialRecord(student_id=student.id, credential_name="待核對證照", confirmation_status="pending"),
+            Portfolio(student_id=student.id, title="草稿活動", category="activity", school_year=1, status="draft"),
+        ])
+        db.session.commit()
+
+        journey = build_journey(student, today=date(2024, 9, 1))
+
+    assert journey["totals"] == {key: 0 for key in CATEGORY_KEYS}
+    assert journey["missing_categories"] == CATEGORY_KEYS

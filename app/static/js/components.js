@@ -286,6 +286,12 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
         tag.textContent = source.title;
         if (source.url) { tag.href = source.url; tag.target = "_blank"; tag.rel = "noopener noreferrer"; }
         list.append(tag);
+        if (source.detail) {
+          const detail = document.createElement("small");
+          detail.className = "assistant__source-detail";
+          detail.textContent = source.detail;
+          list.append(detail);
+        }
       });
       box.append(list);
     }

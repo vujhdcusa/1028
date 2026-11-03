@@ -32,6 +32,7 @@ def system_instruction(user, page=""):
 
 你可以使用工具查資料。規則：
 1. 問到科上規定（畢業門檻、重補修、專題、轉科、二技時程等）一定要先用 search_department_rules 查，依查到的段落回答，並說出是哪一份文件。查不到就換關鍵字再查一次；還是查不到就說「文件裡沒有寫到」，建議詢問科辦或導師，不可以自己編。
+1-1. 問到「最新」、招生簡章、報名日期、招生時程或資料來源時，一定要先用 get_latest_admission_sources；回答要說明資料學年度與最後查核日期，並提醒以招生單位正式公告為準。沒有官方來源時要直接說明，不可以推測日期。
 2. 問到個人進度、缺件、準備度、自傳，一定要先用工具查，不要猜數字。
 3. 給建議（例如先考哪張證照、先補什麼）時，要根據目標校系的加權和缺件比對說明理由。
 4. 檢查自傳一致性時，逐句對照已確認資料，明確列出「找不到依據的句子」和「沒有佐證檔案的經歷」。
@@ -73,6 +74,26 @@ def _run_tool(user, registry, name, args):
         return {"error": "工具參數不正確。"}
 
 
+def _collect_sources(result, sources):
+    """把知識庫段落與已發布招生資料轉成前端可顯示的可追溯來源。"""
+    if not isinstance(result, dict):
+        return
+    candidates = []
+    for passage in result.get("passages", []):
+        candidates.append({"title": passage.get("title", "科上規定"), "url": passage.get("url", "")})
+    candidates.extend(result.get("sources", []))
+    for source in candidates:
+        if not isinstance(source, dict) or not source.get("title"):
+            continue
+        normalized = {
+            "title": str(source["title"])[:180],
+            "url": str(source.get("url") or "")[:500],
+            "detail": str(source.get("detail") or "")[:160],
+        }
+        if normalized not in sources:
+            sources.append(normalized)
+
+
 def ask(user, message, history=None, page="", chat=None):
     """回傳 {"answer", "steps": [工具中文名稱], "sources": [{title, url}]}。chat 可換成假的（測試用）。"""
     message = (message or "").strip()[:MAX_TEXT]
@@ -102,10 +123,7 @@ def ask(user, message, history=None, page="", chat=None):
                 label = registry.get(call.get("name"), (None, None, call.get("name")))[2]
                 if label not in steps:
                     steps.append(label)
-                for passage in result.get("passages", []) if isinstance(result, dict) else []:
-                    source = {"title": passage["title"], "url": passage["url"]}
-                    if source not in sources:
-                        sources.append(source)
+                _collect_sources(result, sources)
                 responses.append({"functionResponse": {"name": call.get("name"), "response": {"result": result}}})
             contents.append({"role": "user", "parts": responses})
         task.status = "succeeded" if answer else "failed"

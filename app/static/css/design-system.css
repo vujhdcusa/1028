@@ -737,6 +737,7 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .assistant__steps { font-size: .78rem; color: var(--accent); font-weight: 700; }
 .assistant__sources { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; margin-top: .5rem; font-size: .78rem; color: var(--muted); }
 .assistant__sources a.tag { text-decoration: none; }
+.assistant__source-detail { color: var(--muted); margin-right: .35rem; }
 .assistant__links { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
 .assistant__links .button { text-decoration: none; }
 .assistant__plan { margin-top: .75rem; padding: .7rem; border: 1px solid var(--accent); background: var(--accent-soft); }

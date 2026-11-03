@@ -20,6 +20,7 @@ CATEGORY_LABELS = {
 
 # 由學生自行新增的四類經歷（成績與證照來自上傳的文件）
 EXPERIENCE_CATEGORIES = ["activity", "competition", "service", "leadership"]
+CONFIRMED_PORTFOLIO_STATUSES = ("confirmed", "submitted")
 
 GRADE_LABELS = {1: "專一", 2: "專二", 3: "專三", 4: "專四", 5: "專五"}
 
@@ -62,7 +63,11 @@ def build_journey(student, today=None):
     def place(grade, category, item):
         (folders[grade] if grade else unsorted)[category].append(item)
 
-    courses = LearningCourseRecord.query.filter_by(student_id=student.id).order_by(LearningCourseRecord.id).all()
+    # 拼圖、準備度與 Agent 都使用同一份資料彙整：未經學生核對的 OCR
+    # 不能影響任何分析結果。
+    courses = (LearningCourseRecord.query
+               .filter_by(student_id=student.id, confirmation_status="confirmed")
+               .order_by(LearningCourseRecord.id).all())
     for course in courses:
         place(grade_for(course.year_for_placement, admission_year), "grades", {
             "id": f"course-{course.id}",  # 來源＋資料庫編號：改標題也不會變（首頁拼圖桌的片靠它固定位置）
@@ -73,7 +78,9 @@ def build_journey(student, today=None):
             ) if part),
         })
 
-    credentials = CredentialRecord.query.filter_by(student_id=student.id).order_by(CredentialRecord.id).all()
+    credentials = (CredentialRecord.query
+                   .filter_by(student_id=student.id, confirmation_status="confirmed")
+                   .order_by(CredentialRecord.id).all())
     for credential in credentials:
         year = academic_year_of(credential.issue_date) if credential.issue_date else None
         place(grade_for(year, admission_year), "credential", {
@@ -82,7 +89,9 @@ def build_journey(student, today=None):
             "detail": credential.level or "",
         })
 
-    portfolios = Portfolio.active().filter_by(student_id=student.id).order_by(Portfolio.id).all()
+    portfolios = (Portfolio.active().filter_by(student_id=student.id)
+                  .filter(Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES))
+                  .order_by(Portfolio.id).all())
     unsorted_count = 0
     for record in portfolios:
         if record.category not in EXPERIENCE_CATEGORIES:
