@@ -315,9 +315,10 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
       const heading = document.createElement("b");
       heading.textContent = "已建立的下一步";
       const list = document.createElement("ol");
-      extra.todos.forEach((todo) => {
+      extra.todos.forEach((todo, index) => {
         if (!todo || typeof todo.url !== "string" || !todo.url.startsWith("/")) return;
         const item = document.createElement("li");
+        item.className = todo.status === "completed" ? "is-completed" : "";
         const link = document.createElement("a");
         link.href = todo.url;
         link.textContent = todo.title || "前往處理";
@@ -326,6 +327,30 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
           const note = document.createElement("small");
           note.textContent = todo.note;
           item.append(note);
+        }
+        if (extra.plan_id) {
+          const statusButton = document.createElement("button");
+          statusButton.type = "button";
+          statusButton.className = "assistant__todo-action";
+          const completed = todo.status === "completed";
+          statusButton.textContent = completed ? "重新開啟" : "標記完成";
+          statusButton.addEventListener("click", async () => {
+            const next = item.classList.contains("is-completed") ? "open" : "completed";
+            const data = new FormData();
+            data.append("csrf_token", form.querySelector("[name=csrf_token]").value);
+            try {
+              const response = await fetch(`/assistant/plans/${extra.plan_id}/todos/${index}/${next}`, {
+                method: "POST", body: data, credentials: "same-origin",
+              });
+              if (!response.ok) throw new Error(String(response.status));
+              const updated = await response.json();
+              item.classList.toggle("is-completed", updated.status === "completed");
+              statusButton.textContent = updated.status === "completed" ? "重新開啟" : "標記完成";
+            } catch (error) {
+              add("bot", "待辦狀態暫時無法更新，請稍後再試。");
+            }
+          });
+          item.append(statusButton);
         }
         list.append(item);
       });
@@ -402,7 +427,7 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
         }
         data.plans.forEach((plan) => {
           const status = plan.status === "succeeded" ? "已執行" : plan.status === "cancelled" ? "未執行" : "等待你同意";
-          add("bot", `Agent 計畫：${plan.title}（${status}）`, { todos: plan.todos || [] });
+          add("bot", `Agent 計畫：${plan.title}（${status}）`, { todos: plan.todos || [], plan_id: plan.id });
         });
       } catch (error) {
         add("bot", "暫時無法讀取 Agent 行動紀錄，請稍後再試。");

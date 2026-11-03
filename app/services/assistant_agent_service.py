@@ -24,6 +24,11 @@ SAFE_PATHS = {
     "schedule": "/student/schedule",
 }
 
+CATEGORY_PATHS = {
+    "grades": "grades", "credential": "credentials", "activity": "activities",
+    "competition": "activities", "service": "activities", "leadership": "activities",
+}
+
 
 def _link(label, path_name):
     """只使用白名單內的站內路徑，服務在背景執行時也能安全回傳連結。"""
@@ -69,9 +74,10 @@ def _plan_payload(task):
     }
 
 
-def _todo(title, note, path_name):
+def _todo(title, note, path_name, key, **metadata):
     """待辦只連到站內白名單頁面，不能由模型或資料庫任意指定網址。"""
-    return {"title": title, "note": note, "url": SAFE_PATHS[path_name]}
+    return {"key": key, "title": title, "note": note, "url": SAFE_PATHS[path_name],
+            "status": "open", **metadata}
 
 
 def _unconfirmed_document_count(user):
@@ -84,28 +90,68 @@ def _build_todos(user, journey, targets, unconfirmed):
     """根據已確認資料建立學生自己可追蹤的下一步，不改動任何學習歷程。"""
     todos = []
     if unconfirmed:
-        todos.append(_todo("核對 OCR 資料", f"還有 {unconfirmed} 份上傳資料尚未確認；確認前不會納入分析。", "grades"))
+        todos.append(_todo("核對 OCR 資料", f"還有 {unconfirmed} 份上傳資料尚未確認；確認前不會納入分析。",
+                           "grades", "confirm-ocr", kind="confirm_ocr"))
 
     if not targets:
-        todos.append(_todo("選擇目標校系", "先選擇想申請的校系，Agent 才能依實際加權整理缺件。", "targets"))
+        todos.append(_todo("選擇目標校系", "先選擇想申請的校系，Agent 才能依實際加權整理缺件。",
+                           "targets", "choose-targets", kind="choose_targets"))
     else:
-        missing = set()
+        target_items = []
         for target in targets:
             gap = analyze_gap(user, target.program, journey)
-            missing.update(gap["missing_keys"])
-        target_label = "、".join(CATEGORY_LABELS[key] for key in sorted(missing)[:3])
-        if target_label:
-            todos.append(_todo("補強目標校系缺件", f"已依目標校系加權整理，優先補強：{target_label}。", "targets"))
+            for item in gap["items"]:
+                if item["status"] not in ("missing", "partial") or not item["missing"]:
+                    continue
+                target_items.append((item["weight"], target, item))
+        # 每個待辦保留校系與原始項目，依真正的簡章加權排序，而不是把所有校系的缺件混在一起。
+        for weight, target, item in sorted(target_items, key=lambda row: -row[0])[:3]:
+            missing = item["missing"]
+            path_name = CATEGORY_PATHS.get(missing[0], "targets")
+            labels = "、".join(CATEGORY_LABELS[key] for key in missing)
+            school = f"{target.program.school_name}{target.program.department_name}"
+            todos.append(_todo(
+                f"{school}：補強「{item['name']}」",
+                f"此項占 {weight}%；目前缺少：{labels}。",
+                path_name, f"target-{target.id}-item-{item['id']}", kind="target_gap",
+                target_id=target.id, item_id=item["id"], weight=weight,
+            ))
 
     if journey["totals"]["grades"] == 0:
-        todos.append(_todo("補上成績資料", "上傳成績單後，請逐筆核對 OCR 結果。", "grades"))
+        todos.append(_todo("補上成績資料", "上傳成績單後，請逐筆核對 OCR 結果。",
+                           "grades", "add-grades", kind="category", category="grades"))
     if journey["totals"]["credential"] == 0:
-        todos.append(_todo("整理證照資料", "新增或確認已取得的證照，讓準備度分析更完整。", "credentials"))
+        todos.append(_todo("整理證照資料", "新增或確認已取得的證照，讓準備度分析更完整。",
+                           "credentials", "add-credentials", kind="category", category="credential"))
     if not any(journey["totals"][key] for key in ("activity", "competition", "service", "leadership")):
-        todos.append(_todo("補充活動與經歷", "填入已確認的活動、競賽、服務或幹部經歷。", "activities"))
+        todos.append(_todo("補充活動與經歷", "填入已確認的活動、競賽、服務或幹部經歷。",
+                           "activities", "add-experience", kind="experience"))
     if targets:
-        todos.append(_todo("檢查備審與自傳", "依目標校系加權檢查缺件與自傳佐證。", "autobiography"))
+        todos.append(_todo("檢查備審與自傳", "依目標校系加權檢查缺件與自傳佐證。",
+                           "autobiography", "check-autobiography", kind="autobiography"))
     return todos[:5]
+
+
+def _todo_state(user, todo):
+    """待辦一旦因學生補齊真實資料而完成，紀錄頁就自動顯示完成。"""
+    kind = todo.get("kind")
+    journey = build_journey(user)
+    if kind == "confirm_ocr":
+        return "completed" if _unconfirmed_document_count(user) == 0 else todo.get("status", "open")
+    if kind == "choose_targets":
+        return "completed" if StudentTarget.query.filter_by(student_id=user.id).count() else todo.get("status", "open")
+    if kind == "category":
+        return "completed" if journey["totals"].get(todo.get("category"), 0) else todo.get("status", "open")
+    if kind == "experience":
+        return "completed" if any(journey["totals"][key] for key in ("activity", "competition", "service", "leadership")) else todo.get("status", "open")
+    if kind == "target_gap":
+        target = db.session.get(StudentTarget, todo.get("target_id"))
+        if target and target.student_id == user.id:
+            gap = analyze_gap(user, target.program, journey)
+            item = next((row for row in gap["items"] if row["id"] == todo.get("item_id")), None)
+            if item and item["status"] == "complete":
+                return "completed"
+    return todo.get("status", "open")
 
 
 def plan_history(user, limit=8):
@@ -121,7 +167,8 @@ def plan_history(user, limit=8):
             "status": task.status,
             "created_at": task.created_at.isoformat() if task.created_at else "",
             "executed_at": payload.get("executed_at", ""),
-            "todos": payload.get("todos", []) if task.status == "succeeded" else [],
+            "todos": [{**todo, "status": _todo_state(user, todo)} for todo in payload.get("todos", [])]
+            if task.status == "succeeded" else [],
         })
     return entries
 
@@ -195,4 +242,23 @@ def decide_plan(user, plan_id, decision):
     task.status = "succeeded"
     task.finished_at = datetime.now(timezone.utc)
     db.session.commit()
-    return {"status": "succeeded", "message": summary, "links": links, "todos": todos}
+    return {"status": "succeeded", "message": summary, "links": links, "todos": todos, "plan_id": task.id}
+
+
+def set_todo_status(user, plan_id, todo_index, status):
+    """學生手動完成或重新開啟自己的 Agent 待辦；不改任何學習歷程資料。"""
+    task = db.session.get(AgentTask, plan_id)
+    if not task or task.task_type != "assistant_plan" or task.requester_id != user.id or task.status != "succeeded":
+        return None
+    payload = dict(task.result_json or {})
+    todos = list(payload.get("todos") or [])
+    if todo_index < 0 or todo_index >= len(todos) or status not in {"open", "completed"}:
+        return None
+    todo = dict(todos[todo_index])
+    todo["status"] = status
+    todo["completed_at"] = datetime.now(timezone.utc).isoformat() if status == "completed" else None
+    todos[todo_index] = todo
+    payload["todos"] = todos
+    task.result_json = payload
+    db.session.commit()
+    return {**todo, "status": _todo_state(user, todo), "plan_id": task.id, "todo_index": todo_index}

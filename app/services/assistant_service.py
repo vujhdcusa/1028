@@ -8,6 +8,7 @@
 """
 
 from datetime import datetime, timezone
+import json
 
 from app.extensions import db
 from app.models import AgentTask
@@ -94,6 +95,33 @@ def _collect_sources(result, sources):
             sources.append(normalized)
 
 
+def _required_prefetch(user, message, registry):
+    """在模型回覆前由伺服器先取回不能猜的資料。
+
+    這不是提示詞建議，而是固定的資料閘門：模型即使忘記呼叫工具，回答仍有已查證來源。
+    """
+    text = (message or "").lower()
+    requested = []
+    if any(word in text for word in ("最新", "簡章", "報名", "時程", "日期", "招生")):
+        requested.append(("get_latest_admission_sources", {}))
+    if user.role == "student" and any(word in text for word in (
+        "我的", "我還", "缺什麼", "缺件", "準備度", "進度", "自傳", "成績", "證照",
+    )):
+        requested.append(("get_my_overview", {}))
+
+    verified, labels, sources = [], [], []
+    for name, args in requested:
+        if name not in registry:
+            continue
+        result = _run_tool(user, registry, name, args)
+        label = registry[name][2]
+        if label not in labels:
+            labels.append(label)
+        _collect_sources(result, sources)
+        verified.append({"name": name, "result": result})
+    return verified, labels, sources
+
+
 def ask(user, message, history=None, page="", chat=None):
     """回傳 {"answer", "steps": [工具中文名稱], "sources": [{title, url}]}。chat 可換成假的（測試用）。"""
     message = (message or "").strip()[:MAX_TEXT]
@@ -101,13 +129,18 @@ def ask(user, message, history=None, page="", chat=None):
         return {"answer": "請輸入你的問題。", "steps": [], "sources": []}
     registry = tools_for(user)
     declarations = [entry[1] for entry in registry.values()]
-    contents = _clean_history(history) + [{"role": "user", "parts": [{"text": message}]}]
+    verified, prefetch_steps, prefetch_sources = _required_prefetch(user, message, registry)
+    user_parts = [{"text": message}]
+    if verified:
+        evidence = json.dumps(verified, ensure_ascii=False)[:6000]
+        user_parts.append({"text": "系統已先查證以下資料。回答只能依此資料與後續工具結果，不可自行猜測：\n" + evidence})
+    contents = _clean_history(history) + [{"role": "user", "parts": user_parts}]
     instruction = system_instruction(user, page)
     chat = chat or gemini_client.chat
 
     task = AgentTask(task_type="assistant_chat", requester_id=user.id, target_type="page",
                      status="running", started_at=datetime.now(timezone.utc))
-    steps, sources, answer = [], [], None
+    steps, sources, answer = list(prefetch_steps), list(prefetch_sources), None
     try:
         for _ in range(MAX_STEPS):
             content = chat(contents, declarations, instruction)

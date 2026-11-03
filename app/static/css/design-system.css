@@ -744,6 +744,8 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .assistant__todos li { margin: .25rem 0; }
 .assistant__todos a { display: block; font-weight: 700; color: var(--accent); }
 .assistant__todos small { display: block; color: var(--muted); }
+.assistant__todos li.is-completed a { color: var(--muted); text-decoration: line-through; }
+.assistant__todo-action { margin-top: .2rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--sheet); color: var(--ink); font: inherit; font-size: .78rem; cursor: pointer; padding: .15rem .4rem; }
 .assistant__links { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
 .assistant__links .button { text-decoration: none; }
 .assistant__plan { margin-top: .75rem; padding: .7rem; border: 1px solid var(--accent); background: var(--accent-soft); }

@@ -6,7 +6,7 @@ import pytest
 
 from app import create_app
 from app.extensions import db
-from app.models import AdmissionProgram, AgentTask, ClassAdvisor, CredentialRecord, StudentProfile, User
+from app.models import AdmissionProgram, AgentTask, ClassAdvisor, CredentialRecord, StudentProfile, StudentTarget, User
 from app.services import assistant_service
 from app.services.admission_service import import_seed_programs
 from app.services.knowledge_service import search
@@ -73,7 +73,7 @@ def test_student_agent_calls_tools_then_answers(app):
         result = assistant_service.ask(user(app, "stu"), "我還差幾張證照才能畢業？", chat=chat)
 
     assert "還差 2 張" in result["answer"]
-    assert result["steps"] == ["查科上規定", "查你的資料"]
+    assert result["steps"] == ["查你的資料", "查科上規定"]
     assert any("畢業門檻" in s["title"] for s in result["sources"])
     tool_reply = chat.seen[2]["contents"][-1]["parts"][0]["functionResponse"]
     assert tool_reply["name"] == "get_my_overview"
@@ -214,6 +214,39 @@ def test_approved_agent_plan_saves_todos_and_student_can_read_history(app):
     assert all(todo["url"].startswith("/student/") for todo in approved["todos"])
     assert history[0]["id"] == plan["id"]
     assert history[0]["todos"] == approved["todos"]
+
+
+def test_agent_todos_are_ranked_by_selected_program_weight_and_can_be_completed(app):
+    with app.app_context():
+        student = user(app, "stu")
+        program = AdmissionProgram.query.first()
+        db.session.add(StudentTarget(student_id=student.id, rule_version_id=program.id))
+        db.session.commit()
+        plan = assistant_service.ask(student, "幫我規劃下一步", chat=scripted(text("好")))["plan"]
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+
+    approved = client.post(f"/assistant/plans/{plan['id']}/approve").get_json()
+    weighted = [todo["weight"] for todo in approved["todos"] if todo.get("kind") == "target_gap"]
+    assert weighted == sorted(weighted, reverse=True)
+    first_open = next(index for index, todo in enumerate(approved["todos"]) if todo["status"] == "open")
+    marked = client.post(f"/assistant/plans/{plan['id']}/todos/{first_open}/completed").get_json()
+    reopened = client.post(f"/assistant/plans/{plan['id']}/todos/{first_open}/open").get_json()
+    history = client.get("/assistant/plans").get_json()["plans"]
+
+    assert marked["status"] == "completed"
+    assert reopened["status"] == "open"
+    assert history[0]["todos"][first_open]["status"] == "open"
+
+
+def test_agent_prefetches_private_progress_without_sending_identity(app):
+    chat = scripted(text("目前資料已整理。"))
+    with app.app_context():
+        result = assistant_service.ask(user(app, "stu"), "我的進度如何？", chat=chat)
+
+    prompt = json.dumps(chat.seen[0]["contents"], ensure_ascii=False)
+    assert "查你的資料" in result["steps"]
+    assert "111534100" not in prompt and "資管科三甲" not in prompt
 
 
 def test_agent_plan_history_is_private_to_each_student(app):

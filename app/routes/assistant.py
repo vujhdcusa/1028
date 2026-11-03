@@ -5,7 +5,7 @@ import json
 from flask import Blueprint, jsonify, request
 
 from app.routes.main import get_current_user, role_required
-from app.services.assistant_agent_service import decide_plan, plan_history
+from app.services.assistant_agent_service import decide_plan, plan_history, set_todo_status
 from app.services.assistant_service import ask
 
 assistant_bp = Blueprint("assistant", __name__)
@@ -38,3 +38,12 @@ def assistant_plan_decide(plan_id, decision):
 @role_required("student")
 def assistant_plan_history():
     return jsonify({"plans": plan_history(get_current_user())})
+
+
+@assistant_bp.post("/assistant/plans/<int:plan_id>/todos/<int:todo_index>/<status>")
+@role_required("student")
+def assistant_todo_status(plan_id, todo_index, status):
+    todo = set_todo_status(get_current_user(), plan_id, todo_index, status)
+    if not todo:
+        return jsonify({"error": "找不到這個待辦。"}), 404
+    return jsonify(todo)

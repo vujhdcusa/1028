@@ -35,7 +35,7 @@ def _program_by_code(code):
     return program
 
 
-def _overview(student):
+def _overview(student, include_identity=True):
     journey = build_journey(student)
     profile = student.student_profile
     targets = []
@@ -51,10 +51,7 @@ def _overview(student):
             "teacher_review": REVIEW_TEXT.get(review.status, "") if review else "尚未送導師確認",
             "autobiography": ("已修改儲存" if draft.content_json.get("edited") else "有草稿未修改") if draft else "還沒寫",
         })
-    return {
-        "name": student.display_name,
-        "student_no": profile.student_no if profile else None,
-        "class_name": profile.class_name if profile else None,
+    overview = {
         "current_grade": f"專{'一二三四五'[journey['current_grade'] - 1]}" if journey.get("current_grade") else "未知",
         "record_counts": {CATEGORY_LABELS[k]: journey["totals"][k] for k in CATEGORY_KEYS},
         "credentials": [c.credential_name + (f"（{c.level}）" if c.level else "")
@@ -62,6 +59,14 @@ def _overview(student):
                             student_id=student.id, confirmation_status="confirmed")],
         "targets": targets,
     }
+    # 學生自己的 Agent 不需要姓名、學號與班級來完成分析；避免把識別資料送到模型。
+    if include_identity:
+        overview.update({
+            "name": student.display_name,
+            "student_no": profile.student_no if profile else None,
+            "class_name": profile.class_name if profile else None,
+        })
+    return overview
 
 
 def _gap(student, program):
@@ -167,7 +172,7 @@ def get_latest_admission_sources(user):
 # ---------- 學生 ----------
 
 def get_my_overview(user):
-    return _overview(user)
+    return _overview(user, include_identity=False)
 
 
 def get_my_target_gap(user, program_code):
