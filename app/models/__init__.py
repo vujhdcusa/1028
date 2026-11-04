@@ -24,6 +24,7 @@ from app.models.learning_profile import (
 from app.models.user import StudentProfile, User
 from app.models.admission import (
     AdmissionProgram,
+    AdmissionRequirementCategory,
     AdmissionRequirementItem,
     AdmissionScheduleEvent,
     ClassAdvisor,
@@ -41,7 +42,7 @@ from app.models.p0_workbench import (
     PublicSourceChange,
     PublicSourcePublication,
 )
-from app.models.transfer_credit import TransferCreditRecord
+from app.models.transfer_credit import TransferCreditMissingDocument, TransferCreditRecord
 from app.models.system_setting import SystemSetting
 from app.models.google_doc import AutobiographyGoogleDoc
 from app.models.match_filter import MatchFilterOption
@@ -84,12 +85,14 @@ __all__ = [
     "PublicSourceChange",
     "PublicSourcePublication",
     "AdmissionProgram",
+    "AdmissionRequirementCategory",
     "AdmissionRequirementItem",
     "AdmissionScheduleEvent",
     "StudentTarget",
     "ClassAdvisor",
     "PackageReview",
     "TransferCreditRecord",
+    "TransferCreditMissingDocument",
     "SystemSetting",
     "AutobiographyGoogleDoc",
     "MatchFilterOption",

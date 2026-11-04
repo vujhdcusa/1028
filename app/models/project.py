@@ -61,6 +61,7 @@ class ProjectGroup(db.Model):
 
 class ProjectMember(db.Model):
     __tablename__ = "project_members"
+    __table_args__ = (db.UniqueConstraint("project_group_id", "student_id", name="uq_project_group_member"),)
     id = db.Column(db.Integer, primary_key=True)
     project_group_id = db.Column(db.Integer, db.ForeignKey("project_groups.id"), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)

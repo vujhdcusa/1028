@@ -6,6 +6,7 @@ from flask import Blueprint, abort, redirect, render_template, request, url_for
 
 from app.extensions import db
 from app.models import TransferCreditRecord, User
+from app.models.transfer_credit import normalize_missing_document_names
 from app.routes.main import get_current_user, role_required
 from app.services.teacher_scope import can_view_student
 
@@ -38,8 +39,14 @@ def student_transfer_credit():
             submitted_on = date.fromisoformat(date_value) if date_value else None
         except ValueError:
             abort(400, description="申請日期格式不正確。")
-        if len(missing_documents) > 1000 or len(note) > 2000:
+        if len(note) > 2000:
             abort(400, description="備註或待補資料太長，請縮短後再儲存。")
+        try:
+            missing_documents = "\n".join(
+                normalize_missing_document_names(missing_documents, reject_duplicates=True)
+            )
+        except ValueError as error:
+            abort(400, description=str(error))
 
         if record is None:
             record = TransferCreditRecord(student_id=student.id)

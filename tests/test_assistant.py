@@ -283,3 +283,64 @@ def test_expired_unapproved_agent_plan_is_cancelled_before_creating_a_new_one(ap
 
         assert db.session.get(AgentTask, old["id"]).status == "cancelled"
         assert new["id"] != old["id"]
+
+
+def test_competition_followup_requires_consent_and_only_creates_a_todo(app):
+    with app.app_context():
+        student = user(app, "stu")
+        plan = assistant_agent_service.propose_competition_followup(
+            student, "全國資訊競賽", "https://contest.example.edu.tw/info"
+        )
+        assert plan["status"] == "pending"
+        assert db.session.get(AgentTask, plan["id"]).status == "pending"
+        result = assistant_agent_service.decide_plan(student, plan["id"], "approve")
+        task = db.session.get(AgentTask, plan["id"])
+
+        assert result["status"] == "succeeded"
+        assert task.status == "succeeded"
+        assert result["todos"][0]["kind"] == "competition_followup"
+        assert result["todos"][0]["source_url"] == "https://contest.example.edu.tw/info"
+        assert not task.result_json.get("registration")
+        history = assistant_agent_service.plan_history(student)
+        assert history[0]["todos"][0]["source_url"] == "https://contest.example.edu.tw/info"
+
+
+def test_competition_followup_rejects_non_public_urls(app):
+    with app.app_context():
+        assert assistant_agent_service.propose_competition_followup(
+            user(app, "stu"), "危險連結", "javascript:alert(1)"
+        ) is None
+        assert assistant_agent_service.propose_competition_followup(
+            user(app, "stu"), "內網連結", "http://127.0.0.1:5000/admin"
+        ) is None
+
+
+def test_competition_result_exposes_only_grounded_sources_as_followup_actions(app):
+    def web_chat(contents, tools, instruction):
+        return {
+            "role": "model", "parts": [{"text": "這是可參考的競賽。"}],
+            "_web_sources": [
+                {"title": "主辦方競賽公告", "url": "https://contest.example.edu.tw/info",
+                 "detail": "Gemini 即時網路查詢"},
+                {"title": "不應加入待辦的來源", "url": "https://example.com/other", "detail": "其他"},
+                {"title": "內網來源", "url": "http://localhost:5000", "detail": "Gemini 即時網路查詢"},
+            ],
+        }
+
+    with app.app_context():
+        result = assistant_service.ask(user(app, "stu"), "幫我查詢最新資訊比賽", chat=web_chat)
+
+    assert result["competition_actions"] == [{
+        "title": "主辦方競賽公告", "url": "https://contest.example.edu.tw/info"
+    }]
+
+
+def test_competition_plan_route_returns_pending_consent_plan(app):
+    client = app.test_client()
+    client.post("/login", data={"username": "stu", "password": "pw"})
+    response = client.post("/assistant/competition-plans", data={
+        "title": "全國資訊競賽", "source_url": "https://contest.example.edu.tw/info",
+    })
+
+    assert response.status_code == 200
+    assert response.get_json()["plan"]["status"] == "pending"

@@ -45,7 +45,8 @@ def _is_snoozed(card_id, snoozed, now):
 
 def guide_cards(user, snoozed=None, now=None):
     now = now or datetime.now(timezone.utc)
-    journey = build_journey(user)
+    # 引導卡片要在學生剛存下成果後立即更新，不必等待送審。
+    journey = build_journey(user, include_draft_portfolios=True)
     totals = journey["totals"]
     grade = journey["current_grade"] or 1
     has_any = sum(totals.values()) > 0

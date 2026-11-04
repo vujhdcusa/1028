@@ -15,7 +15,7 @@ from flask import current_app
 from app.extensions import db
 from app.models import AgentTask
 from app.services import gemini_client
-from app.services.assistant_agent_service import navigation_links, propose_plan
+from app.services.assistant_agent_service import navigation_links, propose_plan, public_source_url
 from app.services.assistant_tools import ToolError, tools_for
 from app.services.knowledge_service import documents
 
@@ -34,6 +34,11 @@ def _needs_live_search(message):
     text = (message or "").lower()
     return (any(word in text for word in LIVE_SEARCH_TOPICS)
             and any(word in text for word in LIVE_SEARCH_CUES))
+
+
+def _is_competition_query(message):
+    text = (message or "").lower()
+    return any(word in text for word in ("比賽", "競賽", "徵件", "黑客松", "hackathon"))
 
 
 def system_instruction(user, page="", live_search=False):
@@ -104,7 +109,7 @@ def _collect_sources(result, sources):
             continue
         normalized = {
             "title": str(source["title"])[:180],
-            "url": str(source.get("url") or "")[:500],
+            "url": public_source_url(source.get("url")) or "",
             "detail": str(source.get("detail") or "")[:160],
             "freshness": str(source.get("freshness") or ""),
         }
@@ -121,9 +126,9 @@ def _required_prefetch(user, message, registry):
     requested = []
     if any(word in text for word in ("最新", "簡章", "報名", "時程", "日期", "招生")):
         requested.append(("get_latest_admission_sources", {}))
-    if user.role == "student" and any(word in text for word in (
+    if user.role == "student" and (any(word in text for word in (
         "我的", "我還", "缺什麼", "缺件", "準備度", "進度", "自傳", "成績", "證照",
-    )):
+    )) or _is_competition_query(message)):
         requested.append(("get_my_overview", {}))
 
     verified, labels, sources = [], [], []
@@ -198,6 +203,12 @@ def ask(user, message, history=None, page="", chat=None):
     db.session.add(task)
     db.session.commit()
     provider_label = " → ".join("GPT" if provider == "openai" else "Gemini" for provider in providers)
+    competition_actions = []
+    if user.role == "student" and _is_competition_query(message):
+        for source in sources:
+            if source.get("detail") == "Gemini 即時網路查詢" and source.get("url"):
+                competition_actions.append({"title": source["title"], "url": source["url"]})
     return {"answer": answer or "這個問題我查了很多次還是沒有結論，請換個問法，或直接詢問導師／科辦。",
             "steps": steps, "sources": sources, "links": navigation_links(user, message),
-            "plan": propose_plan(user, message), "provider": provider_label}
+            "plan": propose_plan(user, message), "provider": provider_label,
+            "competition_actions": competition_actions[:3]}

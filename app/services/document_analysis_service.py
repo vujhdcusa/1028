@@ -898,7 +898,8 @@ def analyze_document(document_type, file_path, provider_name="fake", ocr_engine=
     if provider_name in {"ocr", "tesseract", "paddleocr", "rapidocr"}:
         from app.services.ocr_pipeline import analyze
         return analyze(document_type, file_path, "tesseract" if provider_name == "ocr" else provider_name)
-    if provider_name != "fake":
+    # 舊版 .env 使用較長的名稱；它仍是本機確定性草稿，不應讓上傳流程直接失敗。
+    if provider_name not in {"fake", "deterministic_text_extractor_v1"}:
         raise RuntimeError("目前尚未設定可用的文件分析服務")
 
     file_name = Path(file_path).name if file_path else None

@@ -738,6 +738,10 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .assistant__sources { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; margin-top: .5rem; font-size: .78rem; color: var(--muted); }
 .assistant__sources a.tag { text-decoration: none; }
 .assistant__source-detail { color: var(--muted); margin-right: .35rem; }
+.assistant__competition-actions { display: grid; gap: .5rem; margin-top: .75rem; padding: .75rem; border: 1px solid #9ab6ff; background: #f5f8ff; }
+.assistant__competition-actions small { color: #4b5563; }
+.assistant__competition-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.assistant__competition-row a { flex: 1 1 12rem; font-weight: 700; }
 .assistant__provider { margin: 0 0 .35rem; font-size: .75rem; color: var(--muted); }
 .assistant__history-button { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: .8rem; cursor: pointer; text-decoration: underline; }
 .assistant__todos { margin-top: .6rem; padding: .55rem .7rem; border-left: 3px solid var(--accent); background: #f4f6ff; }
@@ -745,6 +749,7 @@ fieldset.field legend { padding: 0; margin-bottom: .35rem; }
 .assistant__todos li { margin: .25rem 0; }
 .assistant__todos a { display: block; font-weight: 700; color: var(--accent); }
 .assistant__todos small { display: block; color: var(--muted); }
+.assistant__todos .assistant__todo-source { display: inline-block; margin-top: .15rem; font-size: .8rem; font-weight: 600; }
 .assistant__todos li.is-completed a { color: var(--muted); text-decoration: line-through; }
 .assistant__todo-action { margin-top: .2rem; border: 1px solid var(--line); border-radius: .25rem; background: var(--sheet); color: var(--ink); font: inherit; font-size: .78rem; cursor: pointer; padding: .15rem .4rem; }
 .assistant__links { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }

@@ -124,9 +124,11 @@ def role_required(*allowed_roles):
 @role_required("student")
 def student_dashboard():
     user = get_current_user()
-    journey = build_journey(user)
+    # 準備度只看已確認資料；個人首頁呈現學生剛保存的成果。
+    analysis_journey = build_journey(user)
+    journey = build_journey(user, include_draft_portfolios=True)
     targets = [
-        {"program": target.program, "readiness": analyze_gap(user, target.program, journey)["readiness"]}
+        {"program": target.program, "readiness": analyze_gap(user, target.program, analysis_journey)["readiness"]}
         for target in StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
     ]
     home = journey_home(user, journey)

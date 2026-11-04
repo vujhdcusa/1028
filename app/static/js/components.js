@@ -302,6 +302,51 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
       });
       box.append(list);
     }
+    if (extra.competition_actions && extra.competition_actions.length) {
+      const actions = document.createElement("section");
+      actions.className = "assistant__competition-actions";
+      const heading = document.createElement("b");
+      heading.textContent = "想追蹤哪一項比賽？";
+      const note = document.createElement("small");
+      note.textContent = "先提出計畫，經你同意後才建立站內待辦；系統不會代為報名。";
+      actions.append(heading, note);
+      extra.competition_actions.forEach((source) => {
+        if (!source || typeof source.url !== "string" || !/^https?:\/\//.test(source.url)) return;
+        const row = document.createElement("div");
+        row.className = "assistant__competition-row";
+        const link = document.createElement("a");
+        link.href = source.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = source.title || "查看公開比賽來源";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "button button--small button--line";
+        button.textContent = "加入待辦";
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          const data = new FormData();
+          data.append("csrf_token", form.querySelector("[name=csrf_token]").value);
+          data.append("title", source.title || "公開比賽來源");
+          data.append("source_url", source.url);
+          try {
+            const response = await fetch("/assistant/competition-plans", {
+              method: "POST", body: data, credentials: "same-origin",
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || String(response.status));
+            add("bot", result.message, { plan: result.plan });
+          } catch (error) {
+            add("bot", "這個比賽暫時無法建立追蹤計畫，請稍後再試。" );
+          } finally {
+            button.disabled = false;
+          }
+        });
+        row.append(link, button);
+        actions.append(row);
+      });
+      if (actions.querySelector(".assistant__competition-row")) box.append(actions);
+    }
     if (extra.links && extra.links.length) {
       const links = document.createElement("div");
       links.className = "assistant__links";
@@ -333,6 +378,15 @@ document.querySelectorAll("[data-assistant]").forEach((root) => {
           const note = document.createElement("small");
           note.textContent = todo.note;
           item.append(note);
+        }
+        if (typeof todo.source_url === "string" && /^https?:\/\//.test(todo.source_url)) {
+          const source = document.createElement("a");
+          source.className = "assistant__todo-source";
+          source.href = todo.source_url;
+          source.target = "_blank";
+          source.rel = "noopener noreferrer";
+          source.textContent = `查看公告：${todo.source_title || "公開來源"}`;
+          item.append(source);
         }
         if (extra.plan_id) {
           const statusButton = document.createElement("button");

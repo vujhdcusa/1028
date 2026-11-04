@@ -5,6 +5,8 @@ AI 可以閱讀資料、提出下一步；但建立可追蹤的規劃紀錄前�
 """
 
 from datetime import datetime, timedelta, timezone
+from ipaddress import ip_address
+from urllib.parse import urlparse
 
 from app.extensions import db
 from app.models import AgentTask, SourceDocument, StudentTarget
@@ -81,6 +83,25 @@ def _todo(title, note, path_name, key, **metadata):
             "status": "open", **metadata}
 
 
+def public_source_url(url):
+    """競賽待辦只保存學生能自行開啟的公開 http(s) 來源。"""
+    value = str(url or "").strip()
+    parsed = urlparse(value)
+    hostname = (parsed.hostname or "").lower().rstrip(".")
+    if (parsed.scheme not in {"https", "http"} or not hostname or parsed.username or parsed.password
+            or len(value) > 500 or any(ord(char) < 32 for char in value)):
+        return None
+    if hostname == "localhost" or hostname.endswith(".localhost") or hostname.endswith(".local"):
+        return None
+    try:
+        if not ip_address(hostname).is_global:
+            return None
+    except ValueError:
+        # 一般網域名稱由瀏覽器自行做 DNS 解析；伺服器不會替使用者連線或下載內容。
+        pass
+    return value
+
+
 def _unconfirmed_document_count(user):
     return SourceDocument.query.filter(
         SourceDocument.owner_id == user.id, SourceDocument.status != "confirmed"
@@ -155,6 +176,19 @@ def _todo_state(user, todo):
     return todo.get("status", "open")
 
 
+def _safe_todo_for_display(user, todo):
+    """歷史 JSON 也要重新驗證，避免舊資料或人工修改塞入不安全的外部連結。"""
+    item = {**todo, "status": _todo_state(user, todo)}
+    if item.get("source_url"):
+        safe_url = public_source_url(item["source_url"])
+        if safe_url:
+            item["source_url"] = safe_url
+        else:
+            item.pop("source_url", None)
+            item.pop("source_title", None)
+    return item
+
+
 def plan_history(user, limit=8):
     """學生只讀取自己的 Agent 計畫紀錄；不回傳對話內容。"""
     rows = (AgentTask.query.filter_by(task_type="assistant_plan", requester_id=user.id)
@@ -168,7 +202,7 @@ def plan_history(user, limit=8):
             "status": task.status,
             "created_at": task.created_at.isoformat() if task.created_at else "",
             "executed_at": payload.get("executed_at", ""),
-            "todos": [{**todo, "status": _todo_state(user, todo)} for todo in payload.get("todos", [])]
+            "todos": [_safe_todo_for_display(user, todo) for todo in payload.get("todos", [])]
             if task.status == "succeeded" else [],
         })
     return entries
@@ -215,6 +249,35 @@ def propose_plan(user, message):
     return _plan_payload(task)
 
 
+def propose_competition_followup(user, title, source_url):
+    """學生點選公開競賽來源後，提出需同意的站內追蹤計畫。"""
+    source_url = public_source_url(source_url)
+    title = str(title or "").strip()[:180]
+    if user.role != "student" or not title or not source_url:
+        return None
+    existing = (AgentTask.query.filter_by(task_type="assistant_plan", requester_id=user.id,
+                                          status="pending")
+                .order_by(AgentTask.id.desc()).all())
+    for task in existing:
+        payload = task.result_json or {}
+        if payload.get("plan_kind") == "competition_followup" and payload.get("source_url") == source_url:
+            return _plan_payload(task)
+    task = AgentTask(
+        task_type="assistant_plan", requester_id=user.id, target_type="competition_source",
+        status="pending", result_json={
+            "plan_kind": "competition_followup",
+            "title": f"追蹤比賽：{title}",
+            "reason": "你選擇追蹤這個公開比賽來源。我只會建立站內待辦與保留官方連結，不會替你報名、上傳作品或傳送任何資料。",
+            "steps": ["建立一項站內追蹤待辦", "保留公開來源連結，方便你自行核對資格與截止時間"],
+            "source_title": title,
+            "source_url": source_url,
+        },
+    )
+    db.session.add(task)
+    db.session.commit()
+    return _plan_payload(task)
+
+
 def decide_plan(user, plan_id, decision):
     task = db.session.get(AgentTask, plan_id)
     if not task or task.task_type != "assistant_plan" or task.requester_id != user.id:
@@ -229,6 +292,30 @@ def decide_plan(user, plan_id, decision):
     if decision != "approve":
         return None
 
+    payload = dict(task.result_json or {})
+    if payload.get("plan_kind") == "competition_followup":
+        title = payload.get("source_title", "這項比賽")
+        source_url = public_source_url(payload.get("source_url"))
+        if not source_url:
+            task.status = "failed"
+            task.finished_at = datetime.now(timezone.utc)
+            db.session.commit()
+            return {"status": "failed", "message": "這個來源連結不安全，沒有建立待辦。", "links": []}
+        todos = [_todo(
+            f"確認「{title}」是否適合參加",
+            "先開啟官方／主辦方公告，核對資格、截止日期與作品規格；確認後再自行決定是否報名。",
+            "activities", f"competition-followup-{task.id}", kind="competition_followup",
+            source_title=title, source_url=source_url,
+        )]
+        payload.update({"executed_at": datetime.now(timezone.utc).isoformat(),
+                        "result": {"source_url": source_url}, "todos": todos})
+        task.result_json = payload
+        task.status = "succeeded"
+        task.finished_at = datetime.now(timezone.utc)
+        db.session.commit()
+        return {"status": "succeeded", "message": "已建立站內追蹤待辦。請自行開啟官方公告核對後，再決定是否報名。",
+                "links": [_link("前往活動與經歷", "activities")], "todos": todos, "plan_id": task.id}
+
     journey = build_journey(user)
     targets = StudentTarget.query.filter_by(student_id=user.id).order_by(StudentTarget.selected_at).all()
     todos = _build_todos(user, journey, targets, _unconfirmed_document_count(user))
@@ -242,7 +329,6 @@ def decide_plan(user, plan_id, decision):
         result = {"target_count": 0, "readiness": []}
         links = [_link("前往選擇目標校系", "targets")]
     # JSON 欄位不可原地修改；建立新 dict 才能讓 SQLAlchemy 確實寫入待辦與執行結果。
-    payload = dict(task.result_json or {})
     payload.update({
         "executed_at": datetime.now(timezone.utc).isoformat(),
         "result": result,
@@ -271,4 +357,4 @@ def set_todo_status(user, plan_id, todo_index, status):
     payload["todos"] = todos
     task.result_json = payload
     db.session.commit()
-    return {**todo, "status": _todo_state(user, todo), "plan_id": task.id, "todo_index": todo_index}
+    return {**_safe_todo_for_display(user, todo), "plan_id": task.id, "todo_index": todo_index}

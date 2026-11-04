@@ -78,6 +78,31 @@ def test_student_cannot_save_invalid_transfer_status_or_date():
         assert TransferCreditRecord.query.count() == 0
 
 
+def test_transfer_credit_rejects_duplicate_or_oversized_missing_documents():
+    app = transfer_app()
+    student = signed_in(app, "transfer-student")
+
+    duplicate = student.post(
+        "/student/transfer-credit",
+        data={"status": "needs_documents", "missing_documents": "課程大綱\n課程大綱"},
+    )
+    too_many = student.post(
+        "/student/transfer-credit",
+        data={"status": "needs_documents", "missing_documents": "\n".join(f"文件{index}" for index in range(21))},
+    )
+    too_long = student.post(
+        "/student/transfer-credit",
+        data={"status": "needs_documents", "missing_documents": "文" * 256},
+    )
+
+    assert duplicate.status_code == 400
+    assert too_many.status_code == 400
+    assert too_long.status_code == 400
+    with app.app_context():
+        from app.models import TransferCreditRecord
+        assert TransferCreditRecord.query.count() == 0
+
+
 def test_teacher_cannot_confirm_transfer_record_outside_assigned_class():
     app = transfer_app()
     student = signed_in(app, "transfer-student")

@@ -363,6 +363,10 @@ def program_item_update(item_id):
     categories = [key for key in request.form.getlist("categories") if key in ALL_LABELS]
     if not categories:
         abort(400, description="至少要對應一個資料類別")
+    if len(categories) != len(set(categories)):
+        abort(400, description="同一個資料類別不可重複選擇。")
+    if len(categories) > 6:
+        abort(400, description="一個評分項目最多可對應 6 個資料類別。")
     status = request.form.get("mapping_status", "pending")
     item.mapped_categories = ",".join(categories)
     item.mapping_status = status if status in {"confirmed", "pending"} else "pending"

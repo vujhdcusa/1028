@@ -187,7 +187,8 @@ def board_progress(journey):
 
 
 def journey_home(user, journey=None, now=None):
-    journey = journey or build_journey(user)
+    # 首頁是學生自己的收納櫃：剛存的成果要立刻看得到；分析頁仍使用預設的已確認資料。
+    journey = journey or build_journey(user, include_draft_portfolios=True)
     grade = journey["current_grade"] or 1
     words = {stop["grade"]: stop["title"].split("・")[-1] for stop in FIVE_YEAR_PLAN}
 

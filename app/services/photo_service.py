@@ -68,7 +68,12 @@ def save_photo(user_id, grade, semester, stream):
         with NamedTemporaryFile(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as output:
             temporary = Path(output.name)
         image.save(temporary, "JPEG", quality=85)  # 不帶 exif 參數，原本的拍攝資訊都不會寫入
-        temporary.replace(path)
+        try:
+            temporary.replace(path)
+        except PermissionError:
+            # 部分受限 Windows 暫存目錄禁止 rename；退回到同目錄覆寫。
+            # 一般檔案系統仍走上面的原子替換，其他 OSError 仍照常回報，避免掩蓋真正失敗。
+            path.write_bytes(temporary.read_bytes())
     finally:
         image.close()
         if temporary is not None:

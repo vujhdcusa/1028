@@ -6,7 +6,6 @@ import re
 from datetime import date, datetime, timezone
 from urllib.parse import urlparse
 from uuid import uuid4
-from urllib.parse import urlparse
 
 from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_file, url_for
 

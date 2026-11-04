@@ -45,8 +45,9 @@ class AdmissionProgram(db.Model):
 class AdmissionRequirementItem(db.Model):
     """簡章上的一個評分項目，以及它對應到本系統的哪些資料類別。
 
-    mapped_categories：以逗號分隔的類別代碼，例如 "credential,competition,autobiography"
-    mapping_status：confirmed（確定）／pending（待確認）
+    類別改存到 ``admission_requirement_categories``，一個類別一列，避免把多個
+    值塞在同一欄位。``mapped_categories`` 保留成相容用屬性，讓既有表單與服務
+    不需要一次全部改寫。
     """
 
     __tablename__ = "admission_rule_items"
@@ -55,17 +56,75 @@ class AdmissionRequirementItem(db.Model):
     rule_version_id = db.Column(db.Integer, db.ForeignKey("admission_rule_versions.id"), nullable=False, index=True)
     source_item_name = db.Column(db.String(100), nullable=False)
     weight_percent = db.Column(db.Integer, nullable=False)
-    mapped_categories = db.Column(db.String(200), nullable=False, default="")
     mapping_status = db.Column(db.String(20), nullable=False, default="pending")
     requirement = db.Column(db.Text, nullable=True)
     is_required = db.Column(db.Boolean, nullable=False, default=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
 
     program = db.relationship("AdmissionProgram", back_populates="items")
+    category_mappings = db.relationship(
+        "AdmissionRequirementCategory",
+        back_populates="requirement_item",
+        cascade="all, delete-orphan",
+        order_by="AdmissionRequirementCategory.id",
+    )
+
+    @property
+    def mapped_categories(self):
+        """相容舊程式與表單使用的逗號字串表示法。"""
+        return ",".join(self.category_keys)
+
+    @mapped_categories.setter
+    def mapped_categories(self, value):
+        if isinstance(value, str):
+            raw_keys = value.split(",")
+        else:
+            raw_keys = value or []
+        keys = []
+        seen = set()
+        for raw_key in raw_keys:
+            key = str(raw_key or "").strip()
+            if len(key) > 50:
+                raise ValueError("招生資料類別代碼不可超過 50 個字元。")
+            if any(ord(char) < 32 for char in key):
+                raise ValueError("招生資料類別代碼不可包含控制字元。")
+            if key and key not in seen:
+                keys.append(key)
+                seen.add(key)
+        # 就地更新關聯，避免資料庫在同一個交易中先插入、後刪除同一個類別，
+        # 進而碰到唯一規則。這也是管理員再次儲存相同分類時應維持冪等的原因。
+        existing_by_key = {mapping.category_key: mapping for mapping in self.category_mappings}
+        for mapping in list(self.category_mappings):
+            if mapping.category_key not in seen:
+                self.category_mappings.remove(mapping)
+        for key in keys:
+            if key not in existing_by_key:
+                self.category_mappings.append(AdmissionRequirementCategory(category_key=key))
 
     @property
     def category_keys(self):
-        return [key for key in (self.mapped_categories or "").split(",") if key]
+        return [mapping.category_key for mapping in self.category_mappings]
+
+
+class AdmissionRequirementCategory(db.Model):
+    """一個招生評分項目對應的一種學習歷程資料類別。"""
+
+    __tablename__ = "admission_requirement_categories"
+    __table_args__ = (
+        db.UniqueConstraint("requirement_item_id", "category_key", name="uq_requirement_category"),
+        db.CheckConstraint("length(category_key) > 0", name="ck_requirement_category_not_blank"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    requirement_item_id = db.Column(
+        db.Integer,
+        db.ForeignKey("admission_rule_items.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    category_key = db.Column(db.String(50), nullable=False)
+
+    requirement_item = db.relationship("AdmissionRequirementItem", back_populates="category_mappings")
 
 
 class AdmissionScheduleEvent(db.Model):

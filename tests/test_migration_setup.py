@@ -76,8 +76,10 @@ def test_transfer_credit_migration_creates_and_removes_its_table(tmp_path):
     assert runner.invoke(args=["db", "upgrade"]).exit_code == 0
     with app.app_context():
         columns = {column["name"] for column in inspect(db.engine).get_columns("transfer_credit_records")}
-    assert {"student_id", "status", "submitted_on", "missing_documents", "note",
+        has_missing_document_table = inspect(db.engine).has_table("transfer_credit_missing_documents")
+    assert {"student_id", "status", "submitted_on", "note",
             "teacher_confirmed", "teacher_id", "teacher_confirmed_at"} <= columns
+    assert has_missing_document_table
 
     assert runner.invoke(args=["db", "downgrade", "fc61707846c7"]).exit_code == 0
     with app.app_context():

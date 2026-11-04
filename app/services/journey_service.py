@@ -54,7 +54,8 @@ def _empty_categories():
     return {key: [] for key in CATEGORY_KEYS}
 
 
-def build_journey(student, today=None):
+def build_journey(student, today=None, include_draft_portfolios=False):
+    """建立五年資料；分析預設只讀確認資料，歷程頁可顯示剛保存的成果。"""
     profile = student.student_profile
     admission_year = profile.admission_year if profile else None
     folders = {grade: _empty_categories() for grade in GRADE_LABELS}
@@ -89,9 +90,10 @@ def build_journey(student, today=None):
             "detail": credential.level or "",
         })
 
-    portfolios = (Portfolio.active().filter_by(student_id=student.id)
-                  .filter(Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES))
-                  .order_by(Portfolio.id).all())
+    portfolios = Portfolio.active().filter_by(student_id=student.id)
+    if not include_draft_portfolios:
+        portfolios = portfolios.filter(Portfolio.status.in_(CONFIRMED_PORTFOLIO_STATUSES))
+    portfolios = portfolios.order_by(Portfolio.id).all()
     unsorted_count = 0
     for record in portfolios:
         if record.category not in EXPERIENCE_CATEGORIES:

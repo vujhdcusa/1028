@@ -5,7 +5,8 @@ import json
 from flask import Blueprint, jsonify, request
 
 from app.routes.main import get_current_user, role_required
-from app.services.assistant_agent_service import decide_plan, plan_history, set_todo_status
+from app.services.assistant_agent_service import (decide_plan, plan_history,
+                                                  propose_competition_followup, set_todo_status)
 from app.services.assistant_service import ask
 
 assistant_bp = Blueprint("assistant", __name__)
@@ -23,6 +24,17 @@ def assistant_ask():
     result = ask(get_current_user(), request.form.get("message", ""), history=history,
                  page=request.form.get("page", ""))
     return jsonify(result)
+
+
+@assistant_bp.post("/assistant/competition-plans")
+@role_required("student")
+def assistant_competition_plan():
+    plan = propose_competition_followup(
+        get_current_user(), request.form.get("title", ""), request.form.get("source_url", "")
+    )
+    if not plan:
+        return jsonify({"error": "這個比賽來源無法建立追蹤計畫。"}), 400
+    return jsonify({"plan": plan, "message": "我先提出追蹤計畫；請確認後才會建立站內待辦。"})
 
 
 @assistant_bp.post("/assistant/plans/<int:plan_id>/<decision>")

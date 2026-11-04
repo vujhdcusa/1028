@@ -9,6 +9,7 @@ def utcnow():
 
 class PortfolioSubmission(db.Model):
     __tablename__ = "portfolio_submissions"
+    __table_args__ = (db.UniqueConstraint("portfolio_id", "version_no", name="uq_portfolio_submission_version"),)
     id = db.Column(db.Integer, primary_key=True)
     portfolio_id = db.Column(db.Integer, db.ForeignKey("portfolios.id"), nullable=False, index=True)
     version_no = db.Column(db.Integer, nullable=False, default=1)

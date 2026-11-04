@@ -43,6 +43,7 @@ class User(db.Model):
 
 class StudentProfile(db.Model):
     __tablename__ = "student_profiles"
+    __table_args__ = (db.UniqueConstraint("user_id", name="uq_student_profile_user"),)
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)

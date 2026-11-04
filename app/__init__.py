@@ -13,6 +13,10 @@ def create_app(config_overrides=None):
     # 自動化測試沒指定時在請求裡直接辨識，既有測試上傳後就能拿到辨識結果
     if app.config.get("TESTING") and "OCR_QUEUE_MODE" not in (config_overrides or {}):
         app.config["OCR_QUEUE_MODE"] = "inline"
+    # 測試不能被開發者本機 .env 的 OCR 設定影響：測試檔案常是刻意的最小假檔，
+    # 需要穩定產生待核對草稿，而非真的呼叫本機 OCR。
+    if app.config.get("TESTING") and "DOCUMENT_ANALYSIS_PROVIDER" not in (config_overrides or {}):
+        app.config["DOCUMENT_ANALYSIS_PROVIDER"] = "fake"
     if app.config.get("DOCUMENT_OCR_ENGINE") == "rapidocr" and app.config.get("OCR_ENGINE") is None:
         from app.services.document_analysis_service import RapidOcrEngine
 

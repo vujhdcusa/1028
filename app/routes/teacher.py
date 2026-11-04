@@ -33,7 +33,8 @@ def student_detail(student_id):
     student = db.session.get(User, student_id)
     if not student or not can_view_student(teacher, student):
         abort(403)
-    journey = build_journey(student)
+    # 導師查看學生歷程時，也看得到學生剛填的待確認成果。
+    journey = build_journey(student, include_draft_portfolios=True)
     current_grade = journey["current_grade"] or 1
     journey_stops = [
         {
