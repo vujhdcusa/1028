@@ -14,6 +14,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse
 
 from flask import current_app
 
@@ -111,29 +112,55 @@ def generate_json(prompt, schema, files=None, api_key=None, opener=urllib.reques
         raise AIUnavailable("Gemini 回傳的格式不正確，請再試一次。") from None
 
 
-def chat(contents, tools, system_instruction, api_key=None, opener=urllib.request.urlopen):
+def _grounded_sources(candidate):
+    """把 Gemini Google Search 的公開來源轉成前端可安全顯示的連結。"""
+    metadata = candidate.get("groundingMetadata") or candidate.get("grounding_metadata") or {}
+    sources, seen = [], set()
+    for chunk in metadata.get("groundingChunks") or metadata.get("grounding_chunks") or []:
+        web = chunk.get("web") or {}
+        url = str(web.get("uri") or web.get("url") or "")
+        if urlparse(url).scheme not in {"https", "http"} or url in seen:
+            continue
+        seen.add(url)
+        sources.append({
+            "title": str(web.get("title") or urlparse(url).netloc or "即時網路來源")[:180],
+            "url": url[:500],
+            "detail": "Gemini 即時網路查詢",
+        })
+    return sources
+
+
+def chat(contents, tools, system_instruction, api_key=None, opener=urllib.request.urlopen, web_search=False):
     """多輪對話＋工具呼叫（function calling），回傳模型這一輪的 content（可能是文字或工具呼叫）。
 
     contents：對話紀錄，格式為 [{"role": "user"/"model", "parts": [...]}]
     tools：工具說明（functionDeclarations），讓 AI 自己決定要查什麼
     """
     if current_app.config.get("AI_PROVIDER") == "openai":
+        if web_search:
+            raise AIUnavailable("即時網路查詢需要 Gemini，目前無法改由 GPT 執行。")
         from app.services import openai_client
         return openai_client.chat(contents, tools, system_instruction, opener=opener)
+    request_tools = [{"functionDeclarations": tools}]
+    if web_search:
+        # Gemini 會自行決定必要的搜尋字詞；回傳 groundingMetadata 供前端列出來源。
+        request_tools.append({"google_search": {}})
     try:
         payload = _post({
             "systemInstruction": {"parts": [{"text": system_instruction}]},
             "contents": contents,
-            "tools": [{"functionDeclarations": tools}],
+            "tools": request_tools,
             "generationConfig": {"temperature": 0.3},
         }, api_key, opener, model=current_app.config.get("ASSISTANT_MODEL"))
     except AIUnavailable as exc:
-        if not _can_fallback(exc, personal_key=bool(api_key)):
+        # GPT 備援沒有 Gemini 的 Google Search grounding，不能把它誤稱為即時查詢。
+        if web_search or not _can_fallback(exc, personal_key=bool(api_key)):
             raise
         from app.services import openai_client
         return openai_client.chat(contents, tools, system_instruction, opener=opener)
     try:
-        content = payload["candidates"][0]["content"]
-        return {**content, "_provider": "gemini"}
+        candidate = payload["candidates"][0]
+        content = candidate["content"]
+        return {**content, "_provider": "gemini", "_web_sources": _grounded_sources(candidate)}
     except (KeyError, IndexError):
         raise AIUnavailable("小助手這次沒有產生回答，請換個方式再問一次。") from None

@@ -1,7 +1,7 @@
 {# 資管科小助手：每一頁右下角的聊天視窗（學生、導師）。
    對話只存在瀏覽器這個分頁裡，關掉就清掉；伺服器不保存問題與回答。 #}
 {% set suggestions = {
-  "student": ["我還差幾張證照？", "目標校系還缺什麼？", "檢查我的自傳", "二技什麼時候報名？"],
+  "student": ["我還差幾張證照？", "目標校系還缺什麼？", "找最新資訊類比賽", "二技什麼時候報名？"],
   "teacher": ["誰還沒選目標校系？", "誰在等我確認？", "檢查學生的自傳", "專題報告要交什麼？"],
 }[user.role] %}
 <div class="assistant" data-assistant data-endpoint="{{ url_for('assistant.assistant_ask') }}">
@@ -28,6 +28,6 @@
       <textarea id="assistant-input" name="message" rows="1" maxlength="1500" placeholder="輸入問題，Enter 送出" required></textarea>
       <button class="button button--small" type="submit">送出</button>
     </form>
-    <p class="assistant__note">AI 回答與準備度僅供參考，以科辦公告與招生簡章為準。Gemini 暫時無法使用時，系統可能改由 GPT 處理已確認且分析必要的資料。</p>
+    <p class="assistant__note">AI 回答與準備度僅供參考，以科辦公告與招生簡章為準。詢問最新招生或資訊類比賽時，Agent 會查公開網路來源並顯示連結；這可能使用 Gemini 額度。Gemini 暫時無法使用時，系統可能改由 GPT 處理已確認且分析必要的資料。</p>
   </section>
 </div>

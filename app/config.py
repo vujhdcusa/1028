@@ -50,6 +50,9 @@ class Config:
     GOOGLE_CLOUD_PROJECT_NUMBER = os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER", "")
     # 小助手對話次數多，用較輕量的模型，和自傳、簡章擷取分開計算每日額度
     ASSISTANT_MODEL = os.getenv("ASSISTANT_MODEL", "gemini-flash-lite-latest")
+    # 只有明確詢問招生、時程或資訊類比賽時，學習歷程 Agent 才能用 Gemini 搜尋即時公開資料。
+    # 預設關閉，避免一般聊天意外產生外部查詢與額度消耗。
+    ASSISTANT_WEB_SEARCH_ENABLED = os.getenv("ASSISTANT_WEB_SEARCH_ENABLED", "false").lower() == "true"
     # 招生資料 Agent 只擷取科系名稱含這些字的校系（逗號分隔）
     AGENT_PROGRAM_KEYWORDS = [k.strip() for k in os.getenv("AGENT_PROGRAM_KEYWORDS", "資訊管理,資管,資訊應用,資訊工程").split(",") if k.strip()]
     AGENT_SOURCE_FOLDER = os.getenv("AGENT_SOURCE_FOLDER", "instance/agent-sources")
